@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"sapphirebroking.com/sftp_service/pkg/headers"
+	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
@@ -38,6 +38,20 @@ func InjectLogger(root logger.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
+// EnrichLoggerFromClaims adds "user_sub" to the context logger after JWT auth.
+func EnrichLoggerFromClaims(root logger.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if claims := jwt.GetClaimsFromContext(r.Context()); claims != nil && claims.Sub != nil {
+				existing := logger.FromContext(r.Context(), root)
+				enriched := existing.With("user_sub", *claims.Sub)
+				r = r.WithContext(logger.NewContext(r.Context(), enriched))
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // AccessLog logs one structured line per completed request. Must run after
 // InjectLogger. Server errors log at Error, client errors at Warn.
 func AccessLog(fallback logger.Logger) func(next http.Handler) http.Handler {
@@ -54,7 +68,7 @@ func AccessLog(fallback logger.Logger) func(next http.Handler) http.Handler {
 				"status", rec.status,
 				"latency_ms", time.Since(start).Milliseconds(),
 				"bytes", rec.bytes,
-				"ip", headers.GetClientIP(r),
+				"ip", r.RemoteAddr,
 				"user_agent", r.UserAgent(),
 			}
 			switch {

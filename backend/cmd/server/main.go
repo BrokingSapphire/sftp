@@ -42,8 +42,9 @@ func main() {
 	appLogger.Info("migrations applied")
 
 	httpServer := api.NewHttpServer(cfg.App.Port, api.Deps{
-		Config:        cfg,
+		CORSConfig:    cfg.CORS,
 		Logger:        appLogger,
+		DebugErrors:   cfg.IsDevelopment(),
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 	})
 
