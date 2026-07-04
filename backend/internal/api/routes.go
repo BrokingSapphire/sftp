@@ -11,6 +11,7 @@ import (
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
+	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
@@ -22,9 +23,11 @@ type Deps struct {
 	Logger        logger.Logger
 	DebugErrors   bool
 	JWT           *m.JWT
+	Perms         *m.Permissions
 	HealthHandler *handlers.HealthHandler
 	AuthHandler   *authhandler.Handler
 	SSOHandler    *ssohandler.Handler
+	UserHandler   *userhandler.Handler
 }
 
 var (
@@ -54,10 +57,32 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	fuego.Get(g, "/info", deps.HealthHandler.Info, option.Summary("Build/runtime info"), option.Tags("Health"))
 
 	registerAuthRoutes(g, deps)
+	registerUserRoutes(g, deps)
 	// Feature route groups are registered here in later phases:
-	//   registerUserRoutes(g, deps)
 	//   registerFileRoutes(g, deps)
 	//   ...
+}
+
+func registerUserRoutes(g *fuego.Server, deps Deps) {
+	read := option.Middleware(deps.Perms.Require("users.read"))
+	manage := option.Middleware(deps.Perms.Require("users.manage"))
+
+	gu := fuego.Group(g, "/users", option.Tags("Users"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gu, deps.JWT.Require)
+
+	fuego.Get(gu, "/", deps.UserHandler.List, read, option.Summary("List users"))
+	fuego.Post(gu, "/", deps.UserHandler.Create, manage, option.Summary("Create user"))
+	fuego.Get(gu, "/{id}", deps.UserHandler.Get, read, option.Summary("Get a user"))
+	fuego.Patch(gu, "/{id}", deps.UserHandler.Update, manage, option.Summary("Update a user"))
+	fuego.Delete(gu, "/{id}", deps.UserHandler.Delete, manage, option.Summary("Delete a user"))
+	fuego.Put(gu, "/{id}/role", deps.UserHandler.SetRole, manage, option.Summary("Set a user's role"))
+	fuego.Put(gu, "/{id}/quota", deps.UserHandler.SetQuota, manage, option.Summary("Set a user's storage quota"))
+	fuego.Put(gu, "/{id}/status", deps.UserHandler.SetActive, manage, option.Summary("Enable/disable a user"))
+	fuego.Post(gu, "/{id}/reset-password", deps.UserHandler.ResetPassword, manage, option.Summary("Reset a user's password"))
+
+	gr := fuego.Group(g, "/roles", option.Tags("Roles"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gr, deps.JWT.Require)
+	fuego.Get(gr, "/", deps.UserHandler.ListRoles, read, option.Summary("List roles and permissions"))
 }
 
 func registerAuthRoutes(g *fuego.Server, deps Deps) {

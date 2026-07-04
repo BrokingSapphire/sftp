@@ -25,9 +25,19 @@ type Config struct {
 	Storage  StorageConfig        `mapstructure:"storage"`
 	Security SecurityConfig       `mapstructure:"security"`
 	CORS     CORSConfig           `mapstructure:"cors"`
-	SFTP     SFTPConfig           `mapstructure:"sftp"`
-	Redis    RedisConfig          `mapstructure:"redis"`
-	SSO      SSOConfig            `mapstructure:"sso"`
+	SFTP      SFTPConfig          `mapstructure:"sftp"`
+	Redis     RedisConfig         `mapstructure:"redis"`
+	SSO       SSOConfig           `mapstructure:"sso"`
+	Bootstrap BootstrapConfig     `mapstructure:"bootstrap"`
+}
+
+// BootstrapConfig seeds the first super-admin on an empty database.
+type BootstrapConfig struct {
+	AdminEmail    string `mapstructure:"admin_email"    default:"admin@sapphirebroking.com"`
+	AdminUsername string `mapstructure:"admin_username" default:"admin"`
+	// AdminPassword is read from the environment (BOOTSTRAP_ADMIN_PASSWORD).
+	// If empty, no admin is auto-created.
+	AdminPassword string `mapstructure:"admin_password"`
 }
 
 // SSOConfig groups external identity-provider settings.

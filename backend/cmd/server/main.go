@@ -14,11 +14,13 @@ import (
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
+	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
 	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
+	usersvc "sapphirebroking.com/sftp_service/internal/service/user"
 	"sapphirebroking.com/sftp_service/migrations"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -57,6 +59,16 @@ func main() {
 		Security: cfg.Security,
 		Logger:   appLogger,
 	})
+	userService := usersvc.New(usersvc.Deps{
+		Queries:  queries,
+		Security: cfg.Security,
+		Logger:   appLogger,
+	})
+
+	// Seed the first super-admin on an empty database.
+	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
+		appLogger.Error("bootstrap super-admin failed", "error", err)
+	}
 
 	// Optional Microsoft Entra ID SSO (OIDC discovery at startup).
 	msSSO, err := ssosvc.NewMicrosoft(ctx, cfg.SSO.Microsoft)
@@ -71,9 +83,11 @@ func main() {
 		Logger:        appLogger,
 		DebugErrors:   cfg.IsDevelopment(),
 		JWT:           m.NewJWT(jwtManager),
+		Perms:         m.NewPermissions(queries),
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 		AuthHandler:   authhandler.NewHandler(authService, appLogger),
 		SSOHandler:    ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
+		UserHandler:   userhandler.NewHandler(userService, appLogger),
 	})
 
 	go httpServer.Start()
