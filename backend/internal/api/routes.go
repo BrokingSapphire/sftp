@@ -8,17 +8,21 @@ import (
 	"github.com/go-fuego/fuego/option"
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
+	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
 // Deps carries everything the router needs. Feature handlers are added here as
-// later phases land (auth, users, files, shares, ...).
+// later phases land (users, files, shares, ...).
 type Deps struct {
 	CORSConfig    config.CORSConfig
 	Logger        logger.Logger
 	DebugErrors   bool
+	JWT           *m.JWT
 	HealthHandler *handlers.HealthHandler
+	AuthHandler   *authhandler.Handler
 }
 
 var (
@@ -47,9 +51,22 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	fuego.Get(g, "/health-check", deps.HealthHandler.Live, option.Summary("Health check"), option.Tags("Health"))
 	fuego.Get(g, "/info", deps.HealthHandler.Info, option.Summary("Build/runtime info"), option.Tags("Health"))
 
+	registerAuthRoutes(g, deps)
 	// Feature route groups are registered here in later phases:
-	//   registerAuthRoutes(g, deps)
 	//   registerUserRoutes(g, deps)
 	//   registerFileRoutes(g, deps)
 	//   ...
+}
+
+func registerAuthRoutes(g *fuego.Server, deps Deps) {
+	ga := fuego.Group(g, "/auth", option.Tags("Auth"))
+
+	fuego.Post(ga, "/login", deps.AuthHandler.Login, option.Summary("Log in with email/username and password"))
+	fuego.Post(ga, "/refresh", deps.AuthHandler.Refresh, option.Summary("Refresh access token"))
+
+	gsec := fuego.Group(ga, "", secured, respUnauthorized)
+	fuego.Use(gsec, deps.JWT.Require)
+	fuego.Post(gsec, "/logout", deps.AuthHandler.Logout, option.Summary("Log out (revoke refresh token)"))
+	fuego.Get(gsec, "/me", deps.AuthHandler.Me, option.Summary("Get current user profile"))
+	fuego.Post(gsec, "/change-password", deps.AuthHandler.ChangePassword, option.Summary("Change password"))
 }

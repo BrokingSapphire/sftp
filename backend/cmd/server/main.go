@@ -11,9 +11,14 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/api"
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
+	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
+	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
+	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
 	"sapphirebroking.com/sftp_service/migrations"
+	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
@@ -41,11 +46,23 @@ func main() {
 	}
 	appLogger.Info("migrations applied")
 
+	// Build the data-access, auth and HTTP layers.
+	queries := sftpdb.New(pool)
+	jwtManager := jwt.NewManager(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.AccessTTL)
+	authService := authsvc.New(authsvc.Deps{
+		Queries:  queries,
+		JWT:      jwtManager,
+		Security: cfg.Security,
+		Logger:   appLogger,
+	})
+
 	httpServer := api.NewHttpServer(cfg.App.Port, api.Deps{
 		CORSConfig:    cfg.CORS,
 		Logger:        appLogger,
 		DebugErrors:   cfg.IsDevelopment(),
+		JWT:           m.NewJWT(jwtManager),
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
+		AuthHandler:   authhandler.NewHandler(authService, appLogger),
 	})
 
 	go httpServer.Start()
