@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+tasks:
+  default:
+    desc: Run locally with hot reload (air) against config.local.yaml
+    env:
+      CONFIG_FILE: '{{.CONFIG_FILE | default "config.local.yaml"}}'
+      ENV_FILE: '{{.ENV_FILE | default ".env.local"}}'
+    cmds:
+      - go run github.com/air-verse/air@latest
+
+  infra:
+    desc: Start only backing services (Postgres [+ Redis]) for local dev
+    cmds:
+      - docker compose up -d postgres
+      - echo "✓ Postgres on localhost:5432"
+
+  infra:down:
+    desc: Stop backing services
+    cmds:
+      - docker compose stop postgres redis || true

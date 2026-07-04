@@ -1,0 +1,37 @@
+# Local development configuration. Use with .env.local.
+app:
+  name: sftp_service
+  version: 0.1.0-dev
+  port: 8080
+  environment: local
+  self_base_url: http://localhost:8080
+
+logging:
+  level: debug
+  format: console
+  enable_caller: true
+  sinks:
+    - type: stdout
+      level: debug
+
+storage:
+  root_path: ./storage/files
+  temp_path: ./storage/tmp
+  max_upload_size: 0
+  chunk_size: 8388608
+  trash_retention_days: 30
+
+cors:
+  allowed_origins:
+    - http://localhost:3000
+  allow_credentials: true
+
+sftp:
+  enabled: true
+  port: 2222
+  host_key_path: ./storage/ssh_host_ed25519_key
+
+jwt:
+  issuer: sftp_service
+  access_ttl: 30m
+  refresh_ttl: 168h

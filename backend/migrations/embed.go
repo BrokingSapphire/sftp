@@ -1,8 +1,8 @@
-// Package migrations embeds the SQL migration files so they ship inside
-// the compiled binary and run at startup.
+// Package migrations embeds the goose SQL migrations so they ship inside the
+// compiled binary and can be applied automatically at startup.
 package migrations
 
 import "embed"
 
-//go:embed *.up.sql
+//go:embed sftp/*.sql
 var FS embed.FS

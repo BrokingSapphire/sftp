@@ -1,81 +1,99 @@
-// Command server is the entrypoint for the SFTP platform API.
+// Command server is the entrypoint for the SFTP file-transfer platform.
 package main
 
 import (
 	"context"
+	stdlog "log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/BrokingSapphire/sftp/backend/internal/api"
-	"github.com/BrokingSapphire/sftp/backend/internal/config"
-	"github.com/BrokingSapphire/sftp/backend/internal/database"
-	"github.com/BrokingSapphire/sftp/backend/internal/logger"
-	"github.com/BrokingSapphire/sftp/backend/migrations"
-	"go.uber.org/zap"
+	"sapphirebroking.com/sftp_service/internal/api"
+	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	"sapphirebroking.com/sftp_service/internal/config"
+	"sapphirebroking.com/sftp_service/internal/db"
+	"sapphirebroking.com/sftp_service/migrations"
+	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
-// version is overridable at build time via -ldflags "-X main.version=...".
-var version = "0.1.0-dev"
-
 func main() {
-	cfg, err := config.Load()
+	ctx := context.Background()
+
+	cfg, err := config.Load(ctx)
 	if err != nil {
-		panic("load config: " + err.Error())
+		stdlog.Fatalf("failed to load config: %v", err)
 	}
 
-	log, err := logger.New(cfg.Log.Level, cfg.Log.Format)
+	appLogger := buildLogger(cfg)
+	defer func() { _ = appLogger.Sync() }()
+	appLogger.Info("configuration loaded", "environment", cfg.App.Environment, "version", cfg.App.Version)
+
+	pool, err := db.NewPool(ctx, cfg.Database.URL)
 	if err != nil {
-		panic("init logger: " + err.Error())
+		appLogger.Fatal("failed to open database pool", "error", err)
 	}
-	defer func() { _ = log.Sync() }()
+	defer pool.Close()
+	appLogger.Info("database pool established")
 
-	log.Info("starting sftp platform",
-		zap.String("version", version),
-		zap.String("env", cfg.Server.Env),
-	)
-
-	db, err := database.Connect(cfg.Database, log, cfg.IsProduction())
-	if err != nil {
-		log.Fatal("database connection failed", zap.Error(err))
+	if err := db.Migrate(ctx, pool, migrations.FS, "sftp"); err != nil {
+		appLogger.Fatal("failed to run migrations", "error", err)
 	}
-	defer func() { _ = database.Close(db) }()
+	appLogger.Info("migrations applied")
 
-	if err := database.Migrate(db, migrations.FS, log); err != nil {
-		log.Fatal("migrations failed", zap.Error(err))
-	}
-
-	router := api.NewRouter(api.Deps{
-		Config:  cfg,
-		Logger:  log,
-		DB:      db,
-		Version: version,
+	httpServer := api.NewHttpServer(cfg.App.Port, api.Deps{
+		Config:        cfg,
+		Logger:        appLogger,
+		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 	})
-	srv := api.NewServer(cfg, router, log)
 
-	// Run the HTTP server; capture a fatal startup error.
-	errCh := make(chan error, 1)
-	go func() {
-		if err := srv.Start(); err != nil {
-			errCh <- err
-		}
-	}()
+	go httpServer.Start()
 
-	// Wait for a termination signal or a server error.
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-stop
+	appLogger.Info("shutdown signal received", "signal", sig.String())
 
-	select {
-	case err := <-errCh:
-		log.Fatal("server error", zap.Error(err))
-	case sig := <-stop:
-		log.Info("shutdown signal received", zap.String("signal", sig.String()))
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	gracefulCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Error("graceful shutdown failed", zap.Error(err))
+	if err := httpServer.Shutdown(gracefulCtx); err != nil {
+		appLogger.Error("HTTP server shutdown error", "error", err)
+	} else {
+		appLogger.Info("HTTP server stopped gracefully")
 	}
-	log.Info("server stopped")
+}
+
+// buildLogger constructs the logger from configured sinks (default: stdout).
+func buildLogger(cfg *config.Config) logger.Logger {
+	var sinks []logger.Sink
+	if len(cfg.Logging.Sinks) == 0 {
+		sinks = append(sinks, logger.NewStdoutSink(logger.ParseLevel(cfg.Logging.Level)))
+	} else {
+		for _, sc := range cfg.Logging.Sinks {
+			level := logger.ParseLevel(cfg.Logging.Level)
+			if sc.Level != "" {
+				level = logger.ParseLevel(sc.Level)
+			}
+			switch sc.Type {
+			case "stdout":
+				sinks = append(sinks, logger.NewStdoutSink(level))
+			case "file":
+				sinks = append(sinks, logger.NewFileSink(logger.FileSinkConfig{
+					Path:       sc.Path,
+					MaxSizeMB:  sc.MaxSizeMB,
+					MaxBackups: sc.MaxBackups,
+					MaxAgeDays: sc.MaxAgeDays,
+					Compress:   sc.Compress,
+				}, level))
+			default:
+				stdlog.Fatalf("unknown log sink type: %s", sc.Type)
+			}
+		}
+	}
+
+	l, err := logger.BuildLogger(&cfg.Logging, sinks)
+	if err != nil {
+		stdlog.Fatalf("failed to build logger: %v", err)
+	}
+	return l
 }

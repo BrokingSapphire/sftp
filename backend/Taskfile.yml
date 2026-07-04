@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+vars:
+  BINARY_NAME: sftp_service
+  BINARY_PATH: bin/{{.BINARY_NAME}}
+  MAIN_PACKAGE: ./cmd/server
+  MIGRATIONS_DIR: migrations/sftp
+  ENV_FILE: '{{.ENV_FILE | default ".env"}}'
+
+env:
+  GO111MODULE: on
+
+includes:
+  build: ./taskfiles/build.yml
+  test: ./taskfiles/test.yml
+  gen: ./taskfiles/gen.yml
+  db: ./taskfiles/db.yml
+  dev: ./taskfiles/dev.yml
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  run:
+    desc: Build and run the application
+    deps: [build]
+    cmds:
+      - '{{.BINARY_PATH}}'
+
+  deps:
+    desc: Download and verify Go modules
+    cmds:
+      - go mod download
+      - go mod verify
+
+  fmt:
+    desc: Format all Go files
+    cmds:
+      - go fmt ./...
+      - go run golang.org/x/tools/cmd/goimports@latest -w . || true
+
+  lint:
+    desc: Run go vet (and golangci-lint if installed)
+    cmds:
+      - go vet ./...
+      - command -v golangci-lint >/dev/null 2>&1 && golangci-lint run || echo "golangci-lint not installed, skipping"
+
+  check:
+    desc: Run fmt, lint and tests
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test
+
+  bootstrap:
+    desc: First-time setup — env files, deps, infra, migrations
+    cmds:
+      - cp -n .env.example .env 2>/dev/null || true
+      - cp -n .env.example .env.local 2>/dev/null || true
+      - task: deps
+      - task: up
+      - task: db:migrate
+      - echo "✓ Bootstrap complete. Run 'task dev' to start with hot reload."
+
+  up:
+    desc: Start the full stack in Docker (Postgres + app [+ Redis])
+    cmds:
+      - docker compose up -d --build
+      - echo "✓ Stack up. API on http://localhost:8080, SFTP on localhost:2222"
+
+  down:
+    desc: Stop the stack (preserves data)
+    cmds:
+      - docker compose down
+
+  destroy:
+    desc: Stop the stack and delete all volumes/data
+    prompt: This deletes all local data (Postgres + files). Continue?
+    cmds:
+      - docker compose down -v
+
+  logs:
+    desc: Tail stack logs
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/

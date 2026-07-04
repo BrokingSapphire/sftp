@@ -1,5 +1,11 @@
-// Package config loads and validates application configuration from
-// environment variables (and an optional .env file) using Viper.
+// Package config is the single source of truth for application configuration.
+//
+// Struct-tag conventions:
+//
+//	mapstructure  drives YAML file decoding AND env var name derivation.
+//	              Env var = UPPER(parent_tag) + "_" + UPPER(field_tag).
+//	validate      declarative validation (go-playground/validator).
+//	default       value applied before any source loads (string form).
 package config
 
 import (
@@ -7,214 +13,111 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
-// Config is the root application configuration.
+// Config is the root configuration object.
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Storage  StorageConfig
-	Redis    RedisConfig
-	Log      LogConfig
+	App      AppConfig            `mapstructure:"app"`
+	Logging  logger.LoggingConfig `mapstructure:"logging"`
+	Database DatabaseConfig       `mapstructure:"database"`
+	JWT      JWTConfig            `mapstructure:"jwt"`
+	Storage  StorageConfig        `mapstructure:"storage"`
+	Security SecurityConfig       `mapstructure:"security"`
+	CORS     CORSConfig           `mapstructure:"cors"`
+	SFTP     SFTPConfig           `mapstructure:"sftp"`
+	Redis    RedisConfig          `mapstructure:"redis"`
 }
 
-// ServerConfig holds HTTP server settings.
-type ServerConfig struct {
-	Host            string
-	Port            int
-	Env             string // development | production
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	ShutdownTimeout time.Duration
-	AllowedOrigins  []string
+// AppConfig holds top-level application settings.
+type AppConfig struct {
+	Name        string `mapstructure:"name"          validate:"required" default:"sftp_service"`
+	Version     string `mapstructure:"version"       validate:"required" default:"0.1.0"`
+	Port        int    `mapstructure:"port"          validate:"required,min=1,max=65535" default:"8080"`
+	Environment string `mapstructure:"environment"   validate:"required,oneof=local development staging production" default:"local"`
+	SelfBaseURL string `mapstructure:"self_base_url" validate:"required,url" default:"http://localhost:8080"`
 }
 
-// DatabaseConfig holds PostgreSQL connection settings.
+// DatabaseConfig holds the PostgreSQL connection string.
 type DatabaseConfig struct {
-	Host            string
-	Port            int
-	User            string
-	Password        string
-	Name            string
-	SSLMode         string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
+	URL string `mapstructure:"url" validate:"required"`
 }
 
-// JWTConfig holds token signing settings.
+// JWTConfig holds token settings.
 type JWTConfig struct {
-	Secret          string
-	AccessTTL       time.Duration
-	RefreshTTL      time.Duration
-	Issuer          string
+	Secret     string        `mapstructure:"secret"      validate:"required,min=32"`
+	Issuer     string        `mapstructure:"issuer"      default:"sftp_service"`
+	AccessTTL  time.Duration `mapstructure:"access_ttl"  default:"15m"`
+	RefreshTTL time.Duration `mapstructure:"refresh_ttl" default:"168h"`
 }
 
 // StorageConfig holds file-storage settings.
 type StorageConfig struct {
-	RootPath      string
-	TempPath      string
-	MaxUploadSize int64 // bytes; 0 = unlimited
-	ChunkSize     int64 // bytes
+	RootPath      string `mapstructure:"root_path"       validate:"required" default:"./storage/files"`
+	TempPath      string `mapstructure:"temp_path"       validate:"required" default:"./storage/tmp"`
+	MaxUploadSize int64  `mapstructure:"max_upload_size" default:"0"`         // bytes; 0 = unlimited
+	ChunkSize     int64  `mapstructure:"chunk_size"      default:"8388608"`   // 8 MiB
+	TrashRetentionDays int `mapstructure:"trash_retention_days" default:"30"`
 }
 
-// RedisConfig holds optional Redis settings.
+// SecurityConfig holds hardening parameters.
+type SecurityConfig struct {
+	PasswordMinLength int           `mapstructure:"password_min_length" default:"12"`
+	MaxLoginAttempts  int           `mapstructure:"max_login_attempts"  default:"5"`
+	LockoutDuration   time.Duration `mapstructure:"lockout_duration"    default:"15m"`
+	RateLimitRPS      int           `mapstructure:"rate_limit_rps"      default:"20"`
+	RateLimitBurst    int           `mapstructure:"rate_limit_burst"    default:"40"`
+	IdleTimeout       time.Duration `mapstructure:"idle_timeout"        default:"30m"`
+
+	// Argon2id parameters.
+	ArgonMemoryKiB uint32 `mapstructure:"argon_memory_kib" default:"65536"`
+	ArgonTime      uint32 `mapstructure:"argon_time"       default:"3"`
+	ArgonThreads   uint8  `mapstructure:"argon_threads"    default:"4"`
+	ArgonKeyLen    uint32 `mapstructure:"argon_key_len"    default:"32"`
+	ArgonSaltLen   uint32 `mapstructure:"argon_salt_len"   default:"16"`
+}
+
+// CORSConfig holds cross-origin settings.
+type CORSConfig struct {
+	AllowedOrigins   []string `mapstructure:"allowed_origins"   validate:"required,min=1" default:"http://localhost:3000"`
+	AllowedMethods   []string `mapstructure:"allowed_methods"   default:"GET,POST,PUT,PATCH,DELETE,OPTIONS"`
+	AllowedHeaders   []string `mapstructure:"allowed_headers"   default:"Origin,Content-Type,Authorization,X-Request-ID,X-API-Key,X-Upload-Id,Content-Range"`
+	ExposedHeaders   []string `mapstructure:"exposed_headers"   default:"X-Request-ID,Content-Range,Content-Length"`
+	AllowCredentials bool     `mapstructure:"allow_credentials" default:"true"`
+	MaxAgeSecs       int      `mapstructure:"max_age_secs"      default:"300"`
+}
+
+// SFTPConfig holds the embedded SSH/SFTP protocol server settings.
+type SFTPConfig struct {
+	Enabled     bool   `mapstructure:"enabled"       default:"true"`
+	Host        string `mapstructure:"host"          default:"0.0.0.0"`
+	Port        int    `mapstructure:"port"          default:"2222"`
+	HostKeyPath string `mapstructure:"host_key_path" default:"./storage/ssh_host_ed25519_key"`
+}
+
+// RedisConfig holds optional Redis/Valkey settings (jobs, rate limiting).
 type RedisConfig struct {
-	Enabled  bool
-	Host     string
-	Port     int
-	Password string
-	DB       int
+	Enabled  bool   `mapstructure:"enabled"  default:"false"`
+	Address  string `mapstructure:"address"  default:"localhost:6379"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"       default:"0"`
 }
 
-// LogConfig holds logging settings.
-type LogConfig struct {
-	Level  string // debug | info | warn | error
-	Format string // json | console
+// IsDevelopment reports whether the app runs in a non-production environment.
+func (c *Config) IsDevelopment() bool {
+	env := strings.ToLower(c.App.Environment)
+	return env == "local" || env == "development" || env == "dev" || env == "staging"
 }
 
-// DSN returns a PostgreSQL connection string.
-func (d DatabaseConfig) DSN() string {
-	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		d.Host, d.Port, d.User, d.Password, d.Name, d.SSLMode,
-	)
-}
-
-// Load reads configuration from the environment and an optional .env file.
-func Load() (*Config, error) {
-	v := viper.New()
-
-	v.SetConfigName(".env")
-	v.SetConfigType("env")
-	v.AddConfigPath(".")
-	v.AddConfigPath("..")
-	// Missing .env file is fine — env vars still apply.
-	_ = v.ReadInConfig()
-
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	setDefaults(v)
-
-	cfg := &Config{
-		Server: ServerConfig{
-			Host:            v.GetString("SERVER_HOST"),
-			Port:            v.GetInt("SERVER_PORT"),
-			Env:             v.GetString("APP_ENV"),
-			ReadTimeout:     v.GetDuration("SERVER_READ_TIMEOUT"),
-			WriteTimeout:    v.GetDuration("SERVER_WRITE_TIMEOUT"),
-			ShutdownTimeout: v.GetDuration("SERVER_SHUTDOWN_TIMEOUT"),
-			AllowedOrigins:  splitAndTrim(v.GetString("ALLOWED_ORIGINS")),
-		},
-		Database: DatabaseConfig{
-			Host:            v.GetString("POSTGRES_HOST"),
-			Port:            v.GetInt("POSTGRES_PORT"),
-			User:            v.GetString("POSTGRES_USER"),
-			Password:        v.GetString("POSTGRES_PASSWORD"),
-			Name:            v.GetString("POSTGRES_DB"),
-			SSLMode:         v.GetString("POSTGRES_SSLMODE"),
-			MaxOpenConns:    v.GetInt("POSTGRES_MAX_OPEN_CONNS"),
-			MaxIdleConns:    v.GetInt("POSTGRES_MAX_IDLE_CONNS"),
-			ConnMaxLifetime: v.GetDuration("POSTGRES_CONN_MAX_LIFETIME"),
-		},
-		JWT: JWTConfig{
-			Secret:     v.GetString("JWT_SECRET"),
-			AccessTTL:  v.GetDuration("JWT_ACCESS_TTL"),
-			RefreshTTL: v.GetDuration("JWT_REFRESH_TTL"),
-			Issuer:     v.GetString("JWT_ISSUER"),
-		},
-		Storage: StorageConfig{
-			RootPath:      v.GetString("UPLOAD_PATH"),
-			TempPath:      v.GetString("TEMP_PATH"),
-			MaxUploadSize: v.GetInt64("MAX_UPLOAD_SIZE"),
-			ChunkSize:     v.GetInt64("CHUNK_SIZE"),
-		},
-		Redis: RedisConfig{
-			Enabled:  v.GetBool("REDIS_ENABLED"),
-			Host:     v.GetString("REDIS_HOST"),
-			Port:     v.GetInt("REDIS_PORT"),
-			Password: v.GetString("REDIS_PASSWORD"),
-			DB:       v.GetInt("REDIS_DB"),
-		},
-		Log: LogConfig{
-			Level:  v.GetString("LOG_LEVEL"),
-			Format: v.GetString("LOG_FORMAT"),
-		},
-	}
-
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
-}
-
-func setDefaults(v *viper.Viper) {
-	v.SetDefault("SERVER_HOST", "0.0.0.0")
-	v.SetDefault("SERVER_PORT", 8080)
-	v.SetDefault("APP_ENV", "development")
-	v.SetDefault("SERVER_READ_TIMEOUT", "30s")
-	v.SetDefault("SERVER_WRITE_TIMEOUT", "0s") // 0 = no timeout (large streaming downloads)
-	v.SetDefault("SERVER_SHUTDOWN_TIMEOUT", "30s")
-	v.SetDefault("ALLOWED_ORIGINS", "http://localhost:3000")
-
-	v.SetDefault("POSTGRES_HOST", "localhost")
-	v.SetDefault("POSTGRES_PORT", 5432)
-	v.SetDefault("POSTGRES_USER", "sftp")
-	v.SetDefault("POSTGRES_DB", "sftp")
-	v.SetDefault("POSTGRES_SSLMODE", "disable")
-	v.SetDefault("POSTGRES_MAX_OPEN_CONNS", 50)
-	v.SetDefault("POSTGRES_MAX_IDLE_CONNS", 10)
-	v.SetDefault("POSTGRES_CONN_MAX_LIFETIME", "1h")
-
-	v.SetDefault("JWT_ACCESS_TTL", "15m")
-	v.SetDefault("JWT_REFRESH_TTL", "168h") // 7 days
-	v.SetDefault("JWT_ISSUER", "sftp")
-
-	v.SetDefault("UPLOAD_PATH", "./storage/files")
-	v.SetDefault("TEMP_PATH", "./storage/tmp")
-	v.SetDefault("MAX_UPLOAD_SIZE", 0)         // unlimited
-	v.SetDefault("CHUNK_SIZE", 8*1024*1024)    // 8 MiB
-
-	v.SetDefault("REDIS_ENABLED", false)
-	v.SetDefault("REDIS_HOST", "localhost")
-	v.SetDefault("REDIS_PORT", 6379)
-	v.SetDefault("REDIS_DB", 0)
-
-	v.SetDefault("LOG_LEVEL", "info")
-	v.SetDefault("LOG_FORMAT", "json")
-}
-
-func (c *Config) validate() error {
-	if c.JWT.Secret == "" || len(c.JWT.Secret) < 32 {
-		return fmt.Errorf("JWT_SECRET must be set and at least 32 characters")
-	}
-	if c.Database.Password == "" {
-		return fmt.Errorf("POSTGRES_PASSWORD must be set")
-	}
-	if c.Storage.RootPath == "" {
-		return fmt.Errorf("UPLOAD_PATH must be set")
-	}
-	return nil
-}
-
-// IsProduction reports whether the app runs in production mode.
+// IsProduction reports whether the app runs in production.
 func (c *Config) IsProduction() bool {
-	return strings.EqualFold(c.Server.Env, "production")
+	return strings.ToLower(c.App.Environment) == "production"
 }
 
-func splitAndTrim(s string) []string {
-	if s == "" {
-		return nil
+// AppID returns "name/version".
+func (c *Config) AppID() string {
+	if c.App.Name == "" {
+		return ""
 	}
-	parts := strings.Split(s, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if t := strings.TrimSpace(p); t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
+	return fmt.Sprintf("%s/%s", c.App.Name, c.App.Version)
 }

@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+tasks:
+  default:
+    desc: Build the application binary
+    sources:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+    generates:
+      - '{{.BINARY_PATH}}'
+    cmds:
+      - mkdir -p bin
+      - go build -trimpath -ldflags "-s -w" -o {{.BINARY_PATH}} {{.MAIN_PACKAGE}}
+
+  docker:
+    desc: Build the production Docker image
+    cmds:
+      - docker build -t sftp-service:latest -f Dockerfile .

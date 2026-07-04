@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sftp
+      POSTGRES_PASSWORD: sftp
+      POSTGRES_DB: sftp
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sftp"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"   # REST API
+      - "2222:2222"   # SFTP
+    environment:
+      CONFIG_FILE: /app/config.yaml
+      APP_ENVIRONMENT: production
+      DATABASE_URL: postgresql://sftp:sftp@postgres:5432/sftp?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-random-secret-at-least-32-characters}
+      STORAGE_ROOT_PATH: /app/storage/files
+      STORAGE_TEMP_PATH: /app/storage/tmp
+    volumes:
+      - sftp-files:/app/storage/files
+      - sftp-tmp:/app/storage/tmp
+      - sftp-logs:/app/storage/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  sftp-files:
+  sftp-tmp:
+  sftp-logs:

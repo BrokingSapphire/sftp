@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+tasks:
+  default:
+    desc: Run unit tests
+    cmds:
+      - go test ./... {{.CLI_ARGS}}
+
+  race:
+    desc: Run tests with the race detector
+    cmds:
+      - go test -race ./...
+
+  coverage:
+    desc: Run tests with coverage and write coverage.out
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out | tail -1

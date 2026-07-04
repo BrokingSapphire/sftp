@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+tasks:
+  default:
+    desc: Generate all code (sqlc)
+    cmds:
+      - task: sqlc
+
+  sqlc:
+    desc: Generate type-safe DB code from internal/db/queries + migrations/sftp
+    sources:
+      - sqlc.yaml
+      - internal/db/queries/**/*.sql
+      - migrations/sftp/*.sql
+    generates:
+      - internal/db/sftpdb/*.go
+    cmds:
+      - go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest generate
+
+  sqlc:clean:
+    desc: Remove sqlc-generated code
+    cmds:
+      - rm -rf internal/db/sftpdb

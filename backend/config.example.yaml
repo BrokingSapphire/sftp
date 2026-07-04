@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────────────────────
+# SFTP Platform — example configuration (non-secret values only).
+# Copy to config.yaml (prod) or config.local.yaml (dev).
+# Secrets (jwt.secret, database.url password) belong in .env / env vars.
+# ─────────────────────────────────────────────────────────────
+
+app:
+  name: sftp_service
+  version: 0.1.0
+  port: 8080
+  environment: local           # local | development | staging | production
+  self_base_url: http://localhost:8080
+
+logging:
+  level: info                  # debug | info | warn | error | fatal
+  format: json                 # json | console
+  enable_caller: false
+  enable_stack_trace: false
+  sinks:
+    - type: stdout
+      level: info
+    # Long-retention compliance/audit log on disk:
+    - type: file
+      level: info
+      path: ./storage/logs/app.log
+      max_size_mb: 100
+      max_backups: 14
+      max_age_days: 365
+      compress: true
+
+storage:
+  root_path: ./storage/files
+  temp_path: ./storage/tmp
+  max_upload_size: 0           # bytes; 0 = unlimited
+  chunk_size: 8388608          # 8 MiB
+  trash_retention_days: 30
+
+security:
+  password_min_length: 12
+  max_login_attempts: 5
+  lockout_duration: 15m
+  rate_limit_rps: 20
+  rate_limit_burst: 40
+  idle_timeout: 30m
+  argon_memory_kib: 65536
+  argon_time: 3
+  argon_threads: 4
+  argon_key_len: 32
+  argon_salt_len: 16
+
+cors:
+  allowed_origins:
+    - http://localhost:3000
+  allowed_methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+  allow_credentials: true
+  max_age_secs: 300
+
+sftp:
+  enabled: true
+  host: 0.0.0.0
+  port: 2222
+  host_key_path: ./storage/ssh_host_ed25519_key
+
+redis:
+  enabled: false
+  address: localhost:6379
+  db: 0
+
+jwt:
+  issuer: sftp_service
+  access_ttl: 15m
+  refresh_ttl: 168h
+  # jwt.secret is intentionally omitted — set JWT_SECRET in the environment.
+
+database:
+  # database.url is intentionally omitted — set DATABASE_URL in the environment.
