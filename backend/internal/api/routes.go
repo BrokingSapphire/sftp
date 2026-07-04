@@ -10,6 +10,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
@@ -23,6 +24,7 @@ type Deps struct {
 	JWT           *m.JWT
 	HealthHandler *handlers.HealthHandler
 	AuthHandler   *authhandler.Handler
+	SSOHandler    *ssohandler.Handler
 }
 
 var (
@@ -63,6 +65,14 @@ func registerAuthRoutes(g *fuego.Server, deps Deps) {
 
 	fuego.Post(ga, "/login", deps.AuthHandler.Login, option.Summary("Log in with email/username and password"))
 	fuego.Post(ga, "/refresh", deps.AuthHandler.Refresh, option.Summary("Refresh access token"))
+
+	// Microsoft Entra ID (Azure AD) single sign-on.
+	if deps.SSOHandler != nil && deps.SSOHandler.Enabled() {
+		fuego.GetStd(ga, "/sso/microsoft/login", deps.SSOHandler.MicrosoftLogin,
+			option.Summary("Begin Microsoft SSO login"))
+		fuego.GetStd(ga, "/sso/microsoft/callback", deps.SSOHandler.MicrosoftCallback,
+			option.Summary("Microsoft SSO callback"))
+	}
 
 	gsec := fuego.Group(ga, "", secured, respUnauthorized)
 	fuego.Use(gsec, deps.JWT.Require)

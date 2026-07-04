@@ -13,10 +13,12 @@ import (
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
+	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
 	"sapphirebroking.com/sftp_service/migrations"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -56,6 +58,14 @@ func main() {
 		Logger:   appLogger,
 	})
 
+	// Optional Microsoft Entra ID SSO (OIDC discovery at startup).
+	msSSO, err := ssosvc.NewMicrosoft(ctx, cfg.SSO.Microsoft)
+	if err != nil {
+		appLogger.Error("microsoft sso disabled: initialisation failed", "error", err)
+	} else if msSSO != nil {
+		appLogger.Info("microsoft sso enabled", "tenant", cfg.SSO.Microsoft.TenantID)
+	}
+
 	httpServer := api.NewHttpServer(cfg.App.Port, api.Deps{
 		CORSConfig:    cfg.CORS,
 		Logger:        appLogger,
@@ -63,6 +73,7 @@ func main() {
 		JWT:           m.NewJWT(jwtManager),
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 		AuthHandler:   authhandler.NewHandler(authService, appLogger),
+		SSOHandler:    ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
 	})
 
 	go httpServer.Start()

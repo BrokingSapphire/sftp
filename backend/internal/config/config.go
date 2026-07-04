@@ -27,6 +27,27 @@ type Config struct {
 	CORS     CORSConfig           `mapstructure:"cors"`
 	SFTP     SFTPConfig           `mapstructure:"sftp"`
 	Redis    RedisConfig          `mapstructure:"redis"`
+	SSO      SSOConfig            `mapstructure:"sso"`
+}
+
+// SSOConfig groups external identity-provider settings.
+type SSOConfig struct {
+	Microsoft MicrosoftSSOConfig `mapstructure:"microsoft"`
+}
+
+// MicrosoftSSOConfig configures Microsoft Entra ID (Azure AD) OIDC login.
+type MicrosoftSSOConfig struct {
+	Enabled      bool     `mapstructure:"enabled"       default:"false"`
+	TenantID     string   `mapstructure:"tenant_id"     default:"organizations"`
+	ClientID     string   `mapstructure:"client_id"`
+	ClientSecret string   `mapstructure:"client_secret"`
+	RedirectURL  string   `mapstructure:"redirect_url"  default:"http://localhost:8080/api/v1/auth/sso/microsoft/callback"`
+	// SuccessURL is the frontend route the callback redirects to with tokens.
+	SuccessURL string `mapstructure:"success_url" default:"http://localhost:3000/auth/sso/callback"`
+	// AllowedDomains optionally restricts sign-in to specific email domains.
+	AllowedDomains []string `mapstructure:"allowed_domains"`
+	// DefaultRole is the role slug assigned to newly provisioned SSO users.
+	DefaultRole string `mapstructure:"default_role" default:"employee"`
 }
 
 // AppConfig holds top-level application settings.

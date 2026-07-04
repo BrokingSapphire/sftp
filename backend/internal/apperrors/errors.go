@@ -22,6 +22,8 @@ var (
 	ErrRoleImmutable     = errors.New("system role cannot be modified")
 	ErrForbidden         = errors.New("forbidden")
 	ErrUnauthorized      = errors.New("unauthorized")
+	ErrSSODomainNotAllowed = errors.New("email domain not permitted for SSO")
+	ErrSSONotConfigured    = errors.New("sso provider not configured")
 
 	// API keys
 	ErrAPIKeyNotFound = errors.New("api key not found")

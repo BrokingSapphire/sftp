@@ -31,8 +31,12 @@ func HTTPStatus(err error) int {
 		return http.StatusUnauthorized
 
 	case errors.Is(err, ErrForbidden), errors.Is(err, ErrAccountLocked),
-		errors.Is(err, ErrAccountDisabled), errors.Is(err, ErrRoleImmutable):
+		errors.Is(err, ErrAccountDisabled), errors.Is(err, ErrRoleImmutable),
+		errors.Is(err, ErrSSODomainNotAllowed):
 		return http.StatusForbidden
+
+	case errors.Is(err, ErrSSONotConfigured):
+		return http.StatusServiceUnavailable
 
 	case errors.Is(err, ErrWeakPassword), errors.Is(err, ErrPasswordReused),
 		errors.Is(err, ErrInvalidRequest), errors.Is(err, ErrPathTraversal),

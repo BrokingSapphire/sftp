@@ -66,6 +66,17 @@ redis:
   address: localhost:6379
   db: 0
 
+sso:
+  microsoft:
+    enabled: false
+    tenant_id: organizations          # tenant GUID, or "organizations" / "common"
+    redirect_url: http://localhost:8080/api/v1/auth/sso/microsoft/callback
+    success_url: http://localhost:3000/auth/sso/callback
+    default_role: employee
+    allowed_domains: []               # e.g. [sapphirebroking.com] to restrict sign-in
+    # client_id / client_secret come from the environment:
+    #   SSO_MICROSOFT_CLIENT_ID, SSO_MICROSOFT_CLIENT_SECRET
+
 jwt:
   issuer: sftp_service
   access_ttl: 15m
