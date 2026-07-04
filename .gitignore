@@ -1,0 +1,44 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+/backend/bin/
+/backend/server
+/backend/tmp/
+
+# Test / coverage
+*.test
+*.out
+coverage.*
+
+# Env & secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Storage / uploads (runtime data)
+/storage/
+/data/
+uploads/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+npm-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
