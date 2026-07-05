@@ -19,15 +19,20 @@ type Querier interface {
 	CountAuditLogs(ctx context.Context) (int64, error)
 	CountDownloadsSince(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error)
 	CountFilesByFolder(ctx context.Context, arg CountFilesByFolderParams) (int64, error)
+	CountFilesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	CountFolderChildren(ctx context.Context, parentID *uuid.UUID) (int32, error)
+	CountFoldersByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	CountTrashByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateShare(ctx context.Context, arg CreateShareParams) (Share, error)
 	CreateUpload(ctx context.Context, arg CreateUploadParams) (Upload, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeactivateExpiredShares(ctx context.Context) error
 	DeleteExpiredSessions(ctx context.Context) error
 	DeleteExpiredUploads(ctx context.Context) ([]DeleteExpiredUploadsRow, error)
 	DeleteRole(ctx context.Context, id uuid.UUID) error
@@ -41,6 +46,7 @@ type Querier interface {
 	GetRoleBySlug(ctx context.Context, slug string) (Role, error)
 	GetSessionByHash(ctx context.Context, refreshTokenHash string) (Session, error)
 	GetSessionByID(ctx context.Context, id uuid.UUID) (Session, error)
+	GetShareByToken(ctx context.Context, token string) (Share, error)
 	GetUpload(ctx context.Context, id uuid.UUID) (Upload, error)
 	GetUploadForUser(ctx context.Context, arg GetUploadForUserParams) (Upload, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
@@ -50,10 +56,12 @@ type Querier interface {
 	HardDeleteFile(ctx context.Context, id uuid.UUID) (string, error)
 	IncrementDownloadCount(ctx context.Context, id uuid.UUID) error
 	IncrementFailedAttempts(ctx context.Context, id uuid.UUID) (int32, error)
+	IncrementShareDownload(ctx context.Context, id uuid.UUID) error
 	InsertActivity(ctx context.Context, arg InsertActivityParams) error
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
+	LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwnerParams) ([]File, error)
 	ListActivityByUser(ctx context.Context, arg ListActivityByUserParams) ([]UserActivity, error)
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
@@ -68,6 +76,7 @@ type Querier interface {
 	ListRecentFiles(ctx context.Context, arg ListRecentFilesParams) ([]File, error)
 	ListRecentLoginHistory(ctx context.Context, arg ListRecentLoginHistoryParams) ([]LoginHistory, error)
 	ListRoles(ctx context.Context) ([]Role, error)
+	ListSharesByOwner(ctx context.Context, ownerID uuid.UUID) ([]Share, error)
 	ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListTrash(ctx context.Context, arg ListTrashParams) ([]File, error)
 	ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]ApiKey, error)
@@ -87,6 +96,7 @@ type Querier interface {
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	RevokeSession(ctx context.Context, id uuid.UUID) error
 	RevokeSessionByHash(ctx context.Context, refreshTokenHash string) error
+	RevokeShare(ctx context.Context, arg RevokeShareParams) error
 	RotateSession(ctx context.Context, arg RotateSessionParams) error
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
 	SetFileStar(ctx context.Context, arg SetFileStarParams) error
@@ -99,6 +109,8 @@ type Querier interface {
 	SoftDeleteFolder(ctx context.Context, id uuid.UUID) error
 	SoftDeleteUser(ctx context.Context, id uuid.UUID) error
 	SumFileSizesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	SystemFileCount(ctx context.Context) (int64, error)
+	SystemStorageUsed(ctx context.Context) (int64, error)
 	TouchAPIKey(ctx context.Context, arg TouchAPIKeyParams) error
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UnlockUser(ctx context.Context, id uuid.UUID) error

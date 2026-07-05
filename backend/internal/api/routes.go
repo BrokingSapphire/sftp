@@ -13,6 +13,7 @@ import (
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
@@ -36,6 +37,7 @@ type Deps struct {
 	FileHandler   *filehandler.Handler
 	APIKeyHandler *apikeyhandler.Handler
 	AuditHandler  *audithandler.Handler
+	ShareHandler  *sharehandler.Handler
 }
 
 var (
@@ -69,6 +71,22 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerFileRoutes(g, deps)
 	registerAPIKeyRoutes(g, deps)
 	registerAuditRoutes(g, deps)
+	registerShareRoutes(g, deps)
+}
+
+func registerShareRoutes(g *fuego.Server, deps Deps) {
+	// Owner-managed shares (authenticated, files.share).
+	gs := fuego.Group(g, "/shares", option.Tags("Shares"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gs, deps.Auth.Require)
+	share := option.Middleware(deps.Perms.Require("files.share"))
+	fuego.Get(gs, "/", deps.ShareHandler.List, share, option.Summary("List your share links"))
+	fuego.Post(gs, "/", deps.ShareHandler.Create, share, option.Summary("Create a share link"))
+	fuego.Delete(gs, "/{id}", deps.ShareHandler.Revoke, share, option.Summary("Revoke a share link"))
+
+	// Public share access (no authentication).
+	gp := fuego.Group(g, "/share", option.Tags("Public Share"))
+	fuego.Get(gp, "/{token}", deps.ShareHandler.PublicInfo, option.Summary("Get public share metadata"))
+	fuego.GetStd(gp, "/{token}/download", deps.ShareHandler.PublicDownload, option.Summary("Download a shared file"))
 }
 
 func registerAuditRoutes(g *fuego.Server, deps Deps) {
