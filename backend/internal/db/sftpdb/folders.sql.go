@@ -64,12 +64,79 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 	return i, err
 }
 
+const getFileByOwnerFolderName = `-- name: GetFileByOwnerFolderName :one
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+WHERE owner_id = $1
+  AND folder_id IS NOT DISTINCT FROM $3
+  AND name = $2 AND deleted_at IS NULL
+`
+
+type GetFileByOwnerFolderNameParams struct {
+	OwnerID  uuid.UUID  `json:"owner_id"`
+	Name     string     `json:"name"`
+	FolderID *uuid.UUID `json:"folder_id"`
+}
+
+func (q *Queries) GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwnerFolderNameParams) (File, error) {
+	row := q.db.QueryRow(ctx, getFileByOwnerFolderName, arg.OwnerID, arg.Name, arg.FolderID)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.FolderID,
+		&i.Name,
+		&i.Extension,
+		&i.MimeType,
+		&i.SizeBytes,
+		&i.ChecksumSha256,
+		&i.StorageKey,
+		&i.ThumbnailKey,
+		&i.IsStarred,
+		&i.VersionNo,
+		&i.DownloadCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getFolderByID = `-- name: GetFolderByID :one
 SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at FROM folders WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error) {
 	row := q.db.QueryRow(ctx, getFolderByID, id)
+	var i Folder
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.ParentID,
+		&i.Name,
+		&i.Path,
+		&i.Depth,
+		&i.SizeBytes,
+		&i.IsStarred,
+		&i.IsPinned,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getFolderByOwnerPath = `-- name: GetFolderByOwnerPath :one
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at FROM folders
+WHERE owner_id = $1 AND path = $2 AND deleted_at IS NULL
+`
+
+type GetFolderByOwnerPathParams struct {
+	OwnerID uuid.UUID `json:"owner_id"`
+	Path    string    `json:"path"`
+}
+
+func (q *Queries) GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwnerPathParams) (Folder, error) {
+	row := q.db.QueryRow(ctx, getFolderByOwnerPath, arg.OwnerID, arg.Path)
 	var i Folder
 	err := row.Scan(
 		&i.ID,

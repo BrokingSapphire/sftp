@@ -23,6 +23,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "2222:2222"   # native SFTP-over-SSH endpoint
     environment:
       CONFIG_FILE: /app/config.yaml
       APP_ENVIRONMENT: production

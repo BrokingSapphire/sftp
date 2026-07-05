@@ -29,6 +29,7 @@ import (
 	sharesvc "sapphirebroking.com/sftp_service/internal/service/share"
 	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
 	usersvc "sapphirebroking.com/sftp_service/internal/service/user"
+	"sapphirebroking.com/sftp_service/internal/sftpserver"
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/internal/worker"
 	"sapphirebroking.com/sftp_service/migrations"
@@ -129,10 +130,31 @@ func main() {
 
 	go httpServer.Start()
 
+	// Optional native SFTP-over-SSH endpoint (same storage + accounts).
+	var sftpSrv *sftpserver.Server
+	if cfg.SFTP.Enabled {
+		sftpSrv, err = sftpserver.New(sftpserver.Deps{
+			Config: cfg.SFTP, Auth: authService, APIKey: apiKeyService, Files: fileService, Logger: appLogger,
+		})
+		if err != nil {
+			appLogger.Error("sftp server disabled: initialisation failed", "error", err)
+		} else {
+			go func() {
+				if err := sftpSrv.Start(); err != nil {
+					appLogger.Error("sftp server stopped", "error", err)
+				}
+			}()
+		}
+	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-stop
 	appLogger.Info("shutdown signal received", "signal", sig.String())
+
+	if sftpSrv != nil {
+		_ = sftpSrv.Close()
+	}
 
 	gracefulCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

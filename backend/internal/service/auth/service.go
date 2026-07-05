@@ -100,6 +100,29 @@ func (s *Service) Login(ctx context.Context, req models.LoginRequest, meta Reque
 	return s.issueTokens(ctx, user, req.RememberMe, meta)
 }
 
+// VerifyPassword authenticates credentials without issuing tokens and returns
+// the user id. Used by the SFTP protocol server's password auth. Applies the
+// same active/locked/lockout rules as Login.
+func (s *Service) VerifyPassword(ctx context.Context, identifier, password string) (uuid.UUID, error) {
+	user, err := s.q.GetUserByEmailOrUsername(ctx, identifier)
+	if err != nil {
+		return uuid.Nil, apperrors.ErrInvalidCredentials
+	}
+	if !user.IsActive {
+		return uuid.Nil, apperrors.ErrAccountDisabled
+	}
+	if user.IsLocked && user.LockedUntil.Valid && user.LockedUntil.Time.After(time.Now()) {
+		return uuid.Nil, apperrors.ErrAccountLocked
+	}
+	ok, err := argon2.Verify(password, user.PasswordHash)
+	if err != nil || !ok {
+		s.handleFailedAttempt(ctx, user)
+		return uuid.Nil, apperrors.ErrInvalidCredentials
+	}
+	_ = s.q.UpdateLastLogin(ctx, user.ID)
+	return user.ID, nil
+}
+
 // Refresh rotates a refresh token and issues a new access token.
 func (s *Service) Refresh(ctx context.Context, refreshToken string, meta RequestMeta) (*models.TokenPair, error) {
 	session, err := s.q.GetSessionByHash(ctx, hashToken(refreshToken))

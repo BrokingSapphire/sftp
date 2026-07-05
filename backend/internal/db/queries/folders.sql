@@ -6,6 +6,16 @@ RETURNING *;
 -- name: GetFolderByID :one
 SELECT * FROM folders WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: GetFolderByOwnerPath :one
+SELECT * FROM folders
+WHERE owner_id = $1 AND path = $2 AND deleted_at IS NULL;
+
+-- name: GetFileByOwnerFolderName :one
+SELECT * FROM files
+WHERE owner_id = $1
+  AND folder_id IS NOT DISTINCT FROM sqlc.narg('folder_id')
+  AND name = $2 AND deleted_at IS NULL;
+
 -- name: ListFoldersByParent :many
 SELECT * FROM folders
 WHERE owner_id = $1
