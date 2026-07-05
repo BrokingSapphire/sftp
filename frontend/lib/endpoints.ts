@@ -75,6 +75,40 @@ export const apiKeysApi = {
   revoke: (id: string) => http.delete(`/api-keys/${id}`),
 };
 
+// ── Users (admin) ──────────────────────────────────────────
+export interface AdminUser {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string;
+  role: string;
+  storage_used: number;
+  storage_quota: number;
+  is_active: boolean;
+  is_locked: boolean;
+  last_login_at?: string;
+  created_at: string;
+}
+export interface RoleInfo {
+  id: string; name: string; slug: string; description: string;
+  is_system: boolean; priority: number; permissions: string[];
+}
+
+export const usersApi = {
+  list: (limit = 50, offset = 0) =>
+    unwrap<AdminUser[]>(http.get<Envelope<AdminUser[]>>("/users/", { params: { limit, offset } })),
+  create: (body: { email: string; username: string; password: string; full_name: string; role: string }) =>
+    http.post("/users/", body),
+  setActive: (id: string, is_active: boolean) => http.put(`/users/${id}/status`, { is_active }),
+  setRole: (id: string, role: string) => http.put(`/users/${id}/role`, { role }),
+  resetPassword: (id: string, new_password: string) => http.post(`/users/${id}/reset-password`, { new_password }),
+  remove: (id: string) => http.delete(`/users/${id}`),
+};
+
+export const rolesApi = {
+  list: () => unwrap<RoleInfo[]>(http.get<Envelope<RoleInfo[]>>("/roles/")),
+};
+
 // ── Audit + telemetry ──────────────────────────────────────
 export const auditApi = {
   list: (limit = 100, offset = 0) =>
