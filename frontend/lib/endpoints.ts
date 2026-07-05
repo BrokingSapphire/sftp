@@ -1,0 +1,84 @@
+import { http, unwrap, tokens, type Envelope } from "./api";
+import type {
+  ApiKey, AuditLog, FileItem, Listing, ShareLink, TokenPair, UserInfo,
+} from "./types";
+
+// ── Auth ───────────────────────────────────────────────────
+export const authApi = {
+  async login(identifier: string, password: string, remember: boolean) {
+    const pair = await unwrap<TokenPair>(
+      http.post<Envelope<TokenPair>>("/auth/login", { identifier, password, remember_me: remember }),
+    );
+    tokens.set(pair.access_token, pair.refresh_token);
+    return pair;
+  },
+  me: () => unwrap<UserInfo>(http.get<Envelope<UserInfo>>("/auth/me")),
+  async logout() {
+    const rt = tokens.refresh();
+    try {
+      if (rt) await http.post("/auth/logout", { refresh_token: rt });
+    } finally {
+      tokens.clear();
+    }
+  },
+  changePassword: (current_password: string, new_password: string) =>
+    http.post("/auth/change-password", { current_password, new_password }),
+};
+
+// ── Files & folders ────────────────────────────────────────
+export const filesApi = {
+  list: (folderId?: string) =>
+    unwrap<Listing>(http.get<Envelope<Listing>>("/files/", { params: { folder_id: folderId } })),
+  recent: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/recent")),
+  starred: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/starred")),
+  trash: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/trash")),
+  search: (q: string) =>
+    unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/search", { params: { q } })),
+  createFolder: (name: string, parent_id?: string) =>
+    http.post("/folders/", { name, parent_id: parent_id ?? null }),
+  renameFile: (id: string, name: string) => http.put(`/files/${id}/rename`, { name }),
+  renameFolder: (id: string, name: string) => http.put(`/folders/${id}/rename`, { name }),
+  starFile: (id: string, starred: boolean) => http.put(`/files/${id}/star`, { starred }),
+  trashFile: (id: string) => http.post(`/files/${id}/trash`, {}),
+  restoreFile: (id: string) => http.post(`/files/${id}/restore`, {}),
+  deleteFile: (id: string) => http.delete(`/files/${id}`),
+  deleteFolder: (id: string) => http.delete(`/folders/${id}`),
+  downloadUrl: (id: string) => `/api/v1/files/${id}/download`,
+  simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (folderId) form.append("folder_id", folderId);
+    return http.post("/files/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+      },
+    });
+  },
+};
+
+// ── Shares ─────────────────────────────────────────────────
+export const sharesApi = {
+  list: () => unwrap<ShareLink[]>(http.get<Envelope<ShareLink[]>>("/shares/")),
+  create: (file_id: string, opts: { password?: string; expires_in_days?: number; download_limit?: number }) =>
+    unwrap<{ token: string; url: string }>(http.post<Envelope<{ token: string; url: string }>>("/shares/", { file_id, ...opts })),
+  revoke: (id: string) => http.delete(`/shares/${id}`),
+};
+
+// ── API keys ───────────────────────────────────────────────
+export const apiKeysApi = {
+  list: () => unwrap<ApiKey[]>(http.get<Envelope<ApiKey[]>>("/api-keys/")),
+  create: (name: string, scopes: string[], expires_in_days?: number) =>
+    unwrap<{ key: string; prefix: string }>(
+      http.post<Envelope<{ key: string; prefix: string }>>("/api-keys/", { name, scopes, expires_in_days }),
+    ),
+  revoke: (id: string) => http.delete(`/api-keys/${id}`),
+};
+
+// ── Audit + telemetry ──────────────────────────────────────
+export const auditApi = {
+  list: (limit = 100, offset = 0) =>
+    unwrap<AuditLog[]>(http.get<Envelope<AuditLog[]>>("/audit/", { params: { limit, offset } })),
+  track: (event_type: string, element?: string, path?: string, metadata?: Record<string, unknown>) =>
+    http.post("/activity/", { event_type, element, path, metadata }).catch(() => {}),
+};

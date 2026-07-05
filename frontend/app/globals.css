@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Design tokens (enterprise neutral + indigo accent) ── */
+:root {
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --accent: #6366f1;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --ring: #6366f1;
+  --radius: 0.65rem;
+}
+
+.dark {
+  --background: #0b0f19;
+  --surface: #111827;
+  --surface-2: #1e293b;
+  --foreground: #e5e7eb;
+  --muted: #94a3b8;
+  --border: #1f2937;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --accent: #818cf8;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --ring: #818cf8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars for a premium feel */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fade-in 0.2s ease-out;
+}
