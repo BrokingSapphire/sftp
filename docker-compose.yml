@@ -1,0 +1,73 @@
+# Full-stack, production-style deployment: Postgres + backend + frontend + Nginx.
+# Bring it all up:  docker compose up -d --build
+# (For backend-only dev, use backend/docker-compose.yml.)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sftp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sftp}
+      POSTGRES_DB: ${POSTGRES_DB:-sftp}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sftp}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      CONFIG_FILE: /app/config.yaml
+      APP_ENVIRONMENT: production
+      APP_SELF_BASE_URL: ${PUBLIC_URL:-http://localhost}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sftp}:${POSTGRES_PASSWORD:-sftp}@postgres:5432/${POSTGRES_DB:-sftp}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (min 32 chars)}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost}
+      STORAGE_ROOT_PATH: /app/storage/files
+      STORAGE_TEMP_PATH: /app/storage/tmp
+    volumes:
+      - sftp-files:/app/storage/files
+      - sftp-tmp:/app/storage/tmp
+      - sftp-logs:/app/storage/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # SSR/rewrites talk to the backend over the internal network.
+      NEXT_PUBLIC_API_BASE_URL: http://backend:8080
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # - "443:443"   # enable after mounting TLS certs (see nginx.conf)
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./docker/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres-data:
+  sftp-files:
+  sftp-tmp:
+  sftp-logs:
