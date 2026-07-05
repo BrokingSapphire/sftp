@@ -9,12 +9,14 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
+	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
+	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
@@ -26,12 +28,14 @@ type Deps struct {
 	DebugErrors   bool
 	Auth          *m.Authenticator
 	Perms         *m.Permissions
+	Recorder      *auditsvc.Recorder
 	HealthHandler *handlers.HealthHandler
 	AuthHandler   *authhandler.Handler
 	SSOHandler    *ssohandler.Handler
 	UserHandler   *userhandler.Handler
 	FileHandler   *filehandler.Handler
 	APIKeyHandler *apikeyhandler.Handler
+	AuditHandler  *audithandler.Handler
 }
 
 var (
@@ -64,6 +68,20 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerUserRoutes(g, deps)
 	registerFileRoutes(g, deps)
 	registerAPIKeyRoutes(g, deps)
+	registerAuditRoutes(g, deps)
+}
+
+func registerAuditRoutes(g *fuego.Server, deps Deps) {
+	// Telemetry: any authenticated user may report their own UI activity.
+	ga := fuego.Group(g, "/activity", option.Tags("Activity"), secured, respUnauthorized)
+	fuego.Use(ga, deps.Auth.Require)
+	fuego.Post(ga, "/", deps.AuditHandler.Telemetry, option.Summary("Record a UI activity/click event"))
+
+	// Audit log: restricted to holders of audit.read.
+	gl := fuego.Group(g, "/audit", option.Tags("Audit"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gl, deps.Auth.Require)
+	fuego.Get(gl, "/", deps.AuditHandler.List,
+		option.Middleware(deps.Perms.Require("audit.read")), option.Summary("List audit log"))
 }
 
 func registerAPIKeyRoutes(g *fuego.Server, deps Deps) {

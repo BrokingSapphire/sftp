@@ -16,6 +16,7 @@ type Querier interface {
 	ClearRolePermissions(ctx context.Context, roleID uuid.UUID) error
 	CompleteUpload(ctx context.Context, arg CompleteUploadParams) error
 	CountActiveUsers(ctx context.Context) (int64, error)
+	CountAuditLogs(ctx context.Context) (int64, error)
 	CountDownloadsSince(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error)
 	CountFilesByFolder(ctx context.Context, arg CountFilesByFolderParams) (int64, error)
 	CountFolderChildren(ctx context.Context, parentID *uuid.UUID) (int32, error)
@@ -49,13 +50,20 @@ type Querier interface {
 	HardDeleteFile(ctx context.Context, id uuid.UUID) (string, error)
 	IncrementDownloadCount(ctx context.Context, id uuid.UUID) error
 	IncrementFailedAttempts(ctx context.Context, id uuid.UUID) (int32, error)
+	InsertActivity(ctx context.Context, arg InsertActivityParams) error
+	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
+	ListActivityByUser(ctx context.Context, arg ListActivityByUserParams) ([]UserActivity, error)
+	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
+	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
+	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
 	ListPermissions(ctx context.Context) ([]Permission, error)
 	ListReceivedChunks(ctx context.Context, uploadID uuid.UUID) ([]int32, error)
+	ListRecentActivity(ctx context.Context, arg ListRecentActivityParams) ([]UserActivity, error)
 	ListRecentDownloadsForUser(ctx context.Context, arg ListRecentDownloadsForUserParams) ([]Download, error)
 	ListRecentFiles(ctx context.Context, arg ListRecentFilesParams) ([]File, error)
 	ListRecentLoginHistory(ctx context.Context, arg ListRecentLoginHistoryParams) ([]LoginHistory, error)
@@ -68,6 +76,8 @@ type Querier interface {
 	LockUser(ctx context.Context, arg LockUserParams) error
 	MoveFile(ctx context.Context, arg MoveFileParams) error
 	MoveFolder(ctx context.Context, arg MoveFolderParams) error
+	PurgeActivityBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
+	PurgeAuditLogsBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
 	RecordChunk(ctx context.Context, arg RecordChunkParams) error
 	RenameFile(ctx context.Context, arg RenameFileParams) error

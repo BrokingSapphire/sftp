@@ -86,6 +86,7 @@ func NewHttpServer(port int, deps Deps) *HttpServer {
 			m.AccessLog(deps.Logger),
 			m.RealIP,
 			m.SecurityHeaders,
+			m.AuditLog(deps.Recorder),
 			corsMW,
 		),
 	)

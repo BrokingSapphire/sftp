@@ -26,6 +26,7 @@ func NewAuthenticator(jwtMgr *jwt.Manager, apiKey *apikeysvc.Service) *Authentic
 func (a *Authenticator) Require(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if claims := a.resolve(r); claims != nil {
+			setActor(r.Context(), claims) // surface actor to the audit middleware
 			next.ServeHTTP(w, r.WithContext(jwt.NewContextWithClaims(r.Context(), claims)))
 			return
 		}

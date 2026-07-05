@@ -14,6 +14,7 @@ import (
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
+	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
@@ -21,6 +22,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	apikeysvc "sapphirebroking.com/sftp_service/internal/service/apikey"
+	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
 	filesvc "sapphirebroking.com/sftp_service/internal/service/file"
 	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
@@ -82,6 +84,8 @@ func main() {
 		MaxUploadSize: cfg.Storage.MaxUploadSize,
 	})
 	apiKeyService := apikeysvc.New(queries, appLogger)
+	auditRecorder := auditsvc.New(queries, appLogger)
+	defer auditRecorder.Close()
 
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
@@ -102,12 +106,14 @@ func main() {
 		DebugErrors:   cfg.IsDevelopment(),
 		Auth:          m.NewAuthenticator(jwtManager, apiKeyService),
 		Perms:         m.NewPermissions(queries),
+		Recorder:      auditRecorder,
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 		AuthHandler:   authhandler.NewHandler(authService, appLogger),
 		SSOHandler:    ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
 		UserHandler:   userhandler.NewHandler(userService, appLogger),
 		FileHandler:   filehandler.NewHandler(fileService, appLogger),
 		APIKeyHandler: apikeyhandler.NewHandler(apiKeyService, appLogger),
+		AuditHandler:  audithandler.NewHandler(auditRecorder, appLogger),
 	})
 
 	go httpServer.Start()
