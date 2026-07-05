@@ -13,14 +13,17 @@ import (
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
+	filesvc "sapphirebroking.com/sftp_service/internal/service/file"
 	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
 	usersvc "sapphirebroking.com/sftp_service/internal/service/user"
+	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/migrations"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -65,6 +68,18 @@ func main() {
 		Logger:   appLogger,
 	})
 
+	storageEngine, err := storage.New(cfg.Storage.RootPath, cfg.Storage.TempPath)
+	if err != nil {
+		appLogger.Fatal("failed to initialise storage engine", "error", err)
+	}
+	fileService := filesvc.New(filesvc.Deps{
+		Queries:       queries,
+		Storage:       storageEngine,
+		Logger:        appLogger,
+		ChunkSize:     cfg.Storage.ChunkSize,
+		MaxUploadSize: cfg.Storage.MaxUploadSize,
+	})
+
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
 		appLogger.Error("bootstrap super-admin failed", "error", err)
@@ -88,6 +103,7 @@ func main() {
 		AuthHandler:   authhandler.NewHandler(authService, appLogger),
 		SSOHandler:    ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
 		UserHandler:   userhandler.NewHandler(userService, appLogger),
+		FileHandler:   filehandler.NewHandler(fileService, appLogger),
 	})
 
 	go httpServer.Start()

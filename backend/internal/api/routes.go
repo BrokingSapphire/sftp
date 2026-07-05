@@ -9,6 +9,7 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
+	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
@@ -28,6 +29,7 @@ type Deps struct {
 	AuthHandler   *authhandler.Handler
 	SSOHandler    *ssohandler.Handler
 	UserHandler   *userhandler.Handler
+	FileHandler   *filehandler.Handler
 }
 
 var (
@@ -58,9 +60,54 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 
 	registerAuthRoutes(g, deps)
 	registerUserRoutes(g, deps)
-	// Feature route groups are registered here in later phases:
-	//   registerFileRoutes(g, deps)
-	//   ...
+	registerFileRoutes(g, deps)
+}
+
+func registerFileRoutes(g *fuego.Server, deps Deps) {
+	read := option.Middleware(deps.Perms.Require("files.read"))
+	upload := option.Middleware(deps.Perms.Require("files.upload"))
+	write := option.Middleware(deps.Perms.Require("files.write"))
+	del := option.Middleware(deps.Perms.Require("files.delete"))
+	fwrite := option.Middleware(deps.Perms.Require("folders.write"))
+	fdel := option.Middleware(deps.Perms.Require("folders.delete"))
+	h := deps.FileHandler
+
+	// Folders.
+	gd := fuego.Group(g, "/folders", option.Tags("Folders"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gd, deps.JWT.Require)
+	fuego.Post(gd, "/", h.CreateFolder, fwrite, option.Summary("Create folder"))
+	fuego.Put(gd, "/{id}/rename", h.RenameFolder, fwrite, option.Summary("Rename folder"))
+	fuego.Put(gd, "/{id}/move", h.MoveFolder, fwrite, option.Summary("Move folder"))
+	fuego.Put(gd, "/{id}/star", h.StarFolder, fwrite, option.Summary("Star/unstar folder"))
+	fuego.Delete(gd, "/{id}", h.DeleteFolder, fdel, option.Summary("Delete folder"))
+
+	// Files.
+	gf := fuego.Group(g, "/files", option.Tags("Files"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gf, deps.JWT.Require)
+
+	fuego.Get(gf, "/", h.List, read, option.Summary("List folder contents"))
+	fuego.Get(gf, "/trash", h.Trash, read, option.Summary("List recycle bin"))
+	fuego.Get(gf, "/recent", h.Recent, read, option.Summary("List recent files"))
+	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
+	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
+
+	// Uploads (resumable).
+	fuego.PostStd(gf, "/upload", h.SimpleUpload, upload, option.Summary("Upload a single file (multipart)"))
+	fuego.Post(gf, "/uploads", h.InitUpload, upload, option.Summary("Start a resumable upload"))
+	fuego.Get(gf, "/uploads/{id}", h.UploadStatus, read, option.Summary("Get upload progress"))
+	fuego.PutStd(gf, "/uploads/{id}/chunks/{index}", h.PutChunk, upload, option.Summary("Upload a chunk"))
+	fuego.Post(gf, "/uploads/{id}/complete", h.CompleteUpload, upload, option.Summary("Complete an upload"))
+	fuego.Delete(gf, "/uploads/{id}", h.AbortUpload, upload, option.Summary("Abort an upload"))
+
+	// Single file.
+	fuego.Get(gf, "/{id}", h.GetFile, read, option.Summary("Get file metadata"))
+	fuego.GetStd(gf, "/{id}/download", h.Download, read, option.Summary("Download a file"))
+	fuego.Put(gf, "/{id}/rename", h.RenameFile, write, option.Summary("Rename file"))
+	fuego.Put(gf, "/{id}/move", h.MoveFile, write, option.Summary("Move file"))
+	fuego.Put(gf, "/{id}/star", h.StarFile, write, option.Summary("Star/unstar file"))
+	fuego.Post(gf, "/{id}/trash", h.TrashFile, write, option.Summary("Move file to trash"))
+	fuego.Post(gf, "/{id}/restore", h.RestoreFile, write, option.Summary("Restore file from trash"))
+	fuego.Delete(gf, "/{id}", h.DeleteFile, del, option.Summary("Permanently delete file"))
 }
 
 func registerUserRoutes(g *fuego.Server, deps Deps) {

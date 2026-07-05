@@ -1,0 +1,421 @@
+// Package file wires the file/folder HTTP handlers.
+package file
+
+import (
+	"context"
+
+	"github.com/go-fuego/fuego"
+	"github.com/google/uuid"
+
+	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	"sapphirebroking.com/sftp_service/internal/api/params"
+	"sapphirebroking.com/sftp_service/internal/api/response"
+	"sapphirebroking.com/sftp_service/internal/apperrors"
+	models "sapphirebroking.com/sftp_service/internal/models/file"
+	filesvc "sapphirebroking.com/sftp_service/internal/service/file"
+	"sapphirebroking.com/sftp_service/internal/utils"
+	"sapphirebroking.com/sftp_service/pkg/jwt"
+	"sapphirebroking.com/sftp_service/pkg/logger"
+)
+
+// Handler serves the /files and /folders endpoints.
+type Handler struct {
+	svc *filesvc.Service
+	log logger.Logger
+}
+
+// NewHandler constructs the file Handler.
+func NewHandler(svc *filesvc.Service, log logger.Logger) *Handler {
+	return &Handler{svc: svc, log: log.Named("handler.file")}
+}
+
+// ── Folders ───────────────────────────────────────────────
+
+// CreateFolder creates a folder.
+func (h *Handler) CreateFolder(c fuego.ContextWithBody[models.CreateFolderRequest]) (*response.Envelope[models.FolderResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(apperrors.ErrInvalidRequest)
+	}
+	if err := utils.Validate(body); err != nil {
+		return nil, fuego.BadRequestError{Title: "name is required"}
+	}
+	folder, err := h.svc.CreateFolder(c.Context(), uid, body)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*folder, "Folder created"), nil
+}
+
+// List returns the contents of a folder (query: folder_id, limit, offset).
+func (h *Handler) List(c fuego.ContextNoBody) (*response.Envelope[models.ListingResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	folderID, err := optionalUUID(c.QueryParam("folder_id"))
+	if err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid folder_id"}
+	}
+	limit := params.IntQueryDefault(c, "limit", 100)
+	offset := params.IntQueryDefault(c, "offset", 0)
+	listing, total, err := h.svc.ListFolder(c.Context(), uid, folderID, limit, offset)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.Paginated(*listing, models.ListMeta{Total: total, Limit: limit, Offset: offset}), nil
+}
+
+// RenameFolder renames a folder.
+func (h *Handler) RenameFolder(c fuego.ContextWithBody[models.RenameRequest]) (*response.Envelope[response.Any], error) {
+	uid, id, body, err := h.idAndBody(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RenameFolder(c.Context(), uid, id, body.Name); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder renamed"), nil
+}
+
+// MoveFolder reparents a folder.
+func (h *Handler) MoveFolder(c fuego.ContextWithBody[models.MoveRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	target, err := optionalUUID(deref(body.TargetID))
+	if err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid target_id"}
+	}
+	if err := h.svc.MoveFolder(c.Context(), uid, id, target); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder moved"), nil
+}
+
+// DeleteFolder soft-deletes an empty folder.
+func (h *Handler) DeleteFolder(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.DeleteFolder(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder deleted"), nil
+}
+
+// StarFolder toggles a folder's star.
+func (h *Handler) StarFolder(c fuego.ContextWithBody[models.StarRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	if err := h.svc.StarFolder(c.Context(), uid, id, body.Starred); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder updated"), nil
+}
+
+// ── Files ─────────────────────────────────────────────────
+
+// GetFile returns file metadata.
+func (h *Handler) GetFile(c fuego.ContextNoBody) (*response.Envelope[models.FileResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	f, err := h.svc.GetFile(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(*f), nil
+}
+
+// RenameFile renames a file.
+func (h *Handler) RenameFile(c fuego.ContextWithBody[models.RenameRequest]) (*response.Envelope[response.Any], error) {
+	uid, id, body, err := h.idAndBody(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RenameFile(c.Context(), uid, id, body.Name); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File renamed"), nil
+}
+
+// MoveFile moves a file to another folder.
+func (h *Handler) MoveFile(c fuego.ContextWithBody[models.MoveRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	target, err := optionalUUID(deref(body.TargetID))
+	if err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid target_id"}
+	}
+	if err := h.svc.MoveFile(c.Context(), uid, id, target); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File moved"), nil
+}
+
+// StarFile toggles a file's star.
+func (h *Handler) StarFile(c fuego.ContextWithBody[models.StarRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	if err := h.svc.StarFile(c.Context(), uid, id, body.Starred); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File updated"), nil
+}
+
+// TrashFile moves a file to the recycle bin.
+func (h *Handler) TrashFile(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.TrashFile(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File moved to trash"), nil
+}
+
+// RestoreFile restores a file from the recycle bin.
+func (h *Handler) RestoreFile(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RestoreFile(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File restored"), nil
+}
+
+// DeleteFile permanently deletes a file.
+func (h *Handler) DeleteFile(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.DeletePermanent(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File permanently deleted"), nil
+}
+
+// Trash lists soft-deleted files.
+func (h *Handler) Trash(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	files, err := h.svc.ListTrash(c.Context(), uid, params.IntQueryDefault(c, "limit", 100), params.IntQueryDefault(c, "offset", 0))
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
+// Recent lists recently created files.
+func (h *Handler) Recent(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	files, err := h.svc.ListRecent(c.Context(), uid, params.IntQueryDefault(c, "limit", 20))
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
+// Starred lists starred files.
+func (h *Handler) Starred(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	files, err := h.svc.ListStarred(c.Context(), uid)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
+// Search finds files by name.
+func (h *Handler) Search(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	q := c.QueryParam("q")
+	if q == "" {
+		return nil, fuego.BadRequestError{Title: "q is required"}
+	}
+	files, err := h.svc.Search(c.Context(), uid, q, params.IntQueryDefault(c, "limit", 50), params.IntQueryDefault(c, "offset", 0))
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
+// ── Uploads (session control) ─────────────────────────────
+
+// InitUpload starts a resumable upload session.
+func (h *Handler) InitUpload(c fuego.ContextWithBody[models.InitUploadRequest]) (*response.Envelope[models.InitUploadResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(apperrors.ErrInvalidRequest)
+	}
+	if err := utils.Validate(body); err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid upload init payload", Err: err}
+	}
+	res, err := h.svc.InitUpload(c.Context(), uid, body)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*res, "Upload session created"), nil
+}
+
+// UploadStatus reports progress for resume.
+func (h *Handler) UploadStatus(c fuego.ContextNoBody) (*response.Envelope[models.UploadStatusResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	st, err := h.svc.UploadStatus(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(*st), nil
+}
+
+// CompleteUpload assembles the chunks into a stored file.
+func (h *Handler) CompleteUpload(c fuego.ContextNoBody) (*response.Envelope[models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	f, err := h.svc.CompleteUpload(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*f, "Upload complete"), nil
+}
+
+// AbortUpload cancels an upload session.
+func (h *Handler) AbortUpload(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.AbortUpload(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Upload aborted"), nil
+}
+
+// ── shared helpers ────────────────────────────────────────
+
+func (h *Handler) idOnly(c fuego.ContextNoBody) (uuid.UUID, uuid.UUID, error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+	return uid, id, nil
+}
+
+func (h *Handler) idAndBody(c fuego.ContextWithBody[models.RenameRequest]) (uuid.UUID, uuid.UUID, models.RenameRequest, error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, models.RenameRequest{}, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return uuid.Nil, uuid.Nil, models.RenameRequest{}, err
+	}
+	body, err := c.Body()
+	if err != nil {
+		return uuid.Nil, uuid.Nil, models.RenameRequest{}, handlers.Fail(apperrors.ErrInvalidRequest)
+	}
+	if err := utils.Validate(body); err != nil {
+		return uuid.Nil, uuid.Nil, models.RenameRequest{}, fuego.BadRequestError{Title: "name is required"}
+	}
+	return uid, id, body, nil
+}
+
+func currentUserID(ctx context.Context) (uuid.UUID, error) {
+	claims := jwt.GetClaimsFromContext(ctx)
+	if claims == nil || claims.Sub == nil {
+		return uuid.Nil, apperrors.ErrUnauthorized
+	}
+	return uuid.Parse(*claims.Sub)
+}
+
+func optionalUUID(s string) (*uuid.UUID, error) {
+	if s == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}

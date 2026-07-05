@@ -8,53 +8,93 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	AddStorageUsed(ctx context.Context, arg AddStorageUsedParams) error
 	ClearRolePermissions(ctx context.Context, roleID uuid.UUID) error
+	CompleteUpload(ctx context.Context, arg CompleteUploadParams) error
 	CountActiveUsers(ctx context.Context) (int64, error)
+	CountDownloadsSince(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error)
+	CountFilesByFolder(ctx context.Context, arg CountFilesByFolderParams) (int64, error)
+	CountFolderChildren(ctx context.Context, parentID *uuid.UUID) (int32, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
+	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
+	CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateUpload(ctx context.Context, arg CreateUploadParams) (Upload, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteExpiredSessions(ctx context.Context) error
+	DeleteExpiredUploads(ctx context.Context) ([]DeleteExpiredUploadsRow, error)
 	DeleteRole(ctx context.Context, id uuid.UUID) error
 	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
+	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
+	GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error)
+	GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error)
 	GetPermissionsForRole(ctx context.Context, roleID uuid.UUID) ([]string, error)
 	GetPermissionsForUser(ctx context.Context, id uuid.UUID) ([]string, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	GetRoleBySlug(ctx context.Context, slug string) (Role, error)
 	GetSessionByHash(ctx context.Context, refreshTokenHash string) (Session, error)
 	GetSessionByID(ctx context.Context, id uuid.UUID) (Session, error)
+	GetUpload(ctx context.Context, id uuid.UUID) (Upload, error)
+	GetUploadForUser(ctx context.Context, arg GetUploadForUserParams) (Upload, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByEmailOrUsername(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	HardDeleteFile(ctx context.Context, id uuid.UUID) (string, error)
+	IncrementDownloadCount(ctx context.Context, id uuid.UUID) error
 	IncrementFailedAttempts(ctx context.Context, id uuid.UUID) (int32, error)
+	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
+	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
+	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
 	ListPermissions(ctx context.Context) ([]Permission, error)
+	ListReceivedChunks(ctx context.Context, uploadID uuid.UUID) ([]int32, error)
+	ListRecentDownloadsForUser(ctx context.Context, arg ListRecentDownloadsForUserParams) ([]Download, error)
+	ListRecentFiles(ctx context.Context, arg ListRecentFilesParams) ([]File, error)
 	ListRecentLoginHistory(ctx context.Context, arg ListRecentLoginHistoryParams) ([]LoginHistory, error)
 	ListRoles(ctx context.Context) ([]Role, error)
+	ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
+	ListTrash(ctx context.Context, arg ListTrashParams) ([]File, error)
 	ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]ApiKey, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]Session, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	LockUser(ctx context.Context, arg LockUserParams) error
+	MoveFile(ctx context.Context, arg MoveFileParams) error
+	MoveFolder(ctx context.Context, arg MoveFolderParams) error
+	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
+	RecordChunk(ctx context.Context, arg RecordChunkParams) error
+	RenameFile(ctx context.Context, arg RenameFileParams) error
+	RenameFolder(ctx context.Context, arg RenameFolderParams) error
+	RestoreFile(ctx context.Context, id uuid.UUID) error
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) error
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	RevokeSession(ctx context.Context, id uuid.UUID) error
 	RevokeSessionByHash(ctx context.Context, refreshTokenHash string) error
 	RotateSession(ctx context.Context, arg RotateSessionParams) error
+	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
+	SetFileStar(ctx context.Context, arg SetFileStarParams) error
+	SetFolderStar(ctx context.Context, arg SetFolderStarParams) error
 	SetRolePermissions(ctx context.Context, arg SetRolePermissionsParams) error
+	SetUploadStatus(ctx context.Context, arg SetUploadStatusParams) error
 	SetUserActive(ctx context.Context, arg SetUserActiveParams) error
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error
+	SoftDeleteFile(ctx context.Context, id uuid.UUID) error
+	SoftDeleteFolder(ctx context.Context, id uuid.UUID) error
 	SoftDeleteUser(ctx context.Context, id uuid.UUID) error
+	SumFileSizesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	TouchAPIKey(ctx context.Context, arg TouchAPIKeyParams) error
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UnlockUser(ctx context.Context, id uuid.UUID) error
+	UpdateFolderSize(ctx context.Context, arg UpdateFolderSizeParams) error
 	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
+	UpdateUploadProgress(ctx context.Context, arg UpdateUploadProgressParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserQuota(ctx context.Context, arg UpdateUserQuotaParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
