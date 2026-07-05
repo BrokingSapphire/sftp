@@ -8,6 +8,7 @@ import (
 	"github.com/go-fuego/fuego/option"
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
@@ -23,13 +24,14 @@ type Deps struct {
 	CORSConfig    config.CORSConfig
 	Logger        logger.Logger
 	DebugErrors   bool
-	JWT           *m.JWT
+	Auth          *m.Authenticator
 	Perms         *m.Permissions
 	HealthHandler *handlers.HealthHandler
 	AuthHandler   *authhandler.Handler
 	SSOHandler    *ssohandler.Handler
 	UserHandler   *userhandler.Handler
 	FileHandler   *filehandler.Handler
+	APIKeyHandler *apikeyhandler.Handler
 }
 
 var (
@@ -61,6 +63,16 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerAuthRoutes(g, deps)
 	registerUserRoutes(g, deps)
 	registerFileRoutes(g, deps)
+	registerAPIKeyRoutes(g, deps)
+}
+
+func registerAPIKeyRoutes(g *fuego.Server, deps Deps) {
+	manage := option.Middleware(deps.Perms.Require("apikeys.manage"))
+	gk := fuego.Group(g, "/api-keys", option.Tags("API Keys"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gk, deps.Auth.Require)
+	fuego.Get(gk, "/", deps.APIKeyHandler.List, manage, option.Summary("List your API keys"))
+	fuego.Post(gk, "/", deps.APIKeyHandler.Create, manage, option.Summary("Create an API key"))
+	fuego.Delete(gk, "/{id}", deps.APIKeyHandler.Revoke, manage, option.Summary("Revoke an API key"))
 }
 
 func registerFileRoutes(g *fuego.Server, deps Deps) {
@@ -74,7 +86,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 
 	// Folders.
 	gd := fuego.Group(g, "/folders", option.Tags("Folders"), secured, respUnauthorized, respForbidden)
-	fuego.Use(gd, deps.JWT.Require)
+	fuego.Use(gd, deps.Auth.Require)
 	fuego.Post(gd, "/", h.CreateFolder, fwrite, option.Summary("Create folder"))
 	fuego.Put(gd, "/{id}/rename", h.RenameFolder, fwrite, option.Summary("Rename folder"))
 	fuego.Put(gd, "/{id}/move", h.MoveFolder, fwrite, option.Summary("Move folder"))
@@ -83,7 +95,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 
 	// Files.
 	gf := fuego.Group(g, "/files", option.Tags("Files"), secured, respUnauthorized, respForbidden)
-	fuego.Use(gf, deps.JWT.Require)
+	fuego.Use(gf, deps.Auth.Require)
 
 	fuego.Get(gf, "/", h.List, read, option.Summary("List folder contents"))
 	fuego.Get(gf, "/trash", h.Trash, read, option.Summary("List recycle bin"))
@@ -115,7 +127,7 @@ func registerUserRoutes(g *fuego.Server, deps Deps) {
 	manage := option.Middleware(deps.Perms.Require("users.manage"))
 
 	gu := fuego.Group(g, "/users", option.Tags("Users"), secured, respUnauthorized, respForbidden)
-	fuego.Use(gu, deps.JWT.Require)
+	fuego.Use(gu, deps.Auth.Require)
 
 	fuego.Get(gu, "/", deps.UserHandler.List, read, option.Summary("List users"))
 	fuego.Post(gu, "/", deps.UserHandler.Create, manage, option.Summary("Create user"))
@@ -128,7 +140,7 @@ func registerUserRoutes(g *fuego.Server, deps Deps) {
 	fuego.Post(gu, "/{id}/reset-password", deps.UserHandler.ResetPassword, manage, option.Summary("Reset a user's password"))
 
 	gr := fuego.Group(g, "/roles", option.Tags("Roles"), secured, respUnauthorized, respForbidden)
-	fuego.Use(gr, deps.JWT.Require)
+	fuego.Use(gr, deps.Auth.Require)
 	fuego.Get(gr, "/", deps.UserHandler.ListRoles, read, option.Summary("List roles and permissions"))
 }
 
@@ -147,7 +159,7 @@ func registerAuthRoutes(g *fuego.Server, deps Deps) {
 	}
 
 	gsec := fuego.Group(ga, "", secured, respUnauthorized)
-	fuego.Use(gsec, deps.JWT.Require)
+	fuego.Use(gsec, deps.Auth.Require)
 	fuego.Post(gsec, "/logout", deps.AuthHandler.Logout, option.Summary("Log out (revoke refresh token)"))
 	fuego.Get(gsec, "/me", deps.AuthHandler.Me, option.Summary("Get current user profile"))
 	fuego.Post(gsec, "/change-password", deps.AuthHandler.ChangePassword, option.Summary("Change password"))
