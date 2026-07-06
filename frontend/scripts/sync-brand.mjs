@@ -32,6 +32,14 @@ try {
 // Strip $comment keys anywhere in the tree.
 const clean = JSON.parse(JSON.stringify(parsed, (k, v) => (k === "$comment" ? undefined : v)));
 
+// SECURITY: never ship SMTP or SSO credentials to the browser bundle. The
+// frontend only needs to know whether Microsoft SSO is enabled (to show the
+// button). Everything else stays server-side (backend reads the root file).
+delete clean.smtp;
+if (clean.sso?.microsoft) {
+  clean.sso = { microsoft: { enabled: !!clean.sso.microsoft.enabled } };
+}
+
 const out = join(frontendRoot, "config", "brand.json");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(clean, null, 2) + "\n");

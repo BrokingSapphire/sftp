@@ -21,6 +21,8 @@ export interface Brand {
   colors: { primary: string; primaryForeground: string; primaryDark: string; primaryForegroundDark: string };
   org: { domains: string[]; supportEmail: string };
   mail: { from: string };
+  // Only microsoft.enabled reaches the browser — credentials are backend-only.
+  sso?: { microsoft?: { enabled: boolean } };
 }
 
 export const BRAND = brand as Brand;

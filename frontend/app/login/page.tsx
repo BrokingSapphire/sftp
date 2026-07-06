@@ -45,7 +45,7 @@ export default function LoginPage() {
     }
   }
 
-  const ssoEnabled = process.env.NEXT_PUBLIC_MICROSOFT_SSO === "true";
+  const ssoEnabled = BRAND.sso?.microsoft?.enabled ?? false;
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">

@@ -77,17 +77,76 @@ func applyBrandConfig(cfg *Config) {
 		Mail struct {
 			From string `json:"from"`
 		} `json:"mail"`
+		SMTP struct {
+			Enabled  bool   `json:"enabled"`
+			Host     string `json:"host"`
+			Port     int    `json:"port"`
+			Username string `json:"username"`
+			Password string `json:"password"`
+			StartTLS bool   `json:"startTls"`
+		} `json:"smtp"`
+		SSO struct {
+			Microsoft struct {
+				Enabled        bool     `json:"enabled"`
+				TenantID       string   `json:"tenantId"`
+				ClientID       string   `json:"clientId"`
+				ClientSecret   string   `json:"clientSecret"`
+				RedirectURL    string   `json:"redirectUrl"`
+				SuccessURL     string   `json:"successUrl"`
+				AllowedDomains []string `json:"allowedDomains"`
+				DefaultRole    string   `json:"defaultRole"`
+			} `json:"microsoft"`
+		} `json:"sso"`
 	}
 	if json.Unmarshal(raw, &brand) != nil {
 		return
 	}
+
 	if len(cfg.OrgDomains) == 0 && len(brand.Org.Domains) > 0 {
 		cfg.OrgDomains = brand.Org.Domains
 	}
 	if cfg.Mail.From == "" && brand.Mail.From != "" {
 		cfg.Mail.From = brand.Mail.From
 	}
-	slog.Info("config: brand overrides applied", "path", path, "org_domains", cfg.OrgDomains)
+
+	// SMTP credentials — apply from the brand config unless a host was already
+	// configured via config/env.
+	if cfg.Mail.Host == "" && brand.SMTP.Host != "" {
+		cfg.Mail.Enabled = brand.SMTP.Enabled
+		cfg.Mail.Host = brand.SMTP.Host
+		if brand.SMTP.Port != 0 {
+			cfg.Mail.Port = brand.SMTP.Port
+		}
+		cfg.Mail.Username = brand.SMTP.Username
+		cfg.Mail.Password = brand.SMTP.Password
+		cfg.Mail.StartTLS = brand.SMTP.StartTLS
+	}
+
+	// Microsoft SSO — apply unless a client id was already configured.
+	if cfg.SSO.Microsoft.ClientID == "" && brand.SSO.Microsoft.ClientID != "" {
+		m := &cfg.SSO.Microsoft
+		m.Enabled = brand.SSO.Microsoft.Enabled
+		m.ClientID = brand.SSO.Microsoft.ClientID
+		m.ClientSecret = brand.SSO.Microsoft.ClientSecret
+		if brand.SSO.Microsoft.TenantID != "" {
+			m.TenantID = brand.SSO.Microsoft.TenantID
+		}
+		if brand.SSO.Microsoft.RedirectURL != "" {
+			m.RedirectURL = brand.SSO.Microsoft.RedirectURL
+		}
+		if brand.SSO.Microsoft.SuccessURL != "" {
+			m.SuccessURL = brand.SSO.Microsoft.SuccessURL
+		}
+		if len(brand.SSO.Microsoft.AllowedDomains) > 0 {
+			m.AllowedDomains = brand.SSO.Microsoft.AllowedDomains
+		}
+		if brand.SSO.Microsoft.DefaultRole != "" {
+			m.DefaultRole = brand.SSO.Microsoft.DefaultRole
+		}
+	}
+
+	slog.Info("config: brand overrides applied", "path", path,
+		"org_domains", cfg.OrgDomains, "mail_enabled", cfg.Mail.Enabled, "sso_enabled", cfg.SSO.Microsoft.Enabled)
 }
 
 func applyDefaults(cfg *Config) {
