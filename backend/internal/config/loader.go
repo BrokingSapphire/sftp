@@ -51,6 +51,14 @@ func Load(_ context.Context) (*Config, error) {
 	// config/env — so one file drives both services.
 	applyBrandConfig(cfg)
 
+	// Lock SSO down to the organisation: if Microsoft SSO is enabled but no
+	// explicit allow-list was given, restrict sign-in to the org's own email
+	// domains so outsiders (guest/personal accounts) are rejected by default.
+	if cfg.SSO.Microsoft.Enabled && len(cfg.SSO.Microsoft.AllowedDomains) == 0 && len(cfg.OrgDomains) > 0 {
+		cfg.SSO.Microsoft.AllowedDomains = cfg.OrgDomains
+		slog.Info("config: SSO restricted to org domains", "domains", cfg.OrgDomains)
+	}
+
 	if err := utils.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("validation: %w", err)
 	}

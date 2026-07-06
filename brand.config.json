@@ -50,14 +50,14 @@
   },
 
   "sso": {
-    "$comment": "Microsoft Entra ID (Azure AD) single sign-on. clientSecret is a SECRET — only the backend reads the credentials; the frontend receives just microsoft.enabled. Set enabled:true and fill clientId/clientSecret/tenantId to show the 'Continue with Microsoft' button.",
+    "$comment": "Microsoft Entra ID (Azure AD) SSO. clientSecret is a SECRET (backend-only; stripped from the browser). Set enabled:true + fill clientId/clientSecret to show the 'Continue with Microsoft' button. SECURITY: set tenantId to your specific Azure tenant GUID (NOT 'organizations'/'common') so only your tenant can authenticate. allowedDomains restricts which email domains may sign in — leave [] to auto-restrict to org.domains above (outsiders/guests rejected). redirectUrl/successUrl must match your deployed host (e.g. http://localhost/... behind nginx).",
     "microsoft": {
       "enabled": false,
       "tenantId": "organizations",
       "clientId": "",
       "clientSecret": "",
-      "redirectUrl": "http://localhost:8080/api/v1/auth/sso/microsoft/callback",
-      "successUrl": "http://localhost:3000/auth/sso/callback",
+      "redirectUrl": "http://localhost/api/v1/auth/sso/microsoft/callback",
+      "successUrl": "http://localhost/auth/sso/callback",
       "allowedDomains": [],
       "defaultRole": "employee"
     }
