@@ -355,6 +355,23 @@ func (q *Queries) LockUser(ctx context.Context, arg LockUserParams) error {
 	return err
 }
 
+const resetUserPassword = `-- name: ResetUserPassword :exec
+UPDATE users
+SET password_hash = $2, password_changed_at = now(), must_change_pw = TRUE, updated_at = now()
+WHERE id = $1
+`
+
+type ResetUserPasswordParams struct {
+	ID           uuid.UUID `json:"id"`
+	PasswordHash string    `json:"password_hash"`
+}
+
+// Admin reset: force the user to change it on next login.
+func (q *Queries) ResetUserPassword(ctx context.Context, arg ResetUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, resetUserPassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
 const setUserActive = `-- name: SetUserActive :exec
 UPDATE users SET is_active = $2, updated_at = now() WHERE id = $1
 `

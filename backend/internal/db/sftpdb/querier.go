@@ -96,6 +96,8 @@ type Querier interface {
 	RecordChunk(ctx context.Context, arg RecordChunkParams) error
 	RenameFile(ctx context.Context, arg RenameFileParams) error
 	RenameFolder(ctx context.Context, arg RenameFolderParams) error
+	// Admin reset: force the user to change it on next login.
+	ResetUserPassword(ctx context.Context, arg ResetUserPasswordParams) error
 	RestoreFile(ctx context.Context, id uuid.UUID) error
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) error
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID) error

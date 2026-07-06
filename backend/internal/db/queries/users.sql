@@ -47,6 +47,12 @@ UPDATE users
 SET password_hash = $2, password_changed_at = now(), must_change_pw = FALSE, updated_at = now()
 WHERE id = $1;
 
+-- name: ResetUserPassword :exec
+-- Admin reset: force the user to change it on next login.
+UPDATE users
+SET password_hash = $2, password_changed_at = now(), must_change_pw = TRUE, updated_at = now()
+WHERE id = $1;
+
 -- name: SetUserActive :exec
 UPDATE users SET is_active = $2, updated_at = now() WHERE id = $1;
 

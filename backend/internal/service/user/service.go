@@ -187,7 +187,8 @@ func (s *Service) ResetPassword(ctx context.Context, id uuid.UUID, newPassword s
 	if err != nil {
 		return err
 	}
-	if err := s.q.SetUserPassword(ctx, sftpdb.SetUserPasswordParams{ID: id, PasswordHash: hash}); err != nil {
+	// Force the user to set their own password on next login.
+	if err := s.q.ResetUserPassword(ctx, sftpdb.ResetUserPasswordParams{ID: id, PasswordHash: hash}); err != nil {
 		return err
 	}
 	return s.q.RevokeAllUserSessions(ctx, id)

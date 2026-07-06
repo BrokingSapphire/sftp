@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/app-shell/sidebar";
 import { Topbar } from "@/components/app-shell/topbar";
 import { Spinner } from "@/components/ui/misc";
 import { Telemetry } from "@/components/telemetry";
+import { ForcePasswordChange } from "@/components/force-password-change";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -24,6 +25,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Spinner className="h-6 w-6" />
       </div>
     );
+  }
+
+  // First login / after an admin reset: force a password change before anything else.
+  if (user.must_change_pw) {
+    return <ForcePasswordChange />;
   }
 
   return (
