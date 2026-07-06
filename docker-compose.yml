@@ -56,14 +56,13 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "80:80"
-      # - "443:443"   # enable after mounting TLS certs (see nginx.conf)
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # - ./docker/nginx/certs:/etc/nginx/certs:ro
+      # - "443:443"   # enable after adding TLS certs (see docker/nginx/Dockerfile)
     depends_on:
       - backend
       - frontend

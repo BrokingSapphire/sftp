@@ -74,11 +74,15 @@ func (e *Engine) Save(r io.Reader) (SaveResult, error) {
 	if err != nil {
 		return SaveResult{}, err
 	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+	dstDir := filepath.Dir(dst)
+	if err := os.MkdirAll(dstDir, 0o750); err != nil {
 		return SaveResult{}, err
 	}
 
-	tmp, err := os.CreateTemp(e.temp, "save-*")
+	// Create the staging file in the destination directory so the final rename
+	// is always intra-filesystem (the temp dir may be a separate mount/volume,
+	// which would make os.Rename fail with EXDEV).
+	tmp, err := os.CreateTemp(dstDir, ".save-*")
 	if err != nil {
 		return SaveResult{}, err
 	}

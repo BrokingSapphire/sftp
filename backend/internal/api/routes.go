@@ -139,13 +139,8 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
 
-	// Uploads (resumable).
+	// Simple single-request multipart upload.
 	fuego.PostStd(gf, "/upload", h.SimpleUpload, upload, option.Summary("Upload a single file (multipart)"))
-	fuego.Post(gf, "/uploads", h.InitUpload, upload, option.Summary("Start a resumable upload"))
-	fuego.Get(gf, "/uploads/{id}", h.UploadStatus, read, option.Summary("Get upload progress"))
-	fuego.PutStd(gf, "/uploads/{id}/chunks/{index}", h.PutChunk, upload, option.Summary("Upload a chunk"))
-	fuego.Post(gf, "/uploads/{id}/complete", h.CompleteUpload, upload, option.Summary("Complete an upload"))
-	fuego.Delete(gf, "/uploads/{id}", h.AbortUpload, upload, option.Summary("Abort an upload"))
 
 	// Single file.
 	fuego.Get(gf, "/{id}", h.GetFile, read, option.Summary("Get file metadata"))
@@ -156,6 +151,15 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Post(gf, "/{id}/trash", h.TrashFile, write, option.Summary("Move file to trash"))
 	fuego.Post(gf, "/{id}/restore", h.RestoreFile, write, option.Summary("Restore file from trash"))
 	fuego.Delete(gf, "/{id}", h.DeleteFile, del, option.Summary("Permanently delete file"))
+
+	// Resumable uploads (own group to avoid mux wildcard collisions with /files/{id}).
+	gu := fuego.Group(g, "/uploads", option.Tags("Uploads"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gu, deps.Auth.Require)
+	fuego.Post(gu, "/", h.InitUpload, upload, option.Summary("Start a resumable upload"))
+	fuego.Get(gu, "/{id}", h.UploadStatus, read, option.Summary("Get upload progress"))
+	fuego.PutStd(gu, "/{id}/chunks/{index}", h.PutChunk, upload, option.Summary("Upload a chunk"))
+	fuego.Post(gu, "/{id}/complete", h.CompleteUpload, upload, option.Summary("Complete an upload"))
+	fuego.Delete(gu, "/{id}", h.AbortUpload, upload, option.Summary("Abort an upload"))
 }
 
 func registerUserRoutes(g *fuego.Server, deps Deps) {
