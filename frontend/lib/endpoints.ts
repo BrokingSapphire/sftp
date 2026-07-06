@@ -1,6 +1,6 @@
 import { http, unwrap, tokens, type Envelope } from "./api";
 import type {
-  ApiKey, AuditLog, FileItem, Listing, ShareLink, TokenPair, UserInfo,
+  ApiKey, AuditLog, FileItem, FolderItem, Listing, ShareLink, TokenPair, UserInfo,
 } from "./types";
 
 // ── Auth ───────────────────────────────────────────────────
@@ -36,6 +36,8 @@ export const filesApi = {
     unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/search", { params: { q } })),
   createFolder: (name: string, parent_id?: string) =>
     http.post("/folders/", { name, parent_id: parent_id ?? null }),
+  createFolderReturning: (name: string, parent_id?: string) =>
+    unwrap<FolderItem>(http.post<Envelope<FolderItem>>("/folders/", { name, parent_id: parent_id ?? null })),
   renameFile: (id: string, name: string) => http.put(`/files/${id}/rename`, { name }),
   renameFolder: (id: string, name: string) => http.put(`/folders/${id}/rename`, { name }),
   starFile: (id: string, starred: boolean) => http.put(`/files/${id}/star`, { starred }),

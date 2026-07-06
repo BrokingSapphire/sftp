@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  FolderPlus, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
+  FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
   Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe,
 } from "lucide-react";
 import { filesApi, sharesApi, commonApi } from "@/lib/endpoints";
@@ -28,6 +28,7 @@ export default function FilesPage() {
   const [crumbs, setCrumbs] = useState<Crumb[]>([{ name: "Home" }]);
   const current = crumbs[crumbs.length - 1];
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<View>("list");
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
@@ -65,6 +66,46 @@ export default function FilesPage() {
     if (!name) return;
     try { await filesApi.createFolder(name, current.id); toast.success("Folder created"); refresh(); }
     catch { toast.error("Could not create folder"); }
+  }
+
+  // Upload an entire folder tree (preserves structure via webkitRelativePath).
+  async function uploadFolder(fileList: File[]) {
+    const dirCache = new Map<string, string | undefined>([["", current.id]]);
+
+    async function ensureDir(dirPath: string): Promise<string | undefined> {
+      if (dirCache.has(dirPath)) return dirCache.get(dirPath);
+      const parts = dirPath.split("/");
+      const name = parts.pop()!;
+      const parentId = await ensureDir(parts.join("/"));
+      let id: string | undefined;
+      try {
+        id = (await filesApi.createFolderReturning(name, parentId)).id;
+      } catch {
+        // Already exists — resolve its id from the parent listing.
+        const listing = await filesApi.list(parentId);
+        id = listing.folders.find((x) => x.name === name)?.id;
+      }
+      dirCache.set(dirPath, id);
+      return id;
+    }
+
+    const rootName = (fileList[0] as unknown as { webkitRelativePath?: string }).webkitRelativePath?.split("/")[0] ?? "folder";
+    const t = toast.loading(`Uploading folder "${rootName}"… 0/${fileList.length}`, { position: "bottom-right" });
+    let done = 0;
+    try {
+      for (const file of fileList) {
+        const rel = (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const dir = rel.split("/").slice(0, -1).join("/");
+        const folderId = await ensureDir(dir);
+        await filesApi.simpleUpload(file, folderId);
+        done++;
+        toast.loading(`Uploading folder "${rootName}"… ${done}/${fileList.length}`, { id: t, position: "bottom-right" });
+      }
+      toast.success(`Uploaded "${rootName}" (${done} files)`, { id: t, position: "bottom-right" });
+    } catch {
+      toast.error(`Folder upload failed after ${done}/${fileList.length} files`, { id: t, position: "bottom-right" });
+    }
+    refresh();
   }
   async function rename(kind: "file" | "folder", id: string, cur: string) {
     const name = prompt("Rename to", cur);
@@ -137,12 +178,27 @@ export default function FilesPage() {
             <ViewBtn active={view === "grid"} onClick={() => setViewPersist("grid")}><LayoutGrid size={16} /></ViewBtn>
           </div>
           <Button variant="outline" size="sm" onClick={createFolder}><FolderPlus size={16} /> New folder</Button>
+          <Button variant="outline" size="sm" onClick={() => folderInputRef.current?.click()}><FolderUp size={16} /> Upload folder</Button>
           <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
           <input ref={inputRef} type="file" multiple hidden onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
             if (fs.length) uploadFiles(fs);
             e.target.value = "";
           }} />
+          <input
+            ref={folderInputRef}
+            type="file"
+            hidden
+            // @ts-expect-error non-standard directory-picker attributes
+            webkitdirectory=""
+            directory=""
+            multiple
+            onChange={(e) => {
+              const fs = Array.from(e.target.files ?? []);
+              if (fs.length) uploadFolder(fs);
+              e.target.value = "";
+            }}
+          />
         </div>
       </div>
 
