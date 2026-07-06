@@ -12,6 +12,7 @@ import type { FileItem, FolderItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
+import { walkDir } from "@/lib/folder-upload";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
 import { ShareDialog } from "@/components/files/share-dialog";
@@ -105,7 +106,8 @@ export default function FilesPage() {
   }
 
   // Upload an entire folder tree (preserves structure via webkitRelativePath).
-  async function uploadFolder(fileList: File[]) {
+  async function uploadFolder(entries: { file: File; relPath: string }[]) {
+    if (entries.length === 0) return;
     const dirCache = new Map<string, string | undefined>([["", current.id]]);
 
     async function ensureDir(dirPath: string): Promise<string | undefined> {
@@ -125,23 +127,39 @@ export default function FilesPage() {
       return id;
     }
 
-    const rootName = (fileList[0] as unknown as { webkitRelativePath?: string }).webkitRelativePath?.split("/")[0] ?? "folder";
-    const t = toast.loading(`Uploading folder "${rootName}"… 0/${fileList.length}`, { position: "bottom-right" });
+    const rootName = entries[0].relPath.split("/")[0] || "folder";
+    const total = entries.length;
+    const t = toast.loading(`Uploading folder "${rootName}"… 0/${total}`, { position: "bottom-right" });
     let done = 0;
     try {
-      for (const file of fileList) {
-        const rel = (file as unknown as { webkitRelativePath?: string }).webkitRelativePath || file.name;
-        const dir = rel.split("/").slice(0, -1).join("/");
+      for (const { file, relPath } of entries) {
+        const dir = relPath.split("/").slice(0, -1).join("/");
         const folderId = await ensureDir(dir);
         await filesApi.simpleUpload(file, folderId);
         done++;
-        toast.loading(`Uploading folder "${rootName}"… ${done}/${fileList.length}`, { id: t, position: "bottom-right" });
+        toast.loading(`Uploading folder "${rootName}"… ${done}/${total}`, { id: t, position: "bottom-right" });
       }
       toast.success(`Uploaded "${rootName}" (${done} files)`, { id: t, position: "bottom-right" });
     } catch {
-      toast.error(`Folder upload failed after ${done}/${fileList.length} files`, { id: t, position: "bottom-right" });
+      toast.error(`Folder upload failed after ${done}/${total} files`, { id: t, position: "bottom-right" });
     }
     refresh();
+  }
+
+  // Prompt-free folder picker on Chromium (File System Access API); falls back
+  // to the directory input on Firefox/Zen (which shows a browser confirm).
+  async function pickFolder() {
+    const w = window as unknown as { showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle> };
+    if (typeof w.showDirectoryPicker === "function") {
+      try {
+        const dir = await w.showDirectoryPicker();
+        const out: { file: File; relPath: string }[] = [];
+        await walkDir(dir, dir.name, out);
+        uploadFolder(out);
+      } catch { /* user cancelled */ }
+    } else {
+      folderInputRef.current?.click();
+    }
   }
   async function rename(kind: "file" | "folder", id: string, cur: string) {
     const name = prompt("Rename to", cur);
@@ -219,7 +237,7 @@ export default function FilesPage() {
             <ViewBtn active={view === "grid"} onClick={() => setViewPersist("grid")}><LayoutGrid size={16} /></ViewBtn>
           </div>
           <Button variant="outline" size="sm" onClick={createFolder}><FolderPlus size={16} /> New folder</Button>
-          <Button variant="outline" size="sm" onClick={() => folderInputRef.current?.click()}><FolderUp size={16} /> Upload folder</Button>
+          <Button variant="outline" size="sm" onClick={pickFolder}><FolderUp size={16} /> Upload folder</Button>
           <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
           <input ref={inputRef} type="file" multiple hidden onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
@@ -236,7 +254,7 @@ export default function FilesPage() {
             multiple
             onChange={(e) => {
               const fs = Array.from(e.target.files ?? []);
-              if (fs.length) uploadFolder(fs);
+              if (fs.length) uploadFolder(fs.map((f) => ({ file: f, relPath: (f as unknown as { webkitRelativePath?: string }).webkitRelativePath || f.name })));
               e.target.value = "";
             }}
           />
@@ -260,7 +278,7 @@ export default function FilesPage() {
       )}
 
       {/* Listing */}
-      <UploadZone onFiles={uploadFiles}>
+      <UploadZone onFiles={uploadFiles} onEntries={uploadFolder}>
         {listing.isLoading ? (
           <div className="rounded-xl border border-border bg-surface p-4">
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}

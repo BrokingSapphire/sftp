@@ -5,23 +5,43 @@ import { UploadCloud } from "lucide-react";
 
 interface Props {
   onFiles: (files: File[]) => void;
+  // Optional: handle dropped folders (recursively, prompt-free). Given files
+  // with their relative paths. When omitted, folder drops fall back to onFiles.
+  onEntries?: (entries: { file: File; relPath: string }[]) => void;
   children: React.ReactNode;
 }
 
 /** Full-area drag-and-drop wrapper that also exposes a click-to-browse input. */
-export function UploadZone({ onFiles, children }: Props) {
+export function UploadZone({ onFiles, onEntries, children }: Props) {
   const [dragging, setDragging] = useState(false);
   const depth = useRef(0);
 
   const onDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       depth.current = 0;
       setDragging(false);
+
+      // If the OS exposes directory entries and the caller wants them, traverse
+      // folders recursively — no browser "trust this site" prompt.
+      const items = onEntries ? Array.from(e.dataTransfer.items) : [];
+      const roots = items
+        .map((it) => (it.webkitGetAsEntry ? it.webkitGetAsEntry() : null))
+        .filter((x): x is FileSystemEntry => !!x);
+      const hasDir = roots.some((r) => r.isDirectory);
+
+      if (onEntries && hasDir) {
+        const { readDropEntry } = await import("@/lib/folder-upload");
+        const out: { file: File; relPath: string }[] = [];
+        for (const r of roots) await readDropEntry(r, "", out);
+        if (out.length) onEntries(out);
+        return;
+      }
+
       const files = Array.from(e.dataTransfer.files);
       if (files.length) onFiles(files);
     },
-    [onFiles],
+    [onFiles, onEntries],
   );
 
   return (
