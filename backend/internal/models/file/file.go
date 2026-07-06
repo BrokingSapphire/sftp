@@ -76,6 +76,7 @@ type CommonFileResponse struct {
 	IsStarred    bool   `json:"is_starred"`
 	UploaderID   string `json:"uploader_id"`
 	UploaderName string `json:"uploader_name"`
+	UploaderHasAvatar bool `json:"uploader_has_avatar"`
 	CanDelete    bool   `json:"can_delete"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`

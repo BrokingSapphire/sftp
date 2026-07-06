@@ -57,6 +57,7 @@ type Response struct {
 	StorageQuota int64  `json:"storage_quota"`
 	IsActive     bool   `json:"is_active"`
 	IsLocked     bool   `json:"is_locked"`
+	HasAvatar    bool   `json:"has_avatar"`
 	LastLoginAt  string `json:"last_login_at,omitempty"`
 	CreatedAt    string `json:"created_at"`
 }

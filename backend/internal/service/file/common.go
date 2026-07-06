@@ -48,7 +48,7 @@ func (s *Service) ListCommon(ctx context.Context, caller uuid.UUID, isAdmin bool
 		item := models.CommonFileResponse{
 			ID: r.ID.String(), Name: r.Name, Extension: r.Extension, MimeType: r.MimeType,
 			SizeBytes: r.SizeBytes, IsStarred: r.IsStarred, UploaderID: r.OwnerID.String(),
-			UploaderName: name, CanDelete: isAdmin || r.OwnerID == caller,
+			UploaderName: name, UploaderHasAvatar: r.UploaderHasAvatar != nil && *r.UploaderHasAvatar, CanDelete: isAdmin || r.OwnerID == caller,
 			VersionNo: r.VersionNo, DownloadCount: r.DownloadCount,
 			CreatedAt: fmtTS(r.CreatedAt), UpdatedAt: fmtTS(r.UpdatedAt),
 		}

@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	models "sapphirebroking.com/sftp_service/internal/models/user"
+	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/pkg/argon2"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
@@ -19,6 +21,7 @@ import (
 // Deps are the user service dependencies.
 type Deps struct {
 	Queries  *sftpdb.Queries
+	Storage  *storage.Engine
 	Security config.SecurityConfig
 	Logger   logger.Logger
 }
@@ -26,6 +29,7 @@ type Deps struct {
 // Service provides user administration operations.
 type Service struct {
 	q     *sftpdb.Queries
+	store *storage.Engine
 	argon argon2.Params
 	minPw int
 	log   logger.Logger
@@ -34,7 +38,8 @@ type Service struct {
 // New builds the user Service.
 func New(d Deps) *Service {
 	return &Service{
-		q: d.Queries,
+		q:     d.Queries,
+		store: d.Storage,
 		argon: argon2.Params{
 			MemoryKiB: d.Security.ArgonMemoryKiB, Time: d.Security.ArgonTime,
 			Threads: d.Security.ArgonThreads, KeyLen: d.Security.ArgonKeyLen, SaltLen: d.Security.ArgonSaltLen,
@@ -42,6 +47,26 @@ func New(d Deps) *Service {
 		minPw: d.Security.PasswordMinLength,
 		log:   d.Logger.Named("service.user"),
 	}
+}
+
+// SetAvatar stores a user's profile photo and records its storage key.
+func (s *Service) SetAvatar(ctx context.Context, userID uuid.UUID, r io.Reader) error {
+	// Cap avatars at 5 MiB via a limited reader.
+	res, err := s.store.Save(io.LimitReader(r, 5<<20))
+	if err != nil {
+		return err
+	}
+	key := res.Key
+	return s.q.SetUserAvatar(ctx, sftpdb.SetUserAvatarParams{ID: userID, AvatarPath: &key})
+}
+
+// OpenAvatar opens a user's avatar for streaming.
+func (s *Service) OpenAvatar(ctx context.Context, userID uuid.UUID) (io.ReadSeekCloser, error) {
+	path, err := s.q.GetUserAvatar(ctx, userID)
+	if err != nil || path == nil || *path == "" {
+		return nil, apperrors.ErrNotFound
+	}
+	return s.store.Open(*path)
 }
 
 // EnsureSuperAdmin creates the first super-admin when the database has no users.
@@ -369,7 +394,7 @@ func (s *Service) toResponseCached(ctx context.Context, u sftpdb.User, cache map
 	r := &models.Response{
 		ID: u.ID.String(), Email: u.Email, Username: u.Username, FullName: u.FullName,
 		Role: slug, StorageUsed: u.StorageUsed, StorageQuota: u.StorageQuota,
-		IsActive: u.IsActive, IsLocked: u.IsLocked,
+		IsActive: u.IsActive, IsLocked: u.IsLocked, HasAvatar: u.AvatarPath != nil && *u.AvatarPath != "",
 	}
 	if u.EmployeeID != nil {
 		r.EmployeeID = *u.EmployeeID

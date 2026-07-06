@@ -83,7 +83,8 @@ WHERE owner_id = $1 AND deleted_at IS NULL;
 UPDATE files SET is_common = $2, updated_at = now() WHERE id = $1;
 
 -- name: ListCommonFiles :many
-SELECT f.*, u.full_name AS uploader_name, u.username AS uploader_username
+SELECT f.*, u.full_name AS uploader_name, u.username AS uploader_username,
+       (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS uploader_has_avatar
 FROM files f
 JOIN users u ON u.id = f.owner_id
 WHERE f.is_common = TRUE AND f.deleted_at IS NULL

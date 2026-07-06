@@ -44,4 +44,5 @@ type UserInfo struct {
 	StorageUsed int64    `json:"storage_used"`
 	StorageQuota int64   `json:"storage_quota"`
 	MustChangePw bool    `json:"must_change_pw"`
+	HasAvatar   bool     `json:"has_avatar"`
 }

@@ -89,12 +89,6 @@ func main() {
 		Security: cfg.Security,
 		Logger:   appLogger,
 	})
-	userService := usersvc.New(usersvc.Deps{
-		Queries:  queries,
-		Security: cfg.Security,
-		Logger:   appLogger,
-	})
-
 	storageEngine, err := storage.New(cfg.Storage.RootPath, cfg.Storage.TempPath, cfg.Storage.EncryptionKey)
 	if err != nil {
 		appLogger.Fatal("failed to initialise storage engine", "error", err)
@@ -102,6 +96,13 @@ func main() {
 	if storageEngine.Encrypted() {
 		appLogger.Info("file storage encryption enabled (AES-256 at rest)")
 	}
+
+	userService := usersvc.New(usersvc.Deps{
+		Queries:  queries,
+		Storage:  storageEngine,
+		Security: cfg.Security,
+		Logger:   appLogger,
+	})
 	fileService := filesvc.New(filesvc.Deps{
 		Queries:       queries,
 		Storage:       storageEngine,

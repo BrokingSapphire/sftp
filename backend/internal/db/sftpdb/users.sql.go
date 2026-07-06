@@ -118,6 +118,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getUserAvatar = `-- name: GetUserAvatar :one
+SELECT avatar_path FROM users WHERE id = $1
+`
+
+func (q *Queries) GetUserAvatar(ctx context.Context, id uuid.UUID) (*string, error) {
+	row := q.db.QueryRow(ctx, getUserAvatar, id)
+	var avatar_path *string
+	err := row.Scan(&avatar_path)
+	return avatar_path, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL
 `
@@ -383,6 +394,20 @@ type SetUserActiveParams struct {
 
 func (q *Queries) SetUserActive(ctx context.Context, arg SetUserActiveParams) error {
 	_, err := q.db.Exec(ctx, setUserActive, arg.ID, arg.IsActive)
+	return err
+}
+
+const setUserAvatar = `-- name: SetUserAvatar :exec
+UPDATE users SET avatar_path = $2, updated_at = now() WHERE id = $1
+`
+
+type SetUserAvatarParams struct {
+	ID         uuid.UUID `json:"id"`
+	AvatarPath *string   `json:"avatar_path"`
+}
+
+func (q *Queries) SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error {
+	_, err := q.db.Exec(ctx, setUserAvatar, arg.ID, arg.AvatarPath)
 	return err
 }
 

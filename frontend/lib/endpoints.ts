@@ -100,6 +100,7 @@ export interface CommonFile {
   is_starred: boolean;
   uploader_id: string;
   uploader_name: string;
+  uploader_has_avatar: boolean;
   can_delete: boolean;
   created_at: string;
   updated_at: string;
@@ -158,6 +159,7 @@ export interface AdminUser {
   storage_quota: number;
   is_active: boolean;
   is_locked: boolean;
+  has_avatar?: boolean;
   last_login_at?: string;
   created_at: string;
 }
@@ -180,6 +182,18 @@ export const usersApi = {
 
 export const rolesApi = {
   list: () => unwrap<RoleInfo[]>(http.get<Envelope<RoleInfo[]>>("/roles/")),
+};
+
+export const avatarApi = {
+  url: (userId: string) => {
+    const t = tokens.access();
+    return `/api/v1/users/${userId}/avatar${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
+  },
+  upload: (file: File) => {
+    const form = new FormData();
+    form.append("avatar", file);
+    return http.post("/users/me/avatar", form, { headers: { "Content-Type": "multipart/form-data" } });
+  },
 };
 
 export interface UserStorage {

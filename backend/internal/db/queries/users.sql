@@ -65,6 +65,12 @@ RETURNING *;
 -- name: UpdateUserRole :exec
 UPDATE users SET role_id = $2, updated_at = now() WHERE id = $1;
 
+-- name: SetUserAvatar :exec
+UPDATE users SET avatar_path = $2, updated_at = now() WHERE id = $1;
+
+-- name: GetUserAvatar :one
+SELECT avatar_path FROM users WHERE id = $1;
+
 -- name: UpdateUserQuota :exec
 UPDATE users SET storage_quota = $2, updated_at = now() WHERE id = $1;
 

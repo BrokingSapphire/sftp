@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
+import { Avatar } from "@/components/ui/avatar";
 import { FilePreview } from "@/components/files/file-preview";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { StaggerList, StaggerItem } from "@/components/motion";
@@ -90,7 +91,10 @@ export default function CommonPage() {
                     {fileIcon(f.extension, 18)}
                     <span className="truncate text-sm font-medium">{f.name}</span>
                   </button>
-                  <span className="truncate text-xs text-muted">{f.uploader_name}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+                    <Avatar userId={f.uploader_id} name={f.uploader_name} hasAvatar={f.uploader_has_avatar} size={20} />
+                    <span className="truncate">{f.uploader_name}</span>
+                  </span>
                   <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-xs text-muted group-hover:hidden">{timeAgo(f.created_at)}</span>

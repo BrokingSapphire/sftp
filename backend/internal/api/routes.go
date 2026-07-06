@@ -201,6 +201,8 @@ func registerUserRoutes(g *fuego.Server, deps Deps) {
 	fuego.Put(gu, "/{id}/status", deps.UserHandler.SetActive, manage, option.Summary("Enable/disable a user"))
 	fuego.Post(gu, "/{id}/reset-password", deps.UserHandler.ResetPassword, manage, option.Summary("Reset a user's password"))
 	fuego.Get(gu, "/storage", deps.UserHandler.StorageOverview, option.Middleware(deps.Perms.Require("storage.manage")), option.Summary("Storage usage overview (admin)"))
+	fuego.PostStd(gu, "/me/avatar", deps.UserHandler.UploadAvatar, option.Summary("Upload your profile photo"))
+	fuego.GetStd(gu, "/{id}/avatar", deps.UserHandler.Avatar, option.Summary("Get a user's profile photo"))
 
 	gr := fuego.Group(g, "/roles", option.Tags("Roles"), secured, respUnauthorized, respForbidden)
 	fuego.Use(gr, deps.Auth.Require)

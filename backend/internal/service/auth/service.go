@@ -274,6 +274,7 @@ func (s *Service) userInfo(ctx context.Context, user sftpdb.User) *models.UserIn
 		StorageUsed:  user.StorageUsed,
 		StorageQuota: user.StorageQuota,
 		MustChangePw: user.MustChangePw,
+		HasAvatar:    user.AvatarPath != nil && *user.AvatarPath != "",
 	}
 }
 

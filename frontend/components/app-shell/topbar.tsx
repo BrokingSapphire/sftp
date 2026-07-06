@@ -1,31 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Search, User } from "lucide-react";
+import { toast } from "sonner";
+import { LogOut, Search, Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { avatarApi } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PingIndicator } from "@/components/app-shell/ping";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
 
 export function Topbar() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const avatarInput = useRef<HTMLInputElement>(null);
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     if (q.trim()) router.push(`/files?q=${encodeURIComponent(q.trim())}`);
   }
 
-  const initials = (user?.full_name || user?.username || "?")
-    .split(" ")
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  async function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image");
+    try { await avatarApi.upload(file); await refreshUser(); toast.success("Profile photo updated"); }
+    catch { toast.error("Could not update photo"); }
+  }
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-surface/80 px-6 backdrop-blur">
@@ -43,9 +49,17 @@ export function Topbar() {
         <NotificationBell />
         <ThemeToggle />
         <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-            {initials || <User size={14} />}
-          </div>
+          <button
+            onClick={() => avatarInput.current?.click()}
+            title="Change profile photo"
+            className="group relative h-7 w-7 shrink-0 rounded-full"
+          >
+            <Avatar userId={user?.id} name={user?.full_name || user?.username || "?"} hasAvatar={user?.has_avatar} size={28} />
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+              <Camera size={13} className="text-white" />
+            </span>
+          </button>
+          <input ref={avatarInput} type="file" accept="image/*" hidden onChange={onAvatar} />
           <div className="hidden text-sm leading-tight sm:block">
             <div className="font-medium">{user?.full_name || user?.username}</div>
             <div className="text-xs capitalize text-muted">{user?.role?.replace("_", " ")}</div>

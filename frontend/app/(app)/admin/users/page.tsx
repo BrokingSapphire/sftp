@@ -7,6 +7,7 @@ import { Ban, CheckCircle2, KeyRound, Plus, ShieldAlert, ShieldCheck, Trash2, Us
 import { usersApi, rolesApi } from "@/lib/endpoints";
 import { ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/files/file-list";
+import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,9 +133,7 @@ export default function AdminUsersPage() {
         {users.data?.map((u) => (
           <Card key={u.id}>
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
-                {(u.full_name || u.username).slice(0, 2).toUpperCase()}
-              </div>
+              <Avatar userId={u.id} name={u.full_name || u.username} hasAvatar={u.has_avatar} size={40} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{u.full_name || u.username}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted">

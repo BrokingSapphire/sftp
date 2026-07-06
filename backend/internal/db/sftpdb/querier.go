@@ -58,6 +58,7 @@ type Querier interface {
 	GetShareByToken(ctx context.Context, token string) (Share, error)
 	GetUpload(ctx context.Context, id uuid.UUID) (Upload, error)
 	GetUploadForUser(ctx context.Context, arg GetUploadForUserParams) (Upload, error)
+	GetUserAvatar(ctx context.Context, id uuid.UUID) (*string, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByEmailOrUsername(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
@@ -126,6 +127,7 @@ type Querier interface {
 	SetRolePermissions(ctx context.Context, arg SetRolePermissionsParams) error
 	SetUploadStatus(ctx context.Context, arg SetUploadStatusParams) error
 	SetUserActive(ctx context.Context, arg SetUserActiveParams) error
+	SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error
 	SoftDeleteFile(ctx context.Context, id uuid.UUID) error
 	SoftDeleteFolder(ctx context.Context, id uuid.UUID) error
