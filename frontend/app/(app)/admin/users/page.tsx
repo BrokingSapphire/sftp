@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, CheckCircle2, KeyRound, Plus, Trash2, UserPlus } from "lucide-react";
+import { Ban, CheckCircle2, KeyRound, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { usersApi, rolesApi } from "@/lib/endpoints";
 import { ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/files/file-list";
@@ -56,15 +56,43 @@ export default function AdminUsersPage() {
       </div>
 
       {open && (
-        <Card><CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
-          <Input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          <Input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <Input placeholder="Temp password (min 12)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <select className="h-10 rounded-lg border border-border bg-surface px-3 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-            {roles.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}
-          </select>
-          <Button size="sm" onClick={create}><Plus size={16} /> Create</Button>
+        <Card><CardContent className="p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+            <Input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+            <Input placeholder="Temp password (min 12)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <select className="h-10 rounded-lg border border-border bg-surface px-3 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+              {roles.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}
+            </select>
+            <Button size="sm" onClick={create}><Plus size={16} /> Create</Button>
+          </div>
+
+          {/* RBAC access preview for the selected role */}
+          <div className="mt-4 rounded-lg border border-border bg-surface-2 p-3">
+            {(() => {
+              const role = roles.data?.find((r) => r.slug === form.role);
+              return (
+                <>
+                  <div className="mb-2 flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-primary" />
+                    <p className="text-sm font-medium">Access granted by <span className="capitalize">{role?.name ?? form.role}</span></p>
+                  </div>
+                  {role?.description && <p className="mb-2 text-xs text-muted">{role.description}</p>}
+                  {role && role.permissions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {role.permissions.map((p) => <Badge key={p}>{p}</Badge>)}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted">This role grants no explicit permissions.</p>
+                  )}
+                  <p className="mt-2 font-mono text-[11px] text-muted">
+                    {role?.permissions.length ?? 0} permission{(role?.permissions.length ?? 0) === 1 ? "" : "s"}
+                  </p>
+                </>
+              );
+            })()}
+          </div>
         </CardContent></Card>
       )}
 
