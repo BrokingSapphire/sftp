@@ -108,3 +108,13 @@ WHERE owner_id = @owner_id AND deleted_at IS NOT NULL
   AND legal_hold = FALSE
   AND (retain_until IS NULL OR retain_until < now())
 RETURNING storage_key, size_bytes, owner_id;
+
+-- name: ListAllFilesForBackup :many
+SELECT f.id, f.owner_id, u.username AS owner_username, u.email AS owner_email,
+       f.name, f.storage_key, f.size_bytes, f.checksum_sha256, f.is_common,
+       COALESCE(fo.path, '') AS folder_path
+FROM files f
+JOIN users u ON u.id = f.owner_id
+LEFT JOIN folders fo ON fo.id = f.folder_id
+WHERE f.deleted_at IS NULL
+ORDER BY f.owner_id, f.id;

@@ -194,6 +194,61 @@ func (q *Queries) IncrementDownloadCount(ctx context.Context, id uuid.UUID) erro
 	return err
 }
 
+const listAllFilesForBackup = `-- name: ListAllFilesForBackup :many
+SELECT f.id, f.owner_id, u.username AS owner_username, u.email AS owner_email,
+       f.name, f.storage_key, f.size_bytes, f.checksum_sha256, f.is_common,
+       COALESCE(fo.path, '') AS folder_path
+FROM files f
+JOIN users u ON u.id = f.owner_id
+LEFT JOIN folders fo ON fo.id = f.folder_id
+WHERE f.deleted_at IS NULL
+ORDER BY f.owner_id, f.id
+`
+
+type ListAllFilesForBackupRow struct {
+	ID             uuid.UUID `json:"id"`
+	OwnerID        uuid.UUID `json:"owner_id"`
+	OwnerUsername  string    `json:"owner_username"`
+	OwnerEmail     string    `json:"owner_email"`
+	Name           string    `json:"name"`
+	StorageKey     string    `json:"storage_key"`
+	SizeBytes      int64     `json:"size_bytes"`
+	ChecksumSha256 *string   `json:"checksum_sha256"`
+	IsCommon       bool      `json:"is_common"`
+	FolderPath     string    `json:"folder_path"`
+}
+
+func (q *Queries) ListAllFilesForBackup(ctx context.Context) ([]ListAllFilesForBackupRow, error) {
+	rows, err := q.db.Query(ctx, listAllFilesForBackup)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAllFilesForBackupRow{}
+	for rows.Next() {
+		var i ListAllFilesForBackupRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.OwnerUsername,
+			&i.OwnerEmail,
+			&i.Name,
+			&i.StorageKey,
+			&i.SizeBytes,
+			&i.ChecksumSha256,
+			&i.IsCommon,
+			&i.FolderPath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCommonFiles = `-- name: ListCommonFiles :many
 SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types, u.full_name AS uploader_name, u.username AS uploader_username,
        (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS uploader_has_avatar

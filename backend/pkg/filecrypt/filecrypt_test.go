@@ -67,3 +67,29 @@ func TestBadKey(t *testing.T) {
 		t.Fatal("expected error for short key")
 	}
 }
+
+func TestStreamWriterReader(t *testing.T) {
+	c, _ := New(testKey)
+	plain := make([]byte, 40_000)
+	rand.Read(plain)
+
+	var enc bytes.Buffer
+	w, err := c.EncryptWriter(&enc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Write(plain); err != nil {
+		t.Fatal(err)
+	}
+	if enc.Len() != len(plain)+IVLen {
+		t.Fatalf("size = %d", enc.Len())
+	}
+	r, err := c.DecryptReader(&enc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := io.ReadAll(r)
+	if !bytes.Equal(got, plain) {
+		t.Fatal("stream roundtrip mismatch")
+	}
+}

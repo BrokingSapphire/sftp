@@ -18,6 +18,7 @@ import (
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
+	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
 	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
@@ -27,6 +28,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	aisvc "sapphirebroking.com/sftp_service/internal/service/ai"
+	backupsvc "sapphirebroking.com/sftp_service/internal/service/backup"
 	apikeysvc "sapphirebroking.com/sftp_service/internal/service/apikey"
 	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
@@ -39,6 +41,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/worker"
 	"sapphirebroking.com/sftp_service/migrations"
 	"sapphirebroking.com/sftp_service/pkg/ai"
+	"sapphirebroking.com/sftp_service/pkg/filecrypt"
 	"sapphirebroking.com/sftp_service/pkg/cache"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -148,6 +151,15 @@ func main() {
 	aiService.StartBackfill(30 * time.Second)
 	defer aiService.Stop()
 
+	// Super-admin encrypted backup/restore (reuses the storage encryption key).
+	var backupCipher *filecrypt.Cipher
+	if cfg.Storage.EncryptionKey != "" {
+		if c, err := filecrypt.New(cfg.Storage.EncryptionKey); err == nil {
+			backupCipher = c
+		}
+	}
+	backupService := backupsvc.New(queries, storageEngine, backupCipher, appLogger)
+
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
 		appLogger.Error("bootstrap super-admin failed", "error", err)
@@ -179,6 +191,7 @@ func main() {
 		NotifHandler:    notifhandler.NewHandler(queries, appLogger),
 		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
 		AIHandler:       aihandler.NewHandler(aiService, appLogger),
+		BackupHandler:   backuphandler.NewHandler(backupService, appLogger),
 		EditorHandler:   editorhandler.NewHandler(fileService, jwtManager, cfg.Editor, appLogger),
 	})
 

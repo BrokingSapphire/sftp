@@ -88,6 +88,7 @@ type Querier interface {
 	InsertSecurityAlert(ctx context.Context, arg InsertSecurityAlertParams) (SecurityAlert, error)
 	LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwnerParams) ([]File, error)
 	ListActivityByUser(ctx context.Context, arg ListActivityByUserParams) ([]UserActivity, error)
+	ListAllFilesForBackup(ctx context.Context) ([]ListAllFilesForBackupRow, error)
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
 	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Folder, Globe, Star, Share2, Trash2, Inbox,
-  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert, Sparkles,
+  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert, Sparkles, DatabaseBackup,
 } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
@@ -17,6 +17,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   perm?: string;
+  superAdmin?: boolean;
 }
 
 const primary: NavItem[] = [
@@ -36,6 +37,7 @@ const admin: NavItem[] = [
   { href: "/admin/storage", label: "Storage", icon: PieChart, perm: "storage.manage" },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText, perm: "audit.read" },
   { href: "/admin/security", label: "Security", icon: ShieldAlert, perm: "audit.read" },
+  { href: "/admin/backup", label: "Backup", icon: DatabaseBackup, superAdmin: true },
   { href: "/api-keys", label: "API Keys", icon: KeyRound, perm: "apikeys.manage" },
 ];
 
@@ -71,7 +73,7 @@ export function Sidebar() {
     );
   };
 
-  const visibleAdmin = admin.filter((a) => !a.perm || has(a.perm));
+  const visibleAdmin = admin.filter((a) => a.superAdmin ? user?.role === "super_admin" : (!a.perm || has(a.perm)));
   const used = user?.storage_used ?? 0;
   const quota = user?.storage_quota ?? 0;
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;

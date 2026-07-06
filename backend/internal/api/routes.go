@@ -11,6 +11,7 @@ import (
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
+	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
 	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
@@ -44,6 +45,7 @@ type Deps struct {
 	SecurityHandler *securityhandler.Handler
 	AIHandler       *aihandler.Handler
 	EditorHandler   *editorhandler.Handler
+	BackupHandler   *backuphandler.Handler
 	ShareHandler  *sharehandler.Handler
 	NotifHandler  *notifhandler.Handler
 }
@@ -83,6 +85,16 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerNotificationRoutes(g, deps)
 	registerAIRoutes(g, deps)
 	registerEditorRoutes(g, deps)
+	registerAdminRoutes(g, deps)
+}
+
+func registerAdminRoutes(g *fuego.Server, deps Deps) {
+	// Super-admin backup/restore. The role is enforced inside the handlers.
+	gadm := fuego.Group(g, "/admin", option.Tags("Admin"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gadm, deps.Auth.Require)
+	fuego.Post(gadm, "/backup", deps.BackupHandler.Run, option.Summary("Run a full/incremental backup (super admin)"))
+	fuego.Get(gadm, "/backup/status", deps.BackupHandler.Status, option.Summary("Backup status for a target (super admin)"))
+	fuego.Post(gadm, "/restore", deps.BackupHandler.Restore, option.Summary("Restore from a backup target (super admin)"))
 }
 
 func registerEditorRoutes(g *fuego.Server, deps Deps) {

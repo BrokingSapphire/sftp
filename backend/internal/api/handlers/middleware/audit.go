@@ -118,6 +118,13 @@ func deriveAction(method, path string) (action, category, objectID string) {
 		action = "apikey." + map[string]string{http.MethodPost: "create", http.MethodDelete: "revoke"}[method]
 	case "activity":
 		category, action = "activity", "activity.track"
+	case "admin":
+		category = "backup"
+		if sub == "restore" {
+			action = "backup.restore"
+		} else {
+			action = "backup.run"
+		}
 	default:
 		action = category + "." + strings.ToLower(method)
 	}

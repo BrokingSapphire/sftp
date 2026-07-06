@@ -46,6 +46,29 @@ func New(key string) (*Cipher, error) {
 	return &Cipher{block: block}, nil
 }
 
+// EncryptWriter writes a fresh IV to dst and returns a Writer that encrypts
+// everything written to it (AES-256-CTR). Used for streaming archives (backups).
+func (c *Cipher) EncryptWriter(dst io.Writer) (io.Writer, error) {
+	iv := make([]byte, IVLen)
+	if _, err := rand.Read(iv); err != nil {
+		return nil, err
+	}
+	if _, err := dst.Write(iv); err != nil {
+		return nil, err
+	}
+	return &cipher.StreamWriter{S: cipher.NewCTR(c.block, iv), W: dst}, nil
+}
+
+// DecryptReader reads the IV prefix from src and returns a Reader that decrypts
+// the remaining stream. Counterpart to EncryptWriter.
+func (c *Cipher) DecryptReader(src io.Reader) (io.Reader, error) {
+	iv := make([]byte, IVLen)
+	if _, err := io.ReadFull(src, iv); err != nil {
+		return nil, err
+	}
+	return &cipher.StreamReader{S: cipher.NewCTR(c.block, iv), R: src}, nil
+}
+
 // EncryptTo writes a fresh random IV to dst, then streams src encrypted after
 // it, returning the number of plaintext bytes processed.
 func (c *Cipher) EncryptTo(dst io.Writer, src io.Reader) (int64, error) {

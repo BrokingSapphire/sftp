@@ -280,6 +280,17 @@ export const aiApi = {
   search: (q: string) => unwrap<AiHit[]>(http.get<Envelope<AiHit[]>>(`/ai/search?q=${encodeURIComponent(q)}`)),
 };
 
+// ── Backup / restore (super admin) ─────────────────────────
+export interface BackupArchive { name: string; mode: string; at: string; count: number; bytes: number }
+export interface BackupResult { mode: string; archive: string; files_backed: number; bytes: number; total_files: number }
+export interface BackupStatus { exists: boolean; total_files: number; archives: BackupArchive[]; last_backup_at?: string; next_mode: string }
+export interface RestoreResult { restored: number; skipped: number }
+export const backupApi = {
+  run: (target_path: string) => unwrap<BackupResult>(http.post<Envelope<BackupResult>>("/admin/backup", { target_path })),
+  status: (target_path: string) => unwrap<BackupStatus>(http.get<Envelope<BackupStatus>>(`/admin/backup/status?target_path=${encodeURIComponent(target_path)}`)),
+  restore: (target_path: string) => unwrap<RestoreResult>(http.post<Envelope<RestoreResult>>("/admin/restore", { target_path })),
+};
+
 // ── Notifications ──────────────────────────────────────────
 export interface Notification {
   id: string; type: string; title: string; body: string;
