@@ -1,6 +1,5 @@
 {
-  "$comment": "Single source of truth for white-label branding. Edit these values and rebuild (docker compose up -d --build, or npm run dev) — the whole app (names, logo, colours, emails, org domains) reconfigures itself. This file is consumed by BOTH the frontend and the backend.",
-
+  "$comment": "Single source of truth for white-label branding. Edit these values and rebuild (docker compose up -d --build, or npm run dev) \u2014 the whole app (names, logo, colours, emails, org domains) reconfigures itself. This file is consumed by BOTH the frontend and the backend.",
   "company": {
     "name": "Sapphire Broking",
     "shortName": "Sapphire",
@@ -11,7 +10,6 @@
     "url": "https://sapphirebroking.com",
     "copyright": "Sapphire Broking"
   },
-
   "logo": {
     "$comment": "Paths are served from the frontend /public directory. Drop your files there and point these at them, or use an absolute https URL.",
     "full": "/logo.svg",
@@ -19,7 +17,6 @@
     "dark": "/logo-black.svg",
     "favicon": "/logo.svg"
   },
-
   "colors": {
     "$comment": "Brand primary in light and dark themes (hex). Everything themed off --primary follows these.",
     "primary": "#064D51",
@@ -27,20 +24,19 @@
     "primaryDark": "#5CC5C9",
     "primaryForegroundDark": "#04211F"
   },
-
   "org": {
     "$comment": "Your own email domains. Shares to any other domain are flagged 'external' and audited.",
-    "domains": ["sapphirebroking.com"],
+    "domains": [
+      "sapphirebroking.com"
+    ],
     "supportEmail": "support@sapphirebroking.com"
   },
-
   "mail": {
     "$comment": "Default From header for outgoing share emails.",
     "from": "Sapphire SFTP <no-reply@sapphirebroking.com>"
   },
-
   "smtp": {
-    "$comment": "On-premise SMTP server for share emails. SECRETS: username/password are read ONLY by the backend — the sync script strips this whole section from the browser bundle. Set enabled:true after filling host/credentials.",
+    "$comment": "On-premise SMTP server for share emails. SECRETS: username/password are read ONLY by the backend \u2014 the sync script strips this whole section from the browser bundle. Set enabled:true after filling host/credentials.",
     "enabled": false,
     "host": "",
     "port": 587,
@@ -48,17 +44,14 @@
     "password": "",
     "startTls": true
   },
-
   "editor": {
-    "$comment": "Live Office (docx/xlsx/pptx) co-editing via a self-hosted OnlyOffice Document Server. jwtSecret is a SECRET (backend-only). docServerUrl is the public URL browsers load the editor from; internalBaseUrl is how the doc server reaches this backend (e.g. http://nginx inside compose). Only 'enabled' reaches the browser.",
-    "enabled": false,
-    "docServerUrl": "",
-    "jwtSecret": "",
+    "enabled": true,
+    "docServerUrl": "http://localhost:8082",
+    "jwtSecret": "be5665c88ca6298d44e56dd4f34010b8a45bd2e5007fade19e699bc2399ce683",
     "internalBaseUrl": "http://nginx"
   },
-
   "sso": {
-    "$comment": "Microsoft Entra ID (Azure AD) SSO. clientSecret is a SECRET (backend-only; stripped from the browser). Set enabled:true + fill clientId/clientSecret to show the 'Continue with Microsoft' button. SECURITY: set tenantId to your specific Azure tenant GUID (NOT 'organizations'/'common') so only your tenant can authenticate. allowedDomains restricts which email domains may sign in — leave [] to auto-restrict to org.domains above (outsiders/guests rejected). redirectUrl/successUrl must match your deployed host (e.g. http://localhost/... behind nginx).",
+    "$comment": "Microsoft Entra ID (Azure AD) SSO. clientSecret is a SECRET (backend-only; stripped from the browser). Set enabled:true + fill clientId/clientSecret to show the 'Continue with Microsoft' button. SECURITY: set tenantId to your specific Azure tenant GUID (NOT 'organizations'/'common') so only your tenant can authenticate. allowedDomains restricts which email domains may sign in \u2014 leave [] to auto-restrict to org.domains above (outsiders/guests rejected). redirectUrl/successUrl must match your deployed host (e.g. http://localhost/... behind nginx).",
     "microsoft": {
       "enabled": false,
       "tenantId": "organizations",
@@ -69,5 +62,11 @@
       "allowedDomains": [],
       "defaultRole": "employee"
     }
+  },
+  "ai": {
+    "enabled": true,
+    "ollamaUrl": "http://ollama:11434",
+    "embedModel": "nomic-embed-text",
+    "chatModel": "llama3.2"
   }
 }

@@ -266,6 +266,19 @@ func (h *Handler) Trash(c fuego.ContextNoBody) (*response.Envelope[[]models.File
 	return response.OK(files), nil
 }
 
+// EmptyTrash permanently deletes all of the caller's trashed files.
+func (h *Handler) EmptyTrash(c fuego.ContextNoBody) (*response.Envelope[map[string]int], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	n, err := h.svc.EmptyTrash(c.Context(), uid)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(map[string]int{"deleted": n}, "Trash emptied"), nil
+}
+
 // Recent lists recently created files.
 func (h *Handler) Recent(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
 	uid, err := currentUserID(c.Context())

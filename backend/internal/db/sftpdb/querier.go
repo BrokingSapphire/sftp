@@ -128,6 +128,7 @@ type Querier interface {
 	PurgeActivityBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeAuditLogsBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
+	PurgeUserTrash(ctx context.Context, ownerID uuid.UUID) ([]PurgeUserTrashRow, error)
 	ReassignUserFiles(ctx context.Context, arg ReassignUserFilesParams) error
 	ReassignUserFolders(ctx context.Context, arg ReassignUserFoldersParams) error
 	// Alert lifecycle -------------------------------------------------------------
@@ -161,7 +162,9 @@ type Querier interface {
 	SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error
 	SoftDeleteFile(ctx context.Context, id uuid.UUID) error
+	SoftDeleteFilesInFolders(ctx context.Context, arg SoftDeleteFilesInFoldersParams) error
 	SoftDeleteFolder(ctx context.Context, id uuid.UUID) error
+	SoftDeleteFolders(ctx context.Context, arg SoftDeleteFoldersParams) error
 	SoftDeleteUser(ctx context.Context, id uuid.UUID) error
 	StorageByUser(ctx context.Context) ([]StorageByUserRow, error)
 	SumFileSizesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)

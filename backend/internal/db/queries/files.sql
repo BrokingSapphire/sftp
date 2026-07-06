@@ -93,3 +93,18 @@ LIMIT $1 OFFSET $2;
 
 -- name: CountCommonFiles :one
 SELECT count(*) FROM files WHERE is_common = TRUE AND deleted_at IS NULL;
+
+-- name: SoftDeleteFilesInFolders :exec
+UPDATE files SET deleted_at = now(), updated_at = now()
+WHERE folder_id = ANY(@folder_ids::uuid[])
+  AND owner_id = @owner_id
+  AND deleted_at IS NULL
+  AND legal_hold = FALSE
+  AND (retain_until IS NULL OR retain_until < now());
+
+-- name: PurgeUserTrash :many
+DELETE FROM files
+WHERE owner_id = @owner_id AND deleted_at IS NOT NULL
+  AND legal_hold = FALSE
+  AND (retain_until IS NULL OR retain_until < now())
+RETURNING storage_key, size_bytes, owner_id;

@@ -242,8 +242,12 @@ export default function FilesPage() {
       { separator: true, label: "" },
       { label: "colour", node: <ColorSwatches current={f.color} onPick={(c) => setColor(f, c)} /> },
       { separator: true, label: "" },
-      { label: "Delete", icon: Trash2, danger: true, onClick: () => filesApi.deleteFolder(f.id).then(refresh).catch(() => toast.error("Folder not empty")) },
+      { label: "Delete", icon: Trash2, danger: true, onClick: () => removeFolder(f) },
     ];
+  }
+  function removeFolder(f: FolderItem) {
+    if (!confirm(`Delete folder "${f.name}"? Everything inside it will be moved to Trash.`)) return;
+    filesApi.deleteFolder(f.id).then(() => { toast.success("Folder deleted"); refresh(); }).catch(() => toast.error("Could not delete folder"));
   }
 
   const empty = !listing.isLoading && folders.length === 0 && files.length === 0;
@@ -342,7 +346,7 @@ export default function FilesPage() {
                     <span className="text-xs text-muted group-hover:hidden">{timeAgo(f.updated_at)}</span>
                     <div className="hidden gap-1 group-hover:flex">
                       <IconBtn title="Rename" onClick={() => rename("folder", f.id, f.name)}><Pencil size={15} /></IconBtn>
-                      <IconBtn title="Delete" onClick={() => filesApi.deleteFolder(f.id).then(refresh).catch(() => toast.error("Folder not empty"))}><Trash2 size={15} /></IconBtn>
+                      <IconBtn title="Delete" onClick={() => removeFolder(f)}><Trash2 size={15} /></IconBtn>
                     </div>
                   </div>
                 </StaggerItem>

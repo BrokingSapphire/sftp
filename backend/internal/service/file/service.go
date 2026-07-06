@@ -174,14 +174,48 @@ func (s *Service) DeleteFolder(ctx context.Context, owner uuid.UUID, id uuid.UUI
 	if _, err := s.ownedFolder(ctx, owner, id); err != nil {
 		return err
 	}
-	n, err := s.q.CountFolderChildren(ctx, &id)
-	if err != nil {
+	// Recursively collect the folder and all its descendants, then trash the
+	// files inside them and the folders themselves (soft delete → restorable /
+	// purged later). Files under legal hold or active retention are preserved.
+	ids := []uuid.UUID{id}
+	for queue := []uuid.UUID{id}; len(queue) > 0; {
+		cur := queue[0]
+		queue = queue[1:]
+		children, err := s.q.ListFoldersByParent(ctx, sftpdb.ListFoldersByParentParams{OwnerID: owner, ParentID: &cur})
+		if err != nil {
+			return err
+		}
+		for _, c := range children {
+			ids = append(ids, c.ID)
+			queue = append(queue, c.ID)
+		}
+	}
+	if err := s.q.SoftDeleteFilesInFolders(ctx, sftpdb.SoftDeleteFilesInFoldersParams{FolderIds: ids, OwnerID: owner}); err != nil {
 		return err
 	}
-	if n > 0 {
-		return apperrors.ErrNotEmpty
+	return s.q.SoftDeleteFolders(ctx, sftpdb.SoftDeleteFoldersParams{FolderIds: ids, OwnerID: owner})
+}
+
+// EmptyTrash permanently deletes all of the caller's trashed files (except any
+// under legal hold or active retention) and frees their storage + quota.
+func (s *Service) EmptyTrash(ctx context.Context, owner uuid.UUID) (int, error) {
+	rows, err := s.q.PurgeUserTrash(ctx, owner)
+	if err != nil {
+		return 0, err
 	}
-	return s.q.SoftDeleteFolder(ctx, id)
+	var freed int64
+	for _, r := range rows {
+		if err := s.store.Delete(r.StorageKey); err != nil {
+			s.log.Error("empty trash: delete storage failed", "key", r.StorageKey, "err", err)
+		}
+		freed += r.SizeBytes
+	}
+	if freed > 0 {
+		if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: owner, StorageUsed: -freed}); err != nil {
+			s.log.Error("empty trash: storage accounting failed", "err", err)
+		}
+	}
+	return len(rows), nil
 }
 
 // StarFolder toggles a folder's starred flag.

@@ -288,6 +288,21 @@ func (q *Queries) SoftDeleteFolder(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const softDeleteFolders = `-- name: SoftDeleteFolders :exec
+UPDATE folders SET deleted_at = now(), updated_at = now()
+WHERE id = ANY($1::uuid[]) AND owner_id = $2 AND deleted_at IS NULL
+`
+
+type SoftDeleteFoldersParams struct {
+	FolderIds []uuid.UUID `json:"folder_ids"`
+	OwnerID   uuid.UUID   `json:"owner_id"`
+}
+
+func (q *Queries) SoftDeleteFolders(ctx context.Context, arg SoftDeleteFoldersParams) error {
+	_, err := q.db.Exec(ctx, softDeleteFolders, arg.FolderIds, arg.OwnerID)
+	return err
+}
+
 const updateFolderSize = `-- name: UpdateFolderSize :exec
 UPDATE folders SET size_bytes = $2, updated_at = now() WHERE id = $1
 `

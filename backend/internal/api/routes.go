@@ -183,6 +183,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 
 	fuego.Get(gf, "/", h.List, read, option.Summary("List folder contents"))
 	fuego.Get(gf, "/trash", h.Trash, read, option.Summary("List recycle bin"))
+	fuego.Post(gf, "/trash/empty", h.EmptyTrash, del, option.Summary("Permanently empty the recycle bin"))
 	fuego.Get(gf, "/recent", h.Recent, read, option.Summary("List recent files"))
 	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))

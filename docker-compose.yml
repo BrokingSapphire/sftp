@@ -99,6 +99,8 @@ services:
     image: onlyoffice/documentserver:latest
     restart: unless-stopped
     profiles: ["office"]
+    ports:
+      - "8082:80"   # browser loads the editor from here (editor.docServerUrl)
     environment:
       JWT_ENABLED: "true"
       JWT_SECRET: ${EDITOR_JWT_SECRET:-}

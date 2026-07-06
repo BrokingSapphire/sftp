@@ -559,6 +559,40 @@ func (q *Queries) PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timest
 	return items, nil
 }
 
+const purgeUserTrash = `-- name: PurgeUserTrash :many
+DELETE FROM files
+WHERE owner_id = $1 AND deleted_at IS NOT NULL
+  AND legal_hold = FALSE
+  AND (retain_until IS NULL OR retain_until < now())
+RETURNING storage_key, size_bytes, owner_id
+`
+
+type PurgeUserTrashRow struct {
+	StorageKey string    `json:"storage_key"`
+	SizeBytes  int64     `json:"size_bytes"`
+	OwnerID    uuid.UUID `json:"owner_id"`
+}
+
+func (q *Queries) PurgeUserTrash(ctx context.Context, ownerID uuid.UUID) ([]PurgeUserTrashRow, error) {
+	rows, err := q.db.Query(ctx, purgeUserTrash, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PurgeUserTrashRow{}
+	for rows.Next() {
+		var i PurgeUserTrashRow
+		if err := rows.Scan(&i.StorageKey, &i.SizeBytes, &i.OwnerID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const renameFile = `-- name: RenameFile :exec
 UPDATE files SET name = $2, extension = $3, updated_at = now() WHERE id = $1
 `
@@ -682,6 +716,25 @@ UPDATE files SET deleted_at = now(), updated_at = now() WHERE id = $1
 
 func (q *Queries) SoftDeleteFile(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, softDeleteFile, id)
+	return err
+}
+
+const softDeleteFilesInFolders = `-- name: SoftDeleteFilesInFolders :exec
+UPDATE files SET deleted_at = now(), updated_at = now()
+WHERE folder_id = ANY($1::uuid[])
+  AND owner_id = $2
+  AND deleted_at IS NULL
+  AND legal_hold = FALSE
+  AND (retain_until IS NULL OR retain_until < now())
+`
+
+type SoftDeleteFilesInFoldersParams struct {
+	FolderIds []uuid.UUID `json:"folder_ids"`
+	OwnerID   uuid.UUID   `json:"owner_id"`
+}
+
+func (q *Queries) SoftDeleteFilesInFolders(ctx context.Context, arg SoftDeleteFilesInFoldersParams) error {
+	_, err := q.db.Exec(ctx, softDeleteFilesInFolders, arg.FolderIds, arg.OwnerID)
 	return err
 }
 

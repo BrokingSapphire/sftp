@@ -31,11 +31,14 @@
     "from": "Sapphire SFTP <no-reply@sapphirebroking.com>"
   },
   "editor": {
-    "enabled": false
+    "enabled": true
   },
   "sso": {
     "microsoft": {
       "enabled": false
     }
+  },
+  "ai": {
+    "enabled": true
   }
 }
