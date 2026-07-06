@@ -70,23 +70,26 @@ type Favorite struct {
 }
 
 type File struct {
-	ID             uuid.UUID          `json:"id"`
-	OwnerID        uuid.UUID          `json:"owner_id"`
-	FolderID       *uuid.UUID         `json:"folder_id"`
-	Name           string             `json:"name"`
-	Extension      string             `json:"extension"`
-	MimeType       string             `json:"mime_type"`
-	SizeBytes      int64              `json:"size_bytes"`
-	ChecksumSha256 *string            `json:"checksum_sha256"`
-	StorageKey     string             `json:"storage_key"`
-	ThumbnailKey   *string            `json:"thumbnail_key"`
-	IsStarred      bool               `json:"is_starred"`
-	VersionNo      int32              `json:"version_no"`
-	DownloadCount  int64              `json:"download_count"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
-	IsCommon       bool               `json:"is_common"`
+	ID               uuid.UUID          `json:"id"`
+	OwnerID          uuid.UUID          `json:"owner_id"`
+	FolderID         *uuid.UUID         `json:"folder_id"`
+	Name             string             `json:"name"`
+	Extension        string             `json:"extension"`
+	MimeType         string             `json:"mime_type"`
+	SizeBytes        int64              `json:"size_bytes"`
+	ChecksumSha256   *string            `json:"checksum_sha256"`
+	StorageKey       string             `json:"storage_key"`
+	ThumbnailKey     *string            `json:"thumbnail_key"`
+	IsStarred        bool               `json:"is_starred"`
+	VersionNo        int32              `json:"version_no"`
+	DownloadCount    int64              `json:"download_count"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
+	IsCommon         bool               `json:"is_common"`
+	TransferPending  bool               `json:"transfer_pending"`
+	TransferDeadline pgtype.Timestamptz `json:"transfer_deadline"`
+	TransferFrom     *uuid.UUID         `json:"transfer_from"`
 }
 
 type FileTag struct {

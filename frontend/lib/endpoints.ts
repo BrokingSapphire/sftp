@@ -31,6 +31,8 @@ export const filesApi = {
     unwrap<Listing>(http.get<Envelope<Listing>>("/files/", { params: { folder_id: folderId } })),
   recent: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/recent")),
   starred: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/starred")),
+  inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
+  keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
   trash: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/trash")),
   search: (q: string) =>
     unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/search", { params: { q } })),
@@ -156,7 +158,8 @@ export const usersApi = {
   setActive: (id: string, is_active: boolean) => http.put(`/users/${id}/status`, { is_active }),
   setRole: (id: string, role: string) => http.put(`/users/${id}/role`, { role }),
   resetPassword: (id: string, new_password: string) => http.post(`/users/${id}/reset-password`, { new_password }),
-  remove: (id: string) => http.delete(`/users/${id}`),
+  remove: (id: string, transfer_to: string) => http.delete(`/users/${id}`, { data: { transfer_to } }),
+  enable: (id: string) => http.post(`/users/${id}/enable`, {}),
 };
 
 export const rolesApi = {
@@ -173,6 +176,18 @@ export interface StorageOverview { users: UserStorage[]; media: MediaSlice[]; sy
 
 export const storageApi = {
   overview: () => unwrap<StorageOverview>(http.get<Envelope<StorageOverview>>("/users/storage")),
+};
+
+// ── Notifications ──────────────────────────────────────────
+export interface Notification {
+  id: string; type: string; title: string; body: string;
+  link?: string; is_read: boolean; created_at: string;
+}
+export const notificationsApi = {
+  list: () => unwrap<Notification[]>(http.get<Envelope<Notification[]>>("/notifications/")),
+  unreadCount: () => unwrap<{ unread: number }>(http.get<Envelope<{ unread: number }>>("/notifications/unread-count")),
+  markRead: (id: string) => http.post(`/notifications/${id}/read`, {}),
+  markAllRead: () => http.post("/notifications/read-all", {}),
 };
 
 // ── Audit + telemetry ──────────────────────────────────────

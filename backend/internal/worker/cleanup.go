@@ -3,14 +3,18 @@ package worker
 
 import (
 	"context"
+	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
+
+func itoa(n int) string { return strconv.Itoa(n) }
 
 // Cleaner runs storage/DB housekeeping on an interval:
 //   - purge recycle-bin files older than the retention window (free storage)
@@ -73,6 +77,72 @@ func (c *Cleaner) runOnce() {
 	if err := c.q.DeactivateExpiredShares(ctx); err != nil {
 		c.log.Error("deactivate expired shares failed", "err", err)
 	}
+	c.transferSweep(ctx)
+}
+
+// transferSweep drives the inherited-files workflow: it reminds heirs every
+// couple of days, escalates to a strict warning near the deadline, and disables
+// accounts whose deadline has lapsed with files still un-actioned. It NEVER
+// deletes the files themselves.
+func (c *Cleaner) transferSweep(ctx context.Context) {
+	rows, err := c.q.PendingTransfersByUser(ctx)
+	if err != nil {
+		c.log.Error("pending transfers query failed", "err", err)
+		return
+	}
+	now := time.Now()
+	for _, r := range rows {
+		deadline, ok := r.EarliestDeadline.(time.Time)
+		if !ok {
+			continue
+		}
+
+		if now.After(deadline) {
+			// Deadline lapsed with files still pending → disable the account.
+			_ = c.q.SetUserActive(ctx, sftpdb.SetUserActiveParams{ID: r.OwnerID, IsActive: false})
+			_ = c.q.RevokeAllUserSessions(ctx, r.OwnerID)
+			c.notifyThrottled(ctx, r.OwnerID, "account_disabled", 24*time.Hour,
+				"Account disabled",
+				"Your account has been disabled because inherited files were not actioned in time. Contact a super admin to re-enable it.")
+			c.log.Warn("disabled account for un-actioned inherited files", "user_id", r.OwnerID, "pending", r.PendingCount)
+			continue
+		}
+
+		daysLeft := int(deadline.Sub(now).Hours() / 24)
+		if deadline.Sub(now) <= 3*24*time.Hour {
+			c.notifyThrottled(ctx, r.OwnerID, "transfer_warning", 2*24*time.Hour,
+				"Action required — account will be disabled soon",
+				"You still have inherited files to review. Your account will be disabled in "+plural(daysLeft, "day")+" if you do not keep or delete them.")
+		} else {
+			c.notifyThrottled(ctx, r.OwnerID, "transfer_reminder", 2*24*time.Hour,
+				"Inherited files need your action",
+				"You have "+itoa(int(r.PendingCount))+" inherited file(s) to keep or delete within "+plural(daysLeft, "day")+".")
+		}
+	}
+}
+
+// notifyThrottled creates a notification only if none of the same type was
+// created within window (avoids spamming on every sweep).
+func (c *Cleaner) notifyThrottled(ctx context.Context, user uuid.UUID, ntype string, window time.Duration, title, body string) {
+	since := pgtype.Timestamptz{Time: time.Now().Add(-window), Valid: true}
+	n, err := c.q.CountRecentNotifications(ctx, sftpdb.CountRecentNotificationsParams{UserID: user, Type: ntype, CreatedAt: since})
+	if err != nil || n > 0 {
+		return
+	}
+	link := "/inherited"
+	_ = c.q.CreateNotification(ctx, sftpdb.CreateNotificationParams{
+		UserID: user, Type: ntype, Title: title, Body: body, Link: &link, Metadata: []byte("{}"),
+	})
+}
+
+func plural(n int, unit string) string {
+	if n < 0 {
+		n = 0
+	}
+	if n == 1 {
+		return "1 " + unit
+	}
+	return itoa(n) + " " + unit + "s"
 }
 
 func (c *Cleaner) purgeTrash(ctx context.Context) {

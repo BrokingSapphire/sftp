@@ -454,6 +454,31 @@ func (h *Handler) MakeCommon(c fuego.ContextNoBody) (*response.Envelope[response
 	return response.OKWithMessage[response.Any](nil, "Shared to Common"), nil
 }
 
+// Inherited lists files transferred to the caller from a deleted user.
+func (h *Handler) Inherited(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	files, err := h.svc.ListInherited(c.Context(), uid)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
+// KeepFile clears the inherited-pending flag (heir keeps the file).
+func (h *Handler) KeepFile(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.KeepInherited(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File kept"), nil
+}
+
 // CommonDelete removes a Common file (uploader or admin only).
 func (h *Handler) CommonDelete(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
 	uid, id, err := h.idOnly(c)

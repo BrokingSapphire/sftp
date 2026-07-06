@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"sapphirebroking.com/sftp_service/internal/apperrors"
 	"sapphirebroking.com/sftp_service/internal/config"
@@ -194,13 +195,65 @@ func (s *Service) ResetPassword(ctx context.Context, id uuid.UUID, newPassword s
 	return s.q.RevokeAllUserSessions(ctx, id)
 }
 
-// Delete soft-deletes a user and revokes their sessions.
-func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+// transferWindow is how long the heir has to act on inherited files.
+const transferWindow = 30 * 24 * time.Hour
+
+// DeleteWithTransfer soft-deletes a user after mandatorily transferring all of
+// their files and folders to another (active) user, who must then keep or
+// delete them within the transfer window. Nothing is ever auto-deleted.
+func (s *Service) DeleteWithTransfer(ctx context.Context, id, transferTo uuid.UUID) error {
+	if id == transferTo {
+		return apperrors.ErrInvalidRequest
+	}
+	if _, err := s.q.GetUserByID(ctx, id); err != nil {
+		return apperrors.ErrUserNotFound
+	}
+	heir, err := s.q.GetUserByID(ctx, transferTo)
+	if err != nil {
+		return apperrors.ErrUserNotFound
+	}
+	if !heir.IsActive {
+		return apperrors.ErrForbidden
+	}
+
+	sum, err := s.q.SumFileSizesByOwner(ctx, id)
+	if err != nil {
+		return err
+	}
+	deadline := pgtype.Timestamptz{Time: time.Now().Add(transferWindow), Valid: true}
+
+	if err := s.q.ReassignUserFiles(ctx, sftpdb.ReassignUserFilesParams{ToUser: transferTo, Deadline: deadline, FromUser: &id}); err != nil {
+		return err
+	}
+	if err := s.q.ReassignUserFolders(ctx, sftpdb.ReassignUserFoldersParams{ToUser: transferTo, FromUser: id}); err != nil {
+		return err
+	}
+	// Move the storage accounting from the deleted user to the heir.
+	_ = s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: transferTo, StorageUsed: sum})
+	_ = s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: id, StorageUsed: -sum})
+
+	// Notify the heir.
+	_ = s.q.CreateNotification(ctx, sftpdb.CreateNotificationParams{
+		UserID:   transferTo,
+		Type:     "inherited_files",
+		Title:    "Files transferred to you",
+		Body:     "Files from a removed account are now assigned to you. Please review them (keep or delete) within 30 days, or your account may be disabled.",
+		Link:     strPtr("/inherited"),
+		Metadata: []byte(`{"kind":"inherited_files"}`),
+	})
+
 	if err := s.q.SoftDeleteUser(ctx, id); err != nil {
 		return err
 	}
 	return s.q.RevokeAllUserSessions(ctx, id)
 }
+
+// Enable reactivates a disabled account (super-admin action; enforced at handler).
+func (s *Service) Enable(ctx context.Context, id uuid.UUID) error {
+	return s.q.SetUserActive(ctx, sftpdb.SetUserActiveParams{ID: id, IsActive: true})
+}
+
+func strPtr(s string) *string { return &s }
 
 // RoleInfo is a role with its permission slugs.
 type RoleInfo struct {

@@ -66,7 +66,7 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 }
 
 const getFileByOwnerFolderName = `-- name: GetFileByOwnerFolderName :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1
   AND folder_id IS NOT DISTINCT FROM $3
   AND name = $2 AND deleted_at IS NULL
@@ -99,6 +99,9 @@ func (q *Queries) GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwn
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.IsCommon,
+		&i.TransferPending,
+		&i.TransferDeadline,
+		&i.TransferFrom,
 	)
 	return i, err
 }

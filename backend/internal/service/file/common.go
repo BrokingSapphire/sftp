@@ -11,6 +11,20 @@ import (
 	models "sapphirebroking.com/sftp_service/internal/models/file"
 )
 
+// ListInherited returns files assigned to the caller from a deleted user.
+func (s *Service) ListInherited(ctx context.Context, owner uuid.UUID) ([]models.FileResponse, error) {
+	rows, err := s.q.ListInheritedFiles(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	return mapFiles(rows), nil
+}
+
+// KeepInherited clears the pending flag (the heir chooses to keep the file).
+func (s *Service) KeepInherited(ctx context.Context, owner, id uuid.UUID) error {
+	return s.q.ClearFilePending(ctx, sftpdb.ClearFilePendingParams{ID: id, OwnerID: owner})
+}
+
 // ListCommon returns the organisation-wide Common files. can_delete is true
 // for the uploader and for admins.
 func (s *Service) ListCommon(ctx context.Context, caller uuid.UUID, isAdmin bool, limit, offset int) ([]models.CommonFileResponse, int64, error) {

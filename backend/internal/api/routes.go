@@ -13,6 +13,7 @@ import (
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
@@ -38,6 +39,7 @@ type Deps struct {
 	APIKeyHandler *apikeyhandler.Handler
 	AuditHandler  *audithandler.Handler
 	ShareHandler  *sharehandler.Handler
+	NotifHandler  *notifhandler.Handler
 }
 
 var (
@@ -72,6 +74,16 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerAPIKeyRoutes(g, deps)
 	registerAuditRoutes(g, deps)
 	registerShareRoutes(g, deps)
+	registerNotificationRoutes(g, deps)
+}
+
+func registerNotificationRoutes(g *fuego.Server, deps Deps) {
+	gn := fuego.Group(g, "/notifications", option.Tags("Notifications"), secured, respUnauthorized)
+	fuego.Use(gn, deps.Auth.Require)
+	fuego.Get(gn, "/", deps.NotifHandler.List, option.Summary("List notifications"))
+	fuego.Get(gn, "/unread-count", deps.NotifHandler.UnreadCount, option.Summary("Unread count"))
+	fuego.Post(gn, "/{id}/read", deps.NotifHandler.MarkRead, option.Summary("Mark a notification read"))
+	fuego.Post(gn, "/read-all", deps.NotifHandler.MarkAllRead, option.Summary("Mark all read"))
 }
 
 func registerShareRoutes(g *fuego.Server, deps Deps) {
@@ -139,6 +151,8 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/recent", h.Recent, read, option.Summary("List recent files"))
 	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
+	fuego.Get(gf, "/inherited", h.Inherited, read, option.Summary("List files inherited from a deleted user"))
+	fuego.Post(gf, "/{id}/keep", h.KeepFile, write, option.Summary("Keep an inherited file"))
 
 	// Organisation-wide Common area.
 	fuego.Get(gf, "/common", h.CommonList, read, option.Summary("List organisation-wide Common files"))
@@ -180,7 +194,8 @@ func registerUserRoutes(g *fuego.Server, deps Deps) {
 	fuego.Post(gu, "/", deps.UserHandler.Create, manage, option.Summary("Create user"))
 	fuego.Get(gu, "/{id}", deps.UserHandler.Get, read, option.Summary("Get a user"))
 	fuego.Patch(gu, "/{id}", deps.UserHandler.Update, manage, option.Summary("Update a user"))
-	fuego.Delete(gu, "/{id}", deps.UserHandler.Delete, manage, option.Summary("Delete a user"))
+	fuego.Delete(gu, "/{id}", deps.UserHandler.Delete, manage, option.Summary("Delete a user (transfers their files)"))
+	fuego.Post(gu, "/{id}/enable", deps.UserHandler.Enable, manage, option.Summary("Re-enable a disabled account (super admin)"))
 	fuego.Put(gu, "/{id}/role", deps.UserHandler.SetRole, manage, option.Summary("Set a user's role"))
 	fuego.Put(gu, "/{id}/quota", deps.UserHandler.SetQuota, manage, option.Summary("Set a user's storage quota"))
 	fuego.Put(gu, "/{id}/status", deps.UserHandler.SetActive, manage, option.Summary("Enable/disable a user"))

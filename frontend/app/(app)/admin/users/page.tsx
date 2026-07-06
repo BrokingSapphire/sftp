@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, CheckCircle2, KeyRound, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Ban, CheckCircle2, KeyRound, Plus, ShieldAlert, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { usersApi, rolesApi } from "@/lib/endpoints";
 import { ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/files/file-list";
@@ -20,6 +20,22 @@ export default function AdminUsersPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", username: "", full_name: "", password: "", role: "employee", quota_gb: 15 });
   const isSuper = form.role === "super_admin";
+  const [deleting, setDeleting] = useState<import("@/lib/endpoints").AdminUser | null>(null);
+  const [transferTo, setTransferTo] = useState("");
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    if (!transferTo) return toast.error("Select a user to receive the files");
+    try {
+      await usersApi.remove(deleting.id, transferTo);
+      toast.success("User removed; files transferred");
+      setDeleting(null); setTransferTo(""); refresh();
+    } catch (e) { toast.error(e instanceof ApiError ? e.message : "Could not delete user"); }
+  }
+  async function enableUser(id: string) {
+    try { await usersApi.enable(id); toast.success("Account re-enabled"); refresh(); }
+    catch (e) { toast.error(e instanceof ApiError ? e.message : "Only a super admin can re-enable accounts"); }
+  }
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["users"] });
 
@@ -142,17 +158,51 @@ export default function AdminUsersPage() {
                 className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-foreground">
                 <KeyRound size={16} />
               </button>
-              <button title={u.is_active ? "Disable" : "Enable"}
-                onClick={() => usersApi.setActive(u.id, !u.is_active).then(() => { toast.success("Updated"); refresh(); })}
+              <button title={u.is_active ? "Disable" : "Re-enable (super admin)"}
+                onClick={() => u.is_active
+                  ? usersApi.setActive(u.id, false).then(() => { toast.success("Disabled"); refresh(); })
+                  : enableUser(u.id)}
                 className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-surface-2">
                 {u.is_active ? <Ban size={16} className="text-warning" /> : <CheckCircle2 size={16} className="text-success" />}
               </button>
-              <button title="Delete" onClick={() => confirm(`Delete ${u.username}?`) && usersApi.remove(u.id).then(() => { toast.success("Deleted"); refresh(); })}
+              <button title="Delete (transfers files)" onClick={() => { setDeleting(u); setTransferTo(""); }}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-danger hover:bg-surface-2"><Trash2 size={16} /></button>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Delete-with-transfer modal */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleting(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2 text-danger">
+              <ShieldAlert size={18} />
+              <h3 className="text-base font-semibold">Delete {deleting.full_name || deleting.username}</h3>
+            </div>
+            <p className="text-sm text-muted">
+              All of this user&apos;s files and folders must be transferred to another user. The recipient
+              has <span className="font-medium text-foreground">30 days</span> to keep or delete them —
+              nothing is auto-deleted, and their account is disabled if they take no action.
+            </p>
+            <label className="mt-4 block text-sm font-medium">Transfer files to</label>
+            <select
+              className="mt-1.5 h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+              value={transferTo}
+              onChange={(e) => setTransferTo(e.target.value)}
+            >
+              <option value="">Select a user…</option>
+              {users.data?.filter((x) => x.id !== deleting.id && x.is_active).map((x) => (
+                <option key={x.id} value={x.id}>{x.full_name || x.username} ({x.email})</option>
+              ))}
+            </select>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleting(null)}>Cancel</Button>
+              <Button variant="danger" size="sm" onClick={confirmDelete}>Delete &amp; transfer</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

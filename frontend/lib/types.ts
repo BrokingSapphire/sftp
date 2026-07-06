@@ -46,6 +46,8 @@ export interface FileItem {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  transfer_pending?: boolean;
+  transfer_deadline?: string;
 }
 
 export interface Listing {

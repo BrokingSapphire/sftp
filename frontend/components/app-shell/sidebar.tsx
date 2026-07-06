@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Folder, Globe, Star, Share2, Trash2,
+  LayoutDashboard, Folder, Globe, Star, Share2, Trash2, Inbox,
   Users, ScrollText, KeyRound, HardDrive, PieChart,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -22,6 +22,7 @@ const primary: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/files", label: "My Files", icon: Folder },
   { href: "/common", label: "Common", icon: Globe },
+  { href: "/inherited", label: "Inherited", icon: Inbox },
   { href: "/starred", label: "Starred", icon: Star },
   { href: "/shares", label: "Shared", icon: Share2 },
   { href: "/trash", label: "Trash", icon: Trash2 },

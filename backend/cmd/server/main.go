@@ -16,6 +16,7 @@ import (
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
+	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
@@ -126,6 +127,7 @@ func main() {
 		APIKeyHandler: apikeyhandler.NewHandler(apiKeyService, appLogger),
 		AuditHandler:  audithandler.NewHandler(auditRecorder, appLogger),
 		ShareHandler:  sharehandler.NewHandler(shareService, appLogger),
+		NotifHandler:  notifhandler.NewHandler(queries, appLogger),
 	})
 
 	go httpServer.Start()

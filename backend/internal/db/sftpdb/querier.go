@@ -13,6 +13,8 @@ import (
 
 type Querier interface {
 	AddStorageUsed(ctx context.Context, arg AddStorageUsedParams) error
+	ClearAllPendingForUser(ctx context.Context, ownerID uuid.UUID) error
+	ClearFilePending(ctx context.Context, arg ClearFilePendingParams) error
 	ClearRolePermissions(ctx context.Context, roleID uuid.UUID) error
 	CompleteUpload(ctx context.Context, arg CompleteUploadParams) error
 	CountActiveUsers(ctx context.Context) (int64, error)
@@ -23,11 +25,15 @@ type Querier interface {
 	CountFilesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	CountFolderChildren(ctx context.Context, parentID *uuid.UUID) (int32, error)
 	CountFoldersByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	CountInheritedFiles(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	CountRecentNotifications(ctx context.Context, arg CountRecentNotificationsParams) (int64, error)
 	CountTrashByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error)
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) error
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateShare(ctx context.Context, arg CreateShareParams) (Share, error)
@@ -72,7 +78,9 @@ type Querier interface {
 	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
+	ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
+	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error)
 	ListPermissions(ctx context.Context) ([]Permission, error)
 	ListReceivedChunks(ctx context.Context, uploadID uuid.UUID) ([]int32, error)
 	ListRecentActivity(ctx context.Context, arg ListRecentActivityParams) ([]UserActivity, error)
@@ -87,12 +95,17 @@ type Querier interface {
 	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]Session, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	LockUser(ctx context.Context, arg LockUserParams) error
+	MarkAllNotificationsRead(ctx context.Context, userID uuid.UUID) error
+	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	MediaBreakdown(ctx context.Context) ([]MediaBreakdownRow, error)
 	MoveFile(ctx context.Context, arg MoveFileParams) error
 	MoveFolder(ctx context.Context, arg MoveFolderParams) error
+	PendingTransfersByUser(ctx context.Context) ([]PendingTransfersByUserRow, error)
 	PurgeActivityBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeAuditLogsBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
+	ReassignUserFiles(ctx context.Context, arg ReassignUserFilesParams) error
+	ReassignUserFolders(ctx context.Context, arg ReassignUserFoldersParams) error
 	RecordChunk(ctx context.Context, arg RecordChunkParams) error
 	RenameFile(ctx context.Context, arg RenameFileParams) error
 	RenameFolder(ctx context.Context, arg RenameFolderParams) error

@@ -47,7 +47,7 @@ INSERT INTO files (
     owner_id, folder_id, name, extension, mime_type,
     size_bytes, checksum_sha256, storage_key
 ) VALUES ($1, $8, $2, $3, $4, $5, $6, $7)
-RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common
+RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from
 `
 
 type CreateFileParams struct {
@@ -91,12 +91,15 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, e
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.IsCommon,
+		&i.TransferPending,
+		&i.TransferDeadline,
+		&i.TransferFrom,
 	)
 	return i, err
 }
 
 const getFileByID = `-- name: GetFileByID :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files WHERE id = $1 AND deleted_at IS NULL
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFileByID(ctx context.Context, id uuid.UUID) (File, error) {
@@ -120,12 +123,15 @@ func (q *Queries) GetFileByID(ctx context.Context, id uuid.UUID) (File, error) {
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.IsCommon,
+		&i.TransferPending,
+		&i.TransferDeadline,
+		&i.TransferFrom,
 	)
 	return i, err
 }
 
 const getFileByIDIncludingTrashed = `-- name: GetFileByIDIncludingTrashed :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files WHERE id = $1
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files WHERE id = $1
 `
 
 func (q *Queries) GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error) {
@@ -149,6 +155,9 @@ func (q *Queries) GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID)
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.IsCommon,
+		&i.TransferPending,
+		&i.TransferDeadline,
+		&i.TransferFrom,
 	)
 	return i, err
 }
@@ -174,7 +183,7 @@ func (q *Queries) IncrementDownloadCount(ctx context.Context, id uuid.UUID) erro
 }
 
 const listCommonFiles = `-- name: ListCommonFiles :many
-SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, u.full_name AS uploader_name, u.username AS uploader_username
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, u.full_name AS uploader_name, u.username AS uploader_username
 FROM files f
 JOIN users u ON u.id = f.owner_id
 WHERE f.is_common = TRUE AND f.deleted_at IS NULL
@@ -205,6 +214,9 @@ type ListCommonFilesRow struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
 	IsCommon         bool               `json:"is_common"`
+	TransferPending  bool               `json:"transfer_pending"`
+	TransferDeadline pgtype.Timestamptz `json:"transfer_deadline"`
+	TransferFrom     *uuid.UUID         `json:"transfer_from"`
 	UploaderName     string             `json:"uploader_name"`
 	UploaderUsername string             `json:"uploader_username"`
 }
@@ -236,6 +248,9 @@ func (q *Queries) ListCommonFiles(ctx context.Context, arg ListCommonFilesParams
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 			&i.UploaderName,
 			&i.UploaderUsername,
 		); err != nil {
@@ -250,7 +265,7 @@ func (q *Queries) ListCommonFiles(ctx context.Context, arg ListCommonFilesParams
 }
 
 const listFilesByFolder = `-- name: ListFilesByFolder :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1
   AND folder_id IS NOT DISTINCT FROM $4
   AND deleted_at IS NULL
@@ -297,6 +312,9 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, arg ListFilesByFolderPa
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -309,7 +327,7 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, arg ListFilesByFolderPa
 }
 
 const listRecentFiles = `-- name: ListRecentFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2
@@ -347,6 +365,9 @@ func (q *Queries) ListRecentFiles(ctx context.Context, arg ListRecentFilesParams
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -359,7 +380,7 @@ func (q *Queries) ListRecentFiles(ctx context.Context, arg ListRecentFilesParams
 }
 
 const listStarredFiles = `-- name: ListStarredFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1 AND is_starred = TRUE AND deleted_at IS NULL
 ORDER BY updated_at DESC
 `
@@ -391,6 +412,9 @@ func (q *Queries) ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]Fi
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -403,7 +427,7 @@ func (q *Queries) ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]Fi
 }
 
 const listTrash = `-- name: ListTrash :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1 AND deleted_at IS NOT NULL
 ORDER BY deleted_at DESC
 LIMIT $2 OFFSET $3
@@ -442,6 +466,9 @@ func (q *Queries) ListTrash(ctx context.Context, arg ListTrashParams) ([]File, e
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -518,7 +545,7 @@ func (q *Queries) RestoreFile(ctx context.Context, id uuid.UUID) error {
 }
 
 const searchFiles = `-- name: SearchFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL
   AND name ILIKE '%' || $2 || '%'
 ORDER BY name ASC
@@ -564,6 +591,9 @@ func (q *Queries) SearchFiles(ctx context.Context, arg SearchFilesParams) ([]Fil
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
 		); err != nil {
 			return nil, err
 		}

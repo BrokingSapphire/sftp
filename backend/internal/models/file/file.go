@@ -61,6 +61,9 @@ type FileResponse struct {
 	CreatedAt     string  `json:"created_at"`
 	UpdatedAt     string  `json:"updated_at"`
 	DeletedAt     string  `json:"deleted_at,omitempty"`
+	// Set when this file was inherited from a deleted user and awaits action.
+	TransferPending  bool   `json:"transfer_pending,omitempty"`
+	TransferDeadline string `json:"transfer_deadline,omitempty"`
 }
 
 // CommonFileResponse is a file in the organisation-wide Common area.

@@ -59,5 +59,9 @@ func toFileResponse(f sftpdb.File) *models.FileResponse {
 	if f.ChecksumSha256 != nil {
 		r.Checksum = *f.ChecksumSha256
 	}
+	r.TransferPending = f.TransferPending
+	if f.TransferDeadline.Valid {
+		r.TransferDeadline = f.TransferDeadline.Time.Format(time.RFC3339)
+	}
 	return r
 }

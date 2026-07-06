@@ -34,6 +34,11 @@ type SetActiveRequest struct {
 	IsActive bool `json:"is_active"`
 }
 
+// DeleteRequest carries the mandatory transfer target for a user's files.
+type DeleteRequest struct {
+	TransferTo string `json:"transfer_to" validate:"required,uuid"`
+}
+
 // ResetPasswordRequest sets a new password (admin action).
 type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required,min=12"`

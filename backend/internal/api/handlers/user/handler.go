@@ -157,16 +157,43 @@ func (h *Handler) ResetPassword(c fuego.ContextWithBody[models.ResetPasswordRequ
 	return response.OKWithMessage[response.Any](nil, "Password reset"), nil
 }
 
-// Delete soft-deletes a user.
-func (h *Handler) Delete(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+// Delete removes a user, mandatorily transferring their files to another user.
+func (h *Handler) Delete(c fuego.ContextWithBody[models.DeleteRequest]) (*response.Envelope[response.Any], error) {
 	id, err := params.UUIDPath(c, "id")
 	if err != nil {
 		return nil, err
 	}
-	if err := h.svc.Delete(c.Context(), id); err != nil {
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(apperrors.ErrInvalidRequest)
+	}
+	if err := utils.Validate(body); err != nil {
+		return nil, fuego.BadRequestError{Title: "transfer_to (target user) is required"}
+	}
+	transferTo, err := uuid.Parse(body.TransferTo)
+	if err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid transfer_to"}
+	}
+	if err := h.svc.DeleteWithTransfer(c.Context(), id, transferTo); err != nil {
 		return nil, handlers.Fail(err)
 	}
-	return response.OKWithMessage[response.Any](nil, "User deleted"), nil
+	return response.OKWithMessage[response.Any](nil, "User removed; files transferred"), nil
+}
+
+// Enable reactivates a disabled account — super admin only.
+func (h *Handler) Enable(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	claims := jwt.GetClaimsFromContext(c.Context())
+	if claims == nil || claims.Role != "super_admin" {
+		return nil, handlers.Fail(apperrors.ErrForbidden)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.Enable(c.Context(), id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Account re-enabled"), nil
 }
 
 // StorageOverview returns per-user usage + system media breakdown (admin).
