@@ -135,6 +135,35 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)
 }
 
+// DownloadVersion streams a specific archived version of a file.
+func (h *Handler) DownloadVersion(w http.ResponseWriter, r *http.Request) {
+	uid, ok := userID(r)
+	if !ok {
+		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid file id")
+		return
+	}
+	vn, err := strconv.Atoi(r.PathValue("version"))
+	if err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid version")
+		return
+	}
+	dl, err := h.svc.OpenVersionForDownload(r.Context(), uid, id, int32(vn))
+	if err != nil {
+		writeServiceError(w, r, err)
+		return
+	}
+	defer dl.File.Close()
+	w.Header().Set("Content-Type", dl.MimeType)
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+dl.Name+"\"")
+	w.Header().Set("Accept-Ranges", "bytes")
+	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)
+}
+
 // ── std-handler helpers ────────────────────────────────────
 
 type envelope struct {

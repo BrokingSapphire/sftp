@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History,
 } from "lucide-react";
 import { filesApi, commonApi } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
@@ -16,6 +16,7 @@ import { walkDir } from "@/lib/folder-upload";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
 import { ShareDialog } from "@/components/files/share-dialog";
+import { VersionHistory } from "@/components/files/version-history";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { useUploads } from "@/lib/upload-manager";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export default function FilesPage() {
   const ctx = useContextMenu();
   const uploads = useUploads();
   const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
+  const [versionOf, setVersionOf] = useState<{ id: string; name: string; version: number } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
 
   const anySel = sel.size > 0;
@@ -192,6 +194,7 @@ export default function FilesPage() {
       { separator: true, label: "" },
       { label: f.is_starred ? "Remove star" : "Add star", icon: Star, onClick: () => star(f) },
       { label: "Rename", icon: Pencil, onClick: () => rename("file", f.id, f.name) },
+      { label: "Version history", icon: History, onClick: () => setVersionOf({ id: f.id, name: f.name, version: f.version_no }) },
       { separator: true, label: "" },
       { label: "Move to trash", icon: Trash2, danger: true, onClick: () => trash(f) },
     ];
@@ -391,6 +394,12 @@ export default function FilesPage() {
 
       <ContextMenu menu={ctx.menu} onClose={ctx.close} />
       {sharing && <ShareDialog fileId={sharing.id} fileName={sharing.name} onClose={() => setSharing(null)} />}
+      {versionOf && (
+        <VersionHistory
+          fileId={versionOf.id} fileName={versionOf.name} currentVersion={versionOf.version}
+          onClose={() => setVersionOf(null)} onRestored={refresh}
+        />
+      )}
     </div>
   );
 }

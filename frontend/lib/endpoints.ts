@@ -34,6 +34,12 @@ export const filesApi = {
   inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
   searchContent: (q: string) => unwrap<SearchHit[]>(http.get<Envelope<SearchHit[]>>(`/files/search/content?q=${encodeURIComponent(q)}`)),
+  versions: (id: string) => unwrap<FileVersion[]>(http.get<Envelope<FileVersion[]>>(`/files/${id}/versions`)),
+  restoreVersion: (id: string, v: number) => http.post(`/files/${id}/versions/${v}/restore`, {}),
+  versionDownloadUrl: (id: string, v: number) => {
+    const t = tokens.access();
+    return `/api/v1/files/${id}/versions/${v}/download${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
+  },
   sharedWithMe: () => unwrap<SharedFile[]>(http.get<Envelope<SharedFile[]>>("/files/shared-with-me")),
   shareWithUser: (id: string, recipient_email: string, can_write: boolean) =>
     unwrap<FileGrant>(http.post<Envelope<FileGrant>>(`/files/${id}/share-user`, { recipient_email, can_write })),
@@ -133,6 +139,9 @@ export const commonApi = {
 };
 
 // ── Shares ─────────────────────────────────────────────────
+export interface FileVersion {
+  version_no: number; size_bytes: number; checksum_sha256?: string; author?: string; created_at: string;
+}
 export interface SearchHit {
   id: string; name: string; extension: string; mime_type: string; size_bytes: number;
   folder_id?: string; is_starred: boolean; version_no: number; download_count: number;

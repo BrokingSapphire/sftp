@@ -149,17 +149,10 @@ func (s *Service) CompleteUpload(ctx context.Context, owner, uploadID uuid.UUID)
 	}
 
 	checksum := res.Checksum
-	file, err := s.q.CreateFile(ctx, sftpdb.CreateFileParams{
-		OwnerID: owner, FolderID: up.FolderID, Name: up.Filename,
-		Extension: utils.FileExtension(up.Filename), MimeType: mimeByName(up.Filename),
-		SizeBytes: res.Size, ChecksumSha256: &checksum, StorageKey: res.Key,
-	})
+	file, _, err := s.commitContent(ctx, owner, up.FolderID, up.Filename, res.Key, checksum, res.Size)
 	if err != nil {
 		_ = s.store.Delete(res.Key)
-		return nil, mapConflict(err)
-	}
-	if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: owner, StorageUsed: res.Size}); err != nil {
-		s.log.Error("increment storage used failed", "err", err)
+		return nil, err
 	}
 	if err := s.q.CompleteUpload(ctx, sftpdb.CompleteUploadParams{ID: uploadID, FileID: &file.ID}); err != nil {
 		s.log.Error("mark upload complete failed", "err", err)
@@ -201,17 +194,10 @@ func (s *Service) SimpleUpload(ctx context.Context, owner uuid.UUID, folderID *s
 	}
 
 	checksum := res.Checksum
-	file, err := s.q.CreateFile(ctx, sftpdb.CreateFileParams{
-		OwnerID: owner, FolderID: folder, Name: name,
-		Extension: utils.FileExtension(name), MimeType: mimeByName(name),
-		SizeBytes: res.Size, ChecksumSha256: &checksum, StorageKey: res.Key,
-	})
+	file, _, err := s.commitContent(ctx, owner, folder, name, res.Key, checksum, res.Size)
 	if err != nil {
 		_ = s.store.Delete(res.Key)
-		return nil, mapConflict(err)
-	}
-	if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: owner, StorageUsed: res.Size}); err != nil {
-		s.log.Error("increment storage used failed", "err", err)
+		return nil, err
 	}
 	s.indexAsync(file.ID)
 	return toFileResponse(file), nil

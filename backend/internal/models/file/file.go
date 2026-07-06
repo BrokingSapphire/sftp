@@ -179,3 +179,12 @@ type SearchHit struct {
 	Snippet       string  `json:"snippet,omitempty"`
 	Rank          float64 `json:"rank"`
 }
+
+// FileVersionResponse is one archived (previous) version of a file.
+type FileVersionResponse struct {
+	VersionNo int32  `json:"version_no"`
+	SizeBytes int64  `json:"size_bytes"`
+	Checksum  string `json:"checksum_sha256,omitempty"`
+	Author    string `json:"author,omitempty"`
+	CreatedAt string `json:"created_at"`
+}

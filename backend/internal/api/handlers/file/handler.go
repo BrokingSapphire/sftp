@@ -4,6 +4,8 @@ package file
 import (
 	"context"
 
+	"strconv"
+
 	"github.com/go-fuego/fuego"
 	"github.com/google/uuid"
 
@@ -321,6 +323,36 @@ func (h *Handler) SearchContent(c fuego.ContextNoBody) (*response.Envelope[[]mod
 		return nil, handlers.Fail(err)
 	}
 	return response.OK(hits), nil
+}
+
+// ListVersions returns a file's previous versions.
+func (h *Handler) ListVersions(c fuego.ContextNoBody) (*response.Envelope[[]models.FileVersionResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	vs, err := h.svc.ListVersions(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(vs), nil
+}
+
+// RestoreVersion makes a previous version current.
+func (h *Handler) RestoreVersion(c fuego.ContextNoBody) (*response.Envelope[models.FileResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	vn, err := strconv.Atoi(c.PathParam("version"))
+	if err != nil {
+		return nil, fuego.BadRequestError{Title: "invalid version"}
+	}
+	f, err := h.svc.RestoreVersion(c.Context(), uid, id, int32(vn))
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*f, "Version restored"), nil
 }
 
 // ── Uploads (session control) ─────────────────────────────

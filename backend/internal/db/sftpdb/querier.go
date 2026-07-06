@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	AddStorageUsed(ctx context.Context, arg AddStorageUsedParams) error
+	BumpFileContent(ctx context.Context, arg BumpFileContentParams) (File, error)
 	ClearAllPendingForUser(ctx context.Context, ownerID uuid.UUID) error
 	ClearFilePending(ctx context.Context, arg ClearFilePendingParams) error
 	ClearRolePermissions(ctx context.Context, roleID uuid.UUID) error
@@ -54,6 +55,7 @@ type Querier interface {
 	GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error)
 	GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwnerFolderNameParams) (File, error)
 	GetFileGrant(ctx context.Context, arg GetFileGrantParams) (GetFileGrantRow, error)
+	GetFileVersion(ctx context.Context, arg GetFileVersionParams) (GetFileVersionRow, error)
 	GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error)
 	GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwnerPathParams) (Folder, error)
 	GetPermissionsForRole(ctx context.Context, roleID uuid.UUID) ([]string, error)
@@ -79,6 +81,7 @@ type Querier interface {
 	InsertActivity(ctx context.Context, arg InsertActivityParams) error
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
+	InsertFileVersion(ctx context.Context, arg InsertFileVersionParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
 	InsertSecurityAlert(ctx context.Context, arg InsertSecurityAlertParams) (SecurityAlert, error)
 	LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwnerParams) ([]File, error)
@@ -88,6 +91,7 @@ type Querier interface {
 	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)
 	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
 	ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]ListFileGrantsRow, error)
+	ListFileVersions(ctx context.Context, fileID uuid.UUID) ([]ListFileVersionsRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
 	ListFilesMissingText(ctx context.Context, limit int32) ([]ListFilesMissingTextRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
