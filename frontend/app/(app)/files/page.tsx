@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check,
 } from "lucide-react";
 import { filesApi, sharesApi, commonApi } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
@@ -32,6 +32,44 @@ export default function FilesPage() {
   const [view, setView] = useState<View>("list");
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
+  const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
+
+  const anySel = sel.size > 0;
+  function toggleSel(id: string, kind: "file" | "folder") {
+    setSel((m) => {
+      const n = new Map(m);
+      n.has(id) ? n.delete(id) : n.set(id, kind);
+      return n;
+    });
+  }
+  const clearSel = () => setSel(new Map());
+  // Reset selection when navigating folders.
+  useEffect(() => { clearSel(); }, [current.id]);
+
+  async function bulk(action: "download" | "star" | "common" | "trash") {
+    const ids = [...sel.entries()];
+    const fileIds = ids.filter(([, k]) => k === "file").map(([id]) => id);
+    const folderIds = ids.filter(([, k]) => k === "folder").map(([id]) => id);
+    try {
+      if (action === "download") {
+        fileIds.forEach((id) => window.open(filesApi.downloadUrl(id), "_blank"));
+      } else if (action === "star") {
+        await Promise.all(fileIds.map((id) => filesApi.starFile(id, true)));
+        toast.success(`Starred ${fileIds.length}`);
+      } else if (action === "common") {
+        await Promise.all(fileIds.map((id) => commonApi.makeCommon(id)));
+        toast.success(`Shared ${fileIds.length} to Common`);
+      } else if (action === "trash") {
+        await Promise.all([
+          ...fileIds.map((id) => filesApi.trashFile(id)),
+          ...folderIds.map((id) => filesApi.deleteFolder(id).catch(() => {})),
+        ]);
+        toast.success(`Deleted ${ids.length} item${ids.length === 1 ? "" : "s"}`);
+      }
+    } catch { toast.error("Some items could not be processed"); }
+    clearSel();
+    refresh();
+  }
 
   useEffect(() => {
     const v = localStorage.getItem("sftp_view") as View | null;
@@ -208,6 +246,22 @@ export default function FilesPage() {
         </div>
       </div>
 
+      {/* Bulk-selection action bar */}
+      {anySel && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2"
+        >
+          <span className="text-sm font-medium">{sel.size} selected</span>
+          <div className="mx-1 h-5 w-px bg-border" />
+          <Button variant="ghost" size="sm" onClick={() => bulk("download")}><Download size={15} /> Download</Button>
+          <Button variant="ghost" size="sm" onClick={() => bulk("star")}><Star size={15} /> Star</Button>
+          <Button variant="ghost" size="sm" onClick={() => bulk("common")}><Globe size={15} /> To Common</Button>
+          <Button variant="ghost" size="sm" onClick={() => bulk("trash")}><Trash2 size={15} /> Delete</Button>
+          <button onClick={clearSel} className="ml-auto text-xs text-muted hover:text-foreground">Clear</button>
+        </motion.div>
+      )}
+
       {/* Listing */}
       <UploadZone onFiles={uploadFiles}>
         {listing.isLoading ? (
@@ -226,13 +280,13 @@ export default function FilesPage() {
             </div>
             <StaggerList>
               {folders.map((f) => (
-                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
-                  <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
-                    <motion.span whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className={cn("group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SelectBox selected={sel.has(f.id)} anySel={anySel} onToggle={() => toggleSel(f.id, "folder")}>
                       <Folder size={18} style={f.color ? { color: f.color } : undefined} className={f.color ? "" : "text-primary"} />
-                    </motion.span>
-                    <span className="truncate text-sm font-medium">{f.name}</span>
-                  </button>
+                    </SelectBox>
+                    <button onClick={() => openFolder(f)} className="min-w-0 flex-1 truncate text-left text-sm font-medium">{f.name}</button>
+                  </div>
                   <span className="text-xs text-muted">—</span>
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-xs text-muted group-hover:hidden">{timeAgo(f.updated_at)}</span>
@@ -244,12 +298,14 @@ export default function FilesPage() {
                 </StaggerItem>
               ))}
               {files.map((f, i) => (
-                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
-                  <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
-                    {fileIcon(f.extension, 18)}
-                    <span className="truncate text-sm font-medium">{f.name}</span>
-                    {f.is_starred && <Star size={13} className="fill-amber-400 text-amber-400" />}
-                  </button>
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className={cn("group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SelectBox selected={sel.has(f.id)} anySel={anySel} onToggle={() => toggleSel(f.id, "file")}>
+                      {fileIcon(f.extension, 18)}
+                    </SelectBox>
+                    <button onClick={() => setPreview(i)} className="min-w-0 flex-1 truncate text-left text-sm font-medium">{f.name}</button>
+                    {f.is_starred && <Star size={13} className="shrink-0 fill-amber-400 text-amber-400" />}
+                  </div>
                   <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-xs text-muted group-hover:hidden">{timeAgo(f.updated_at)}</span>
@@ -327,6 +383,28 @@ function IconBtn({ children, title, onClick }: { children: React.ReactNode; titl
   return (
     <button title={title} onClick={onClick} className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-border hover:text-foreground">
       {children}
+    </button>
+  );
+}
+
+/** File-type icon that flips to a selectable checkbox on hover / when selecting. */
+function SelectBox({ selected, anySel, onToggle, children }: { selected: boolean; anySel: boolean; onToggle: () => void; children: React.ReactNode }) {
+  const showCheck = selected || anySel;
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}
+      className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center"
+      title={selected ? "Deselect" : "Select"}
+    >
+      <span className={cn("transition-opacity", selected ? "opacity-0" : "group-hover:opacity-0", showCheck && "opacity-0")}>{children}</span>
+      <span
+        className={cn(
+          "absolute inset-0 flex items-center justify-center rounded border transition-opacity",
+          selected ? "border-primary bg-primary opacity-100" : showCheck ? "border-border opacity-100" : "border-border opacity-0 group-hover:opacity-100",
+        )}
+      >
+        {selected && <Check size={12} className="text-primary-foreground" />}
+      </span>
     </button>
   );
 }
