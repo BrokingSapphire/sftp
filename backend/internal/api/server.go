@@ -91,8 +91,13 @@ func NewHttpServer(port int, deps Deps) *HttpServer {
 		),
 	)
 
-	// Streaming downloads/uploads mean no global write timeout.
-	s.Server.ReadHeaderTimeout = 15 * time.Second
+	// Large files stream for arbitrary durations, so the whole-request read and
+	// write timeouts MUST be disabled (Fuego defaults both to 30s, which would
+	// abort any upload/download longer than 30 seconds). ReadHeaderTimeout still
+	// guards against slow-header (slowloris) attacks.
+	s.Server.ReadTimeout = 0
+	s.Server.WriteTimeout = 0
+	s.Server.ReadHeaderTimeout = 30 * time.Second
 	s.Server.IdleTimeout = 120 * time.Second
 	s.Server.MaxHeaderBytes = 1 << 20
 

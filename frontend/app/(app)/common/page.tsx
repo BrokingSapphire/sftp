@@ -26,11 +26,11 @@ export default function CommonPage() {
 
   async function upload(fs: File[]) {
     for (const file of fs) {
-      const t = toast.loading(`Uploading ${file.name} to Common…`);
+      const t = toast.loading(`Uploading ${file.name} to Common…`, { position: "bottom-right" });
       try {
-        await commonApi.upload(file, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t }));
-        toast.success(`Added ${file.name} to Common`, { id: t });
-      } catch { toast.error(`Failed to upload ${file.name}`, { id: t }); }
+        await commonApi.upload(file, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t, position: "bottom-right" }));
+        toast.success(`Added ${file.name} to Common`, { id: t, position: "bottom-right" });
+      } catch { toast.error(`Failed to upload ${file.name}`, { id: t, position: "bottom-right" }); }
     }
     refresh();
   }

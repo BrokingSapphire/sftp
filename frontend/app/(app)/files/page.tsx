@@ -52,11 +52,11 @@ export default function FilesPage() {
 
   async function uploadFiles(fs: File[]) {
     for (const file of fs) {
-      const t = toast.loading(`Uploading ${file.name}…`);
+      const t = toast.loading(`Uploading ${file.name}…`, { position: "bottom-right" });
       try {
-        await filesApi.simpleUpload(file, current.id, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t }));
-        toast.success(`Uploaded ${file.name}`, { id: t });
-      } catch { toast.error(`Failed to upload ${file.name}`, { id: t }); }
+        await filesApi.simpleUpload(file, current.id, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t, position: "bottom-right" }));
+        toast.success(`Uploaded ${file.name}`, { id: t, position: "bottom-right" });
+      } catch { toast.error(`Failed to upload ${file.name}`, { id: t, position: "bottom-right" }); }
     }
     refresh();
   }
