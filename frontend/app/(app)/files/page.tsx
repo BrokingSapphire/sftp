@@ -16,6 +16,7 @@ import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
 import { ShareDialog } from "@/components/files/share-dialog";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
+import { useUploads } from "@/lib/upload-manager";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
 import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
@@ -33,6 +34,7 @@ export default function FilesPage() {
   const [view, setView] = useState<View>("list");
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
+  const uploads = useUploads();
   const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
 
@@ -91,15 +93,9 @@ export default function FilesPage() {
   function openFolder(f: FolderItem) { setCrumbs((c) => [...c, { id: f.id, name: f.name }]); }
   function goTo(i: number) { setCrumbs((c) => c.slice(0, i + 1)); }
 
-  async function uploadFiles(fs: File[]) {
-    for (const file of fs) {
-      const t = toast.loading(`Uploading ${file.name}…`, { position: "bottom-right" });
-      try {
-        await filesApi.simpleUpload(file, current.id, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t, position: "bottom-right" }));
-        toast.success(`Uploaded ${file.name}`, { id: t, position: "bottom-right" });
-      } catch { toast.error(`Failed to upload ${file.name}`, { id: t, position: "bottom-right" }); }
-    }
-    refresh();
+  function uploadFiles(fs: File[]) {
+    // Resumable, pausable, cancelable uploads via the global upload manager.
+    uploads.add(fs, current.id);
   }
   async function createFolder() {
     const name = prompt("New folder name");

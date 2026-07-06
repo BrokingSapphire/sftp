@@ -48,6 +48,18 @@ export const filesApi = {
   restoreFile: (id: string) => http.post(`/files/${id}/restore`, {}),
   deleteFile: (id: string) => http.delete(`/files/${id}`),
   deleteFolder: (id: string) => http.delete(`/folders/${id}`),
+  initUpload: (body: { filename: string; total_size: number; chunk_size: number; folder_id?: string }) =>
+    unwrap<{ upload_id: string; total_chunks: number; chunk_size: number; received_chunks: number[] }>(
+      http.post<Envelope<{ upload_id: string; total_chunks: number; chunk_size: number; received_chunks: number[] }>>("/uploads/", body),
+    ),
+  putChunk: (uploadId: string, index: number, chunk: Blob, signal?: AbortSignal) =>
+    http.put(`/uploads/${uploadId}/chunks/${index}`, chunk, {
+      headers: { "Content-Type": "application/octet-stream" },
+      signal,
+    }),
+  completeUpload: (uploadId: string) =>
+    unwrap<FileItem>(http.post<Envelope<FileItem>>(`/uploads/${uploadId}/complete`, {})),
+  abortUpload: (uploadId: string) => http.delete(`/uploads/${uploadId}`),
   downloadUrl: (id: string) => {
     const t = tokens.access();
     return `/api/v1/files/${id}/download${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
