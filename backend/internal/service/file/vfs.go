@@ -3,7 +3,6 @@ package file
 import (
 	"context"
 	"io"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -89,7 +88,7 @@ func (s *Service) StatPath(ctx context.Context, owner uuid.UUID, p string) (Entr
 }
 
 // OpenRead opens a file by path for reading (caller closes).
-func (s *Service) OpenRead(ctx context.Context, owner uuid.UUID, p string) (*os.File, int64, error) {
+func (s *Service) OpenRead(ctx context.Context, owner uuid.UUID, p string) (io.ReadSeekCloser, int64, error) {
 	f, err := s.fileByPath(ctx, owner, p)
 	if err != nil {
 		return nil, 0, err

@@ -89,6 +89,9 @@ type StorageConfig struct {
 	MaxUploadSize int64  `mapstructure:"max_upload_size" default:"0"`         // bytes; 0 = unlimited
 	ChunkSize     int64  `mapstructure:"chunk_size"      default:"8388608"`   // 8 MiB
 	TrashRetentionDays int `mapstructure:"trash_retention_days" default:"30"`
+	// EncryptionKey enables at-rest AES-256 encryption of file content when set
+	// (32 raw bytes or 64 hex chars). Empty = stored as plaintext.
+	EncryptionKey string `mapstructure:"encryption_key"`
 }
 
 // SecurityConfig holds hardening parameters.

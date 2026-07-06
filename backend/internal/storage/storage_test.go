@@ -2,6 +2,7 @@ package storage
 
 import (
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -9,7 +10,7 @@ import (
 func newTestEngine(t *testing.T) *Engine {
 	t.Helper()
 	dir := t.TempDir()
-	e, err := New(dir+"/files", dir+"/tmp")
+	e, err := New(dir+"/files", dir+"/tmp", "")
 	if err != nil {
 		t.Fatalf("new engine: %v", err)
 	}
@@ -58,6 +59,46 @@ func TestResolveRejectsTraversal(t *testing.T) {
 				t.Fatalf("expected traversal key %q to be rejected", key)
 			}
 		}
+	}
+}
+
+func TestEncryptedAtRest(t *testing.T) {
+	dir := t.TempDir()
+	key := "0123456789abcdef0123456789abcdef" // 32 bytes
+	e, err := New(dir+"/files", dir+"/tmp", key)
+	if err != nil {
+		t.Fatalf("new encrypted engine: %v", err)
+	}
+	if !e.Encrypted() {
+		t.Fatal("expected encryption enabled")
+	}
+	content := "top secret — admin must not read this on disk"
+
+	res, err := e.Save(strings.NewReader(content))
+	if err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	// Size + checksum are over plaintext.
+	if res.Size != int64(len(content)) {
+		t.Fatalf("size mismatch: %d", res.Size)
+	}
+
+	// Raw on-disk bytes must NOT contain the plaintext.
+	full, _ := e.resolve(res.Key)
+	raw, _ := os.ReadFile(full)
+	if strings.Contains(string(raw), "secret") {
+		t.Fatal("plaintext found on disk — not encrypted")
+	}
+
+	// Reading back decrypts correctly.
+	r, err := e.Open(res.Key)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer r.Close()
+	got, _ := io.ReadAll(r)
+	if string(got) != content {
+		t.Fatalf("decrypt mismatch: %q", string(got))
 	}
 }
 

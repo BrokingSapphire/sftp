@@ -15,16 +15,21 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
+	"sapphirebroking.com/sftp_service/pkg/filecrypt"
 )
 
-// Engine stores and retrieves file content on a mounted filesystem.
+// Engine stores and retrieves file content on a mounted filesystem, optionally
+// encrypting content at rest.
 type Engine struct {
-	root string
-	temp string
+	root   string
+	temp   string
+	cipher *filecrypt.Cipher // nil = store plaintext
 }
 
-// New creates the storage engine, ensuring the root and temp dirs exist.
-func New(root, temp string) (*Engine, error) {
+// New creates the storage engine, ensuring the root and temp dirs exist. When
+// encKey is non-empty, file content is encrypted at rest (AES-256-CTR).
+func New(root, temp, encKey string) (*Engine, error) {
 	for _, d := range []string{root, temp} {
 		if err := os.MkdirAll(d, 0o750); err != nil {
 			return nil, fmt.Errorf("create storage dir %q: %w", d, err)
@@ -38,8 +43,19 @@ func New(root, temp string) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Engine{root: abs, temp: absTmp}, nil
+	e := &Engine{root: abs, temp: absTmp}
+	if encKey != "" {
+		c, err := filecrypt.New(encKey)
+		if err != nil {
+			return nil, fmt.Errorf("storage encryption: %w", err)
+		}
+		e.cipher = c
+	}
+	return e, nil
 }
+
+// Encrypted reports whether at-rest encryption is enabled.
+func (e *Engine) Encrypted() bool { return e.cipher != nil }
 
 // NewKey returns a fresh, sharded storage key (e.g. "a1/b2/<uuid>").
 func NewKey() string {
@@ -91,11 +107,19 @@ func (e *Engine) Save(r io.Reader) (SaveResult, error) {
 	defer os.Remove(tmpName) // no-op after successful rename
 
 	// Batch disk writes through a large buffered writer and copy with a 1 MiB
-	// buffer to minimise syscalls — materially faster for big uploads.
+	// buffer to minimise syscalls — materially faster for big uploads. The
+	// SHA-256 checksum is always computed over the PLAINTEXT so it is stable
+	// regardless of whether encryption is enabled.
 	bw := bufio.NewWriterSize(tmp, 1<<20)
 	h := sha256.New()
-	buf := make([]byte, 1<<20)
-	size, err := io.CopyBuffer(io.MultiWriter(bw, h), r, buf)
+	var size int64
+	if e.cipher != nil {
+		// Encrypt to disk; hash the plaintext via a tee.
+		size, err = e.cipher.EncryptTo(bw, io.TeeReader(r, h))
+	} else {
+		buf := make([]byte, 1<<20)
+		size, err = io.CopyBuffer(io.MultiWriter(bw, h), r, buf)
+	}
 	if err != nil {
 		tmp.Close()
 		return SaveResult{}, err
@@ -117,14 +141,44 @@ func (e *Engine) Save(r io.Reader) (SaveResult, error) {
 	return SaveResult{Key: key, Size: size, Checksum: hex.EncodeToString(h.Sum(nil))}, nil
 }
 
-// Open returns the object for reading (supports range requests via Seek).
-func (e *Engine) Open(key string) (*os.File, error) {
+// Open returns the object for reading as a seekable, closeable stream
+// (transparently decrypting when encryption is enabled). Seek support keeps
+// HTTP range requests working on encrypted files.
+func (e *Engine) Open(key string) (io.ReadSeekCloser, error) {
 	full, err := e.resolve(key)
 	if err != nil {
 		return nil, err
 	}
-	return os.Open(full)
+	f, err := os.Open(full)
+	if err != nil {
+		return nil, err
+	}
+	if e.cipher == nil {
+		return f, nil
+	}
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	sr, err := e.cipher.Reader(f, info.Size())
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	return &secureFile{f: f, sr: sr}, nil
 }
+
+// secureFile adapts a decrypting SecureReader + its backing file into an
+// io.ReadSeekCloser.
+type secureFile struct {
+	f  *os.File
+	sr *filecrypt.SecureReader
+}
+
+func (s *secureFile) Read(p []byte) (int, error)                 { return s.sr.Read(p) }
+func (s *secureFile) Seek(off int64, whence int) (int64, error) { return s.sr.Seek(off, whence) }
+func (s *secureFile) Close() error                              { return s.f.Close() }
 
 // Stat returns file info for the object.
 func (e *Engine) Stat(key string) (os.FileInfo, error) {

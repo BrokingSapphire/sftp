@@ -5,7 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"os"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -142,7 +142,7 @@ func (s *Service) Info(ctx context.Context, token string) (*models.PublicInfo, e
 
 // OpenHandle is the public download target of a share.
 type OpenHandle struct {
-	File     *os.File
+	File     io.ReadSeekCloser
 	Name     string
 	MimeType string
 	Size     int64

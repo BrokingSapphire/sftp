@@ -77,9 +77,12 @@ func main() {
 		Logger:   appLogger,
 	})
 
-	storageEngine, err := storage.New(cfg.Storage.RootPath, cfg.Storage.TempPath)
+	storageEngine, err := storage.New(cfg.Storage.RootPath, cfg.Storage.TempPath, cfg.Storage.EncryptionKey)
 	if err != nil {
 		appLogger.Fatal("failed to initialise storage engine", "error", err)
+	}
+	if storageEngine.Encrypted() {
+		appLogger.Info("file storage encryption enabled (AES-256 at rest)")
 	}
 	fileService := filesvc.New(filesvc.Deps{
 		Queries:       queries,

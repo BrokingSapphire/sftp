@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,8 +32,31 @@ func (h *vfsHandler) Fileread(r *sftp.Request) (io.ReaderAt, error) {
 	if err != nil {
 		return nil, err
 	}
-	return f, nil // *os.File is io.ReaderAt + io.Closer
+	// The stream is seekable but not natively ReaderAt (and may be a decrypting
+	// reader). Adapt it to io.ReaderAt with a mutex-guarded seek+read.
+	return &seekReaderAt{rsc: f}, nil
 }
+
+// seekReaderAt adapts an io.ReadSeekCloser to io.ReaderAt (+io.Closer).
+type seekReaderAt struct {
+	mu  sync.Mutex
+	rsc io.ReadSeekCloser
+}
+
+func (s *seekReaderAt) ReadAt(p []byte, off int64) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, err := s.rsc.Seek(off, io.SeekStart); err != nil {
+		return 0, err
+	}
+	n, err := io.ReadFull(s.rsc, p)
+	if err == io.ErrUnexpectedEOF {
+		err = io.EOF
+	}
+	return n, err
+}
+
+func (s *seekReaderAt) Close() error { return s.rsc.Close() }
 
 func (h *vfsHandler) Filewrite(r *sftp.Request) (io.WriterAt, error) {
 	tmp, err := os.CreateTemp("", "sftp-in-*")

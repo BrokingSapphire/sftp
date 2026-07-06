@@ -2,8 +2,8 @@ package file
 
 import (
 	"context"
+	"io"
 	"net/netip"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ import (
 // DownloadHandle carries an open file plus the metadata a handler needs to
 // serve it (with range support via http.ServeContent).
 type DownloadHandle struct {
-	File     *os.File
+	File     io.ReadSeekCloser
 	Name     string
 	MimeType string
 	Size     int64
