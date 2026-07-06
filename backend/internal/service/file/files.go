@@ -142,6 +142,38 @@ func (s *Service) Search(ctx context.Context, owner uuid.UUID, query string, lim
 	return mapFiles(rows), nil
 }
 
+// SearchContent runs full-text search over extracted file text, returning hits
+// with a highlighted snippet, ranked by relevance.
+func (s *Service) SearchContent(ctx context.Context, owner uuid.UUID, query string, limit int) ([]models.SearchHit, error) {
+	if len(query) == 0 {
+		return []models.SearchHit{}, nil
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 30
+	}
+	rows, err := s.q.SearchFileContent(ctx, sftpdb.SearchFileContentParams{
+		Query: query, OwnerID: owner, RowLimit: int32(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]models.SearchHit, 0, len(rows))
+	for _, r := range rows {
+		hit := models.SearchHit{
+			ID: r.ID.String(), Name: r.Name, Extension: r.Extension, MimeType: r.MimeType,
+			SizeBytes: r.SizeBytes, IsStarred: r.IsStarred, VersionNo: r.VersionNo,
+			DownloadCount: r.DownloadCount, CreatedAt: fmtTS(r.CreatedAt), UpdatedAt: fmtTS(r.UpdatedAt),
+			Snippet: string(r.Snippet), Rank: float64(r.Rank),
+		}
+		if r.FolderID != nil {
+			s := r.FolderID.String()
+			hit.FolderID = &s
+		}
+		out = append(out, hit)
+	}
+	return out, nil
+}
+
 func mapFiles(rows []sftpdb.File) []models.FileResponse {
 	out := make([]models.FileResponse, 0, len(rows))
 	for _, f := range rows {

@@ -306,6 +306,23 @@ func (h *Handler) Search(c fuego.ContextNoBody) (*response.Envelope[[]models.Fil
 	return response.OK(files), nil
 }
 
+// SearchContent runs full-text search over file contents (returns snippets).
+func (h *Handler) SearchContent(c fuego.ContextNoBody) (*response.Envelope[[]models.SearchHit], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	q := c.QueryParam("q")
+	if q == "" {
+		return nil, fuego.BadRequestError{Title: "q is required"}
+	}
+	hits, err := h.svc.SearchContent(c.Context(), uid, q, params.IntQueryDefault(c, "limit", 30))
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(hits), nil
+}
+
 // ── Uploads (session control) ─────────────────────────────
 
 // InitUpload starts a resumable upload session.

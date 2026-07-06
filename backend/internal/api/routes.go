@@ -151,6 +151,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/recent", h.Recent, read, option.Summary("List recent files"))
 	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
+	fuego.Get(gf, "/search/content", h.SearchContent, read, option.Summary("Full-text search inside file contents"))
 	fuego.Get(gf, "/inherited", h.Inherited, read, option.Summary("List files inherited from a deleted user"))
 	fuego.Post(gf, "/{id}/keep", h.KeepFile, write, option.Summary("Keep an inherited file"))
 	fuego.Get(gf, "/shared-with-me", h.SharedWithMe, read, option.Summary("List files shared with me"))

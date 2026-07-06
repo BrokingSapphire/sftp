@@ -97,6 +97,16 @@ type FileTag struct {
 	TagID  uuid.UUID `json:"tag_id"`
 }
 
+type FileText struct {
+	FileID      uuid.UUID          `json:"file_id"`
+	Content     string             `json:"content"`
+	Tsv         interface{}        `json:"tsv"`
+	Lang        string             `json:"lang"`
+	Ocr         bool               `json:"ocr"`
+	Bytes       int64              `json:"bytes"`
+	ExtractedAt pgtype.Timestamptz `json:"extracted_at"`
+}
+
 type FileVersion struct {
 	ID             uuid.UUID          `json:"id"`
 	FileID         uuid.UUID          `json:"file_id"`

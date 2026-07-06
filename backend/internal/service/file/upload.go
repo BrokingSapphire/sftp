@@ -164,6 +164,7 @@ func (s *Service) CompleteUpload(ctx context.Context, owner, uploadID uuid.UUID)
 	if err := s.q.CompleteUpload(ctx, sftpdb.CompleteUploadParams{ID: uploadID, FileID: &file.ID}); err != nil {
 		s.log.Error("mark upload complete failed", "err", err)
 	}
+	s.indexAsync(file.ID)
 	return toFileResponse(file), nil
 }
 
@@ -212,6 +213,7 @@ func (s *Service) SimpleUpload(ctx context.Context, owner uuid.UUID, folderID *s
 	if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: owner, StorageUsed: res.Size}); err != nil {
 		s.log.Error("increment storage used failed", "err", err)
 	}
+	s.indexAsync(file.ID)
 	return toFileResponse(file), nil
 }
 

@@ -11,6 +11,7 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	"sapphirebroking.com/sftp_service/internal/storage"
+	"sapphirebroking.com/sftp_service/pkg/textextract"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
@@ -78,6 +79,45 @@ func (c *Cleaner) runOnce() {
 		c.log.Error("deactivate expired shares failed", "err", err)
 	}
 	c.transferSweep(ctx)
+	c.textIndexSweep(ctx)
+}
+
+// textIndexSweep extracts and stores searchable text for any files that were
+// uploaded before indexing existed, or whose async index failed. Bounded per
+// cycle to keep the worker light.
+func (c *Cleaner) textIndexSweep(ctx context.Context) {
+	rows, err := c.q.ListFilesMissingText(ctx, 100)
+	if err != nil {
+		c.log.Error("list unindexed files failed", "err", err)
+		return
+	}
+	indexed := 0
+	for _, r := range rows {
+		var text string
+		if textextract.Supported(r.Extension, r.MimeType) {
+			rc, err := c.store.Open(r.StorageKey)
+			if err != nil {
+				c.log.Warn("open for indexing failed", "file", r.ID, "err", err)
+				continue
+			}
+			text, err = textextract.Extract(r.Extension, r.MimeType, rc)
+			rc.Close()
+			if err != nil {
+				c.log.Warn("extract failed", "file", r.ID, "err", err)
+				continue
+			}
+		}
+		if err := c.q.UpsertFileText(ctx, sftpdb.UpsertFileTextParams{
+			FileID: r.ID, Content: text, Ocr: false, Bytes: int64(len(text)),
+		}); err != nil {
+			c.log.Warn("store file text failed", "file", r.ID, "err", err)
+			continue
+		}
+		indexed++
+	}
+	if indexed > 0 {
+		c.log.Info("text index backfill", "indexed", indexed)
+	}
 }
 
 // transferSweep drives the inherited-files workflow: it reminds heirs every

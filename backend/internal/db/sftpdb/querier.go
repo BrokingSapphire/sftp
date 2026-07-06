@@ -66,6 +66,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GrantFileToUser(ctx context.Context, arg GrantFileToUserParams) (ResourcePermission, error)
 	HardDeleteFile(ctx context.Context, id uuid.UUID) (string, error)
+	HasFileText(ctx context.Context, fileID uuid.UUID) (bool, error)
 	IncrementDownloadCount(ctx context.Context, id uuid.UUID) error
 	IncrementFailedAttempts(ctx context.Context, id uuid.UUID) (int32, error)
 	IncrementShareDownload(ctx context.Context, id uuid.UUID) error
@@ -81,6 +82,7 @@ type Querier interface {
 	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
 	ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]ListFileGrantsRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
+	ListFilesMissingText(ctx context.Context, limit int32) ([]ListFilesMissingTextRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
@@ -124,6 +126,7 @@ type Querier interface {
 	RevokeSessionByHash(ctx context.Context, refreshTokenHash string) error
 	RevokeShare(ctx context.Context, arg RevokeShareParams) error
 	RotateSession(ctx context.Context, arg RotateSessionParams) error
+	SearchFileContent(ctx context.Context, arg SearchFileContentParams) ([]SearchFileContentRow, error)
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
 	SetFileCommon(ctx context.Context, arg SetFileCommonParams) error
 	SetFileStar(ctx context.Context, arg SetFileStarParams) error
@@ -150,6 +153,7 @@ type Querier interface {
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserQuota(ctx context.Context, arg UpdateUserQuotaParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
+	UpsertFileText(ctx context.Context, arg UpsertFileTextParams) error
 }
 
 var _ Querier = (*Queries)(nil)

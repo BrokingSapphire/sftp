@@ -162,3 +162,20 @@ type SharedFileResponse struct {
 	CanWrite       bool   `json:"can_write"`
 	SharedAt       string `json:"shared_at"`
 }
+
+// SearchHit is a full-text content-search result with a highlighted snippet.
+type SearchHit struct {
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Extension     string  `json:"extension"`
+	MimeType      string  `json:"mime_type"`
+	SizeBytes     int64   `json:"size_bytes"`
+	FolderID      *string `json:"folder_id,omitempty"`
+	IsStarred     bool    `json:"is_starred"`
+	VersionNo     int32   `json:"version_no"`
+	DownloadCount int64   `json:"download_count"`
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+	Snippet       string  `json:"snippet,omitempty"`
+	Rank          float64 `json:"rank"`
+}

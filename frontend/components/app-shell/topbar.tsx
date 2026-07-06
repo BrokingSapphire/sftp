@@ -21,7 +21,7 @@ export function Topbar() {
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (q.trim()) router.push(`/files?q=${encodeURIComponent(q.trim())}`);
+    if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`);
   }
 
   async function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {

@@ -33,6 +33,7 @@ export const filesApi = {
   starred: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/starred")),
   inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
+  searchContent: (q: string) => unwrap<SearchHit[]>(http.get<Envelope<SearchHit[]>>(`/files/search/content?q=${encodeURIComponent(q)}`)),
   sharedWithMe: () => unwrap<SharedFile[]>(http.get<Envelope<SharedFile[]>>("/files/shared-with-me")),
   shareWithUser: (id: string, recipient_email: string, can_write: boolean) =>
     unwrap<FileGrant>(http.post<Envelope<FileGrant>>(`/files/${id}/share-user`, { recipient_email, can_write })),
@@ -132,6 +133,11 @@ export const commonApi = {
 };
 
 // ── Shares ─────────────────────────────────────────────────
+export interface SearchHit {
+  id: string; name: string; extension: string; mime_type: string; size_bytes: number;
+  folder_id?: string; is_starred: boolean; version_no: number; download_count: number;
+  created_at: string; updated_at: string; snippet?: string; rank: number;
+}
 export interface FileGrant {
   user_id: string; name: string; email: string; has_avatar: boolean; can_write: boolean;
 }
