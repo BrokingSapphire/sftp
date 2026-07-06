@@ -25,6 +25,8 @@ export interface Brand {
   sso?: { microsoft?: { enabled: boolean } };
   // Only enabled reaches the browser — Ollama URL/models are backend-only.
   ai?: { enabled: boolean };
+  // Only enabled reaches the browser — doc-server URL comes from the API.
+  editor?: { enabled: boolean };
 }
 
 export const BRAND = brand as Brand;

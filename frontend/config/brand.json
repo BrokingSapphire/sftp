@@ -30,6 +30,9 @@
   "mail": {
     "from": "Sapphire SFTP <no-reply@sapphirebroking.com>"
   },
+  "editor": {
+    "enabled": false
+  },
   "sso": {
     "microsoft": {
       "enabled": false

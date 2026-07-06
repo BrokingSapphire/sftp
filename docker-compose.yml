@@ -91,9 +91,24 @@ services:
     volumes:
       - ollama-data:/root/.ollama
 
+  # Optional live Office editing. Off by default — start with:
+  #   docker compose --profile office up -d
+  # Set editor.enabled=true + editor.jwtSecret in brand.config.json (deploy.sh
+  # can do this) and point editor.docServerUrl at this server's public URL.
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    restart: unless-stopped
+    profiles: ["office"]
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${EDITOR_JWT_SECRET:-}
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+
 volumes:
   postgres-data:
   sftp-files:
   sftp-tmp:
   sftp-logs:
   ollama-data:
+  onlyoffice-data:

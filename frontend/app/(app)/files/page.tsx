@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History, Lock, LockOpen, ShieldCheck,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History, Lock, LockOpen, ShieldCheck, FileText,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { filesApi, commonApi } from "@/lib/endpoints";
@@ -19,6 +19,10 @@ import { FilePreview } from "@/components/files/file-preview";
 import { ShareDialog } from "@/components/files/share-dialog";
 import { VersionHistory } from "@/components/files/version-history";
 import { DocumentEditor, isEditable } from "@/components/files/document-editor";
+import { useRouter } from "next/navigation";
+import { BRAND } from "@/lib/brand";
+
+const OFFICE_EXT = new Set(["docx", "doc", "odt", "xlsx", "xls", "ods", "pptx", "ppt", "odp"]);
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { useUploads } from "@/lib/upload-manager";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
@@ -40,6 +44,7 @@ export default function FilesPage() {
   const ctx = useContextMenu();
   const uploads = useUploads();
   const { has } = useAuth();
+  const router = useRouter();
 
   async function toggleHold(f: FileItem) {
     try { await filesApi.setLegalHold(f.id, !f.legal_hold); toast.success(f.legal_hold ? "Legal hold released" : "Legal hold placed"); refresh(); }
@@ -207,6 +212,8 @@ export default function FilesPage() {
     const items: MenuItem[] = [
       { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
       ...(isEditable(f.extension) ? [{ label: "Edit", icon: Pencil, onClick: () => setEditing({ id: f.id, name: f.name }) }] : []),
+      ...(BRAND.editor?.enabled && OFFICE_EXT.has((f.extension || "").toLowerCase())
+        ? [{ label: "Edit in Office", icon: FileText, onClick: () => router.push(`/editor/${f.id}`) }] : []),
       { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
       { label: "Get share link", icon: Share2, onClick: () => share(f) },
       { label: "Add to Common", icon: Globe, onClick: () => addToCommon(f) },

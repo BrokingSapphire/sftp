@@ -49,6 +49,14 @@
     "startTls": true
   },
 
+  "editor": {
+    "$comment": "Live Office (docx/xlsx/pptx) co-editing via a self-hosted OnlyOffice Document Server. jwtSecret is a SECRET (backend-only). docServerUrl is the public URL browsers load the editor from; internalBaseUrl is how the doc server reaches this backend (e.g. http://nginx inside compose). Only 'enabled' reaches the browser.",
+    "enabled": false,
+    "docServerUrl": "",
+    "jwtSecret": "",
+    "internalBaseUrl": "http://nginx"
+  },
+
   "sso": {
     "$comment": "Microsoft Entra ID (Azure AD) SSO. clientSecret is a SECRET (backend-only; stripped from the browser). Set enabled:true + fill clientId/clientSecret to show the 'Continue with Microsoft' button. SECURITY: set tenantId to your specific Azure tenant GUID (NOT 'organizations'/'common') so only your tenant can authenticate. allowedDomains restricts which email domains may sign in — leave [] to auto-restrict to org.domains above (outsiders/guests rejected). redirectUrl/successUrl must match your deployed host (e.g. http://localhost/... behind nginx).",
     "microsoft": {

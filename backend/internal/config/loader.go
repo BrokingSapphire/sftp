@@ -105,9 +105,43 @@ func applyBrandConfig(cfg *Config) {
 				DefaultRole    string   `json:"defaultRole"`
 			} `json:"microsoft"`
 		} `json:"sso"`
+		AI struct {
+			Enabled    bool   `json:"enabled"`
+			OllamaURL  string `json:"ollamaUrl"`
+			EmbedModel string `json:"embedModel"`
+			ChatModel  string `json:"chatModel"`
+		} `json:"ai"`
+		Editor struct {
+			Enabled         bool   `json:"enabled"`
+			DocServerURL    string `json:"docServerUrl"`
+			JWTSecret       string `json:"jwtSecret"`
+			InternalBaseURL string `json:"internalBaseUrl"`
+		} `json:"editor"`
 	}
 	if json.Unmarshal(raw, &brand) != nil {
 		return
+	}
+
+	// AI + Office editor — brand config drives them unless already enabled via env.
+	if !cfg.AI.Enabled && brand.AI.Enabled {
+		cfg.AI.Enabled = true
+		if brand.AI.OllamaURL != "" {
+			cfg.AI.OllamaURL = brand.AI.OllamaURL
+		}
+		if brand.AI.EmbedModel != "" {
+			cfg.AI.EmbedModel = brand.AI.EmbedModel
+		}
+		if brand.AI.ChatModel != "" {
+			cfg.AI.ChatModel = brand.AI.ChatModel
+		}
+	}
+	if !cfg.Editor.Enabled && brand.Editor.Enabled {
+		cfg.Editor.Enabled = true
+		cfg.Editor.DocServerURL = brand.Editor.DocServerURL
+		cfg.Editor.JWTSecret = brand.Editor.JWTSecret
+		if brand.Editor.InternalBaseURL != "" {
+			cfg.Editor.InternalBaseURL = brand.Editor.InternalBaseURL
+		}
 	}
 
 	if len(cfg.OrgDomains) == 0 && len(brand.Org.Domains) > 0 {

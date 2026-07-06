@@ -18,6 +18,7 @@ import (
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
+	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
@@ -178,6 +179,7 @@ func main() {
 		NotifHandler:    notifhandler.NewHandler(queries, appLogger),
 		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
 		AIHandler:       aihandler.NewHandler(aiService, appLogger),
+		EditorHandler:   editorhandler.NewHandler(fileService, jwtManager, cfg.Editor, appLogger),
 	})
 
 	go httpServer.Start()

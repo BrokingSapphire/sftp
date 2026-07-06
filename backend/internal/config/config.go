@@ -31,9 +31,21 @@ type Config struct {
 	Bootstrap BootstrapConfig     `mapstructure:"bootstrap"`
 	Mail      MailConfig          `mapstructure:"mail"`
 	AI        AIConfig            `mapstructure:"ai"`
+	Editor    EditorConfig        `mapstructure:"editor"`
 	// OrgDomains lists the organisation's own email domains. Sharing to any
 	// other domain is treated as an "external" share (audited + warned).
 	OrgDomains []string `mapstructure:"org_domains"`
+}
+
+// EditorConfig enables live Office co-editing via a self-hosted OnlyOffice
+// Document Server. Disabled by default. InternalBaseURL is how the document
+// server reaches THIS backend (e.g. http://nginx inside the compose network) —
+// distinct from the public URL browsers use.
+type EditorConfig struct {
+	Enabled         bool   `mapstructure:"enabled"           default:"false"`
+	DocServerURL    string `mapstructure:"doc_server_url"`
+	JWTSecret       string `mapstructure:"jwt_secret"`
+	InternalBaseURL string `mapstructure:"internal_base_url" default:"http://nginx"`
 }
 
 // AIConfig enables on-premise AI (semantic search + ask-your-files) backed by a

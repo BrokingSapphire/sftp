@@ -135,12 +135,20 @@ if yesno "Enable on-prem AI (semantic search + ask-your-files via Ollama)?" "n";
   AI_OLLAMA=$(ask "  Ollama server URL" "http://ollama:11434")
 fi
 
+ED_ENABLED=false; ED_DOCURL=""
+ED_SECRET="$(brand_get editor.jwtSecret)"; [ -n "$ED_SECRET" ] || ED_SECRET="$(gen 32)"
+if yesno "Enable live Office editing (OnlyOffice Document Server)?" "n"; then
+  ED_ENABLED=true
+  ED_DOCURL=$(ask "  OnlyOffice Document Server public URL" "$(brand_get editor.docServerUrl)")
+fi
+
 # ── generate brand.config.json ───────────────────────────────────────────────
 head "Writing configuration"
 export CO_NAME CO_SHORT CO_PRODUCT CO_PSHORT CO_TAGLINE CO_URL CO_COLOR \
        ORG_DOMAINS SUPPORT MAIL_FROM PUBLIC_URL \
        SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS \
-       SSO_ENABLED SSO_TENANT SSO_CLIENT SSO_SECRET AI_ENABLED AI_OLLAMA
+       SSO_ENABLED SSO_TENANT SSO_CLIENT SSO_SECRET AI_ENABLED AI_OLLAMA \
+       ED_ENABLED ED_DOCURL ED_SECRET
 
 python3 - <<'PY'
 import json, os
@@ -170,6 +178,8 @@ cfg = {
      "successUrl": f"{pub}/auth/sso/callback", "allowedDomains": [], "defaultRole": "employee"}},
   "ai": {"enabled": b(os.environ["AI_ENABLED"]), "ollamaUrl": os.environ["AI_OLLAMA"],
          "embedModel": "nomic-embed-text", "chatModel": "llama3.1"},
+  "editor": {"enabled": b(os.environ["ED_ENABLED"]), "docServerUrl": os.environ["ED_DOCURL"],
+             "jwtSecret": os.environ["ED_SECRET"], "internalBaseUrl": "http://nginx"},
 }
 json.dump(cfg, open("brand.config.json", "w"), indent=2)
 open("brand.config.json", "a").write("\n")
@@ -195,6 +205,7 @@ umask 077
   echo "ORG_DOMAINS=$ORG_DOMAINS"
   echo "AI_ENABLED=$AI_ENABLED"
   echo "AI_OLLAMA_URL=$AI_OLLAMA"
+  echo "EDITOR_JWT_SECRET=$ED_SECRET"
   [ -n "$ENC_KEY" ] && echo "STORAGE_ENCRYPTION_KEY=$ENC_KEY"
 } > .env
 ok ".env (secrets, permissions 600)"

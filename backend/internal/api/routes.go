@@ -11,6 +11,7 @@ import (
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
+	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
@@ -42,6 +43,7 @@ type Deps struct {
 	AuditHandler    *audithandler.Handler
 	SecurityHandler *securityhandler.Handler
 	AIHandler       *aihandler.Handler
+	EditorHandler   *editorhandler.Handler
 	ShareHandler  *sharehandler.Handler
 	NotifHandler  *notifhandler.Handler
 }
@@ -80,6 +82,18 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerShareRoutes(g, deps)
 	registerNotificationRoutes(g, deps)
 	registerAIRoutes(g, deps)
+	registerEditorRoutes(g, deps)
+}
+
+func registerEditorRoutes(g *fuego.Server, deps Deps) {
+	// Config: authenticated + files.write.
+	ge := fuego.Group(g, "/editor", option.Tags("Editor"), secured, respUnauthorized, respForbidden)
+	fuego.Use(ge, deps.Auth.Require)
+	fuego.Get(ge, "/{id}/config", deps.EditorHandler.Config,
+		option.Middleware(deps.Perms.Require("files.write")), option.Summary("OnlyOffice editor config for a file"))
+
+	// Callback: called by the Document Server (no user auth; secured by a signed token).
+	fuego.PostStd(g, "/editor/{id}/callback", deps.EditorHandler.Callback, option.Summary("OnlyOffice save callback"))
 }
 
 func registerAIRoutes(g *fuego.Server, deps Deps) {

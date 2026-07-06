@@ -42,6 +42,9 @@ if (clean.sso?.microsoft) {
 if (clean.ai) {
   clean.ai = { enabled: !!clean.ai.enabled }; // ollama URL/models stay server-side
 }
+if (clean.editor) {
+  clean.editor = { enabled: !!clean.editor.enabled }; // doc-server URL comes from the API, secret stays server-side
+}
 
 const out = join(frontendRoot, "config", "brand.json");
 mkdirSync(dirname(out), { recursive: true });

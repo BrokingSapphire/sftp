@@ -255,6 +255,12 @@ export const securityApi = {
   resolve: (id: string) => http.post(`/security/alerts/${id}/resolve`, {}),
 };
 
+// ── Office editor (OnlyOffice) ─────────────────────────────
+export interface EditorSession { doc_server_url: string; config: Record<string, unknown> }
+export const editorApi = {
+  config: (fileId: string) => unwrap<EditorSession>(http.get<Envelope<EditorSession>>(`/editor/${fileId}/config`)),
+};
+
 // ── AI (semantic search + ask-your-files) ─────────────────
 export interface AiSource { file_id: string; name: string }
 export interface AiAnswer { answer: string; sources?: AiSource[] }
