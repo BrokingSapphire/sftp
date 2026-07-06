@@ -63,5 +63,9 @@ func toFileResponse(f sftpdb.File) *models.FileResponse {
 	if f.TransferDeadline.Valid {
 		r.TransferDeadline = f.TransferDeadline.Time.Format(time.RFC3339)
 	}
+	r.LegalHold = f.LegalHold
+	if f.RetainUntil.Valid {
+		r.RetainUntil = f.RetainUntil.Time.Format(time.RFC3339)
+	}
 	return r
 }

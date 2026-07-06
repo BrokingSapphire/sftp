@@ -26,7 +26,11 @@ func (s *Service) RenameFile(ctx context.Context, owner, id uuid.UUID, newName s
 	if err != nil {
 		return err
 	}
-	if _, err := s.ownedFile(ctx, owner, id); err != nil {
+	f, err := s.ownedFile(ctx, owner, id)
+	if err != nil {
+		return err
+	}
+	if err := mutationBlocked(f, false); err != nil {
 		return err
 	}
 	return s.q.RenameFile(ctx, sftpdb.RenameFileParams{ID: id, Name: name, Extension: utils.FileExtension(name)})
@@ -34,7 +38,11 @@ func (s *Service) RenameFile(ctx context.Context, owner, id uuid.UUID, newName s
 
 // MoveFile moves a file into targetFolder (nil = root).
 func (s *Service) MoveFile(ctx context.Context, owner, id uuid.UUID, targetFolder *uuid.UUID) error {
-	if _, err := s.ownedFile(ctx, owner, id); err != nil {
+	f, err := s.ownedFile(ctx, owner, id)
+	if err != nil {
+		return err
+	}
+	if err := mutationBlocked(f, false); err != nil {
 		return err
 	}
 	if targetFolder != nil {
@@ -55,7 +63,11 @@ func (s *Service) StarFile(ctx context.Context, owner, id uuid.UUID, starred boo
 
 // TrashFile moves a file to the recycle bin (soft delete).
 func (s *Service) TrashFile(ctx context.Context, owner, id uuid.UUID) error {
-	if _, err := s.ownedFile(ctx, owner, id); err != nil {
+	f, err := s.ownedFile(ctx, owner, id)
+	if err != nil {
+		return err
+	}
+	if err := mutationBlocked(f, true); err != nil {
 		return err
 	}
 	return s.q.SoftDeleteFile(ctx, id)
@@ -81,6 +93,9 @@ func (s *Service) DeletePermanent(ctx context.Context, owner, id uuid.UUID) erro
 	}
 	if f.OwnerID != owner {
 		return apperrors.ErrForbidden
+	}
+	if err := mutationBlocked(f, true); err != nil {
+		return err
 	}
 	key, err := s.q.HardDeleteFile(ctx, id)
 	if err != nil {

@@ -145,6 +145,8 @@ type Querier interface {
 	SearchFileContent(ctx context.Context, arg SearchFileContentParams) ([]SearchFileContentRow, error)
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
 	SetFileCommon(ctx context.Context, arg SetFileCommonParams) error
+	SetFileLegalHold(ctx context.Context, arg SetFileLegalHoldParams) error
+	SetFileRetention(ctx context.Context, arg SetFileRetentionParams) error
 	SetFileStar(ctx context.Context, arg SetFileStarParams) error
 	SetFolderColor(ctx context.Context, arg SetFolderColorParams) error
 	SetFolderStar(ctx context.Context, arg SetFolderStarParams) error

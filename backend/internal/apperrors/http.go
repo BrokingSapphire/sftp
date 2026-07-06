@@ -32,7 +32,8 @@ func HTTPStatus(err error) int {
 
 	case errors.Is(err, ErrForbidden), errors.Is(err, ErrAccountLocked),
 		errors.Is(err, ErrAccountDisabled), errors.Is(err, ErrRoleImmutable),
-		errors.Is(err, ErrSSODomainNotAllowed):
+		errors.Is(err, ErrSSODomainNotAllowed),
+		errors.Is(err, ErrLegalHold), errors.Is(err, ErrUnderRetention):
 		return http.StatusForbidden
 
 	case errors.Is(err, ErrSSONotConfigured):

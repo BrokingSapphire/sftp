@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"strconv"
+	"time"
 
 	"github.com/go-fuego/fuego"
 	"github.com/google/uuid"
@@ -353,6 +354,44 @@ func (h *Handler) RestoreVersion(c fuego.ContextNoBody) (*response.Envelope[mode
 		return nil, handlers.Fail(err)
 	}
 	return response.OKWithMessage(*f, "Version restored"), nil
+}
+
+// SetLegalHold places or releases a legal hold on a file (admin).
+func (h *Handler) SetLegalHold(c fuego.ContextWithBody[models.LegalHoldRequest]) (*response.Envelope[response.Any], error) {
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	if err := h.svc.SetLegalHold(c.Context(), id, body.Hold); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	msg := "Legal hold released"
+	if body.Hold {
+		msg = "Legal hold placed"
+	}
+	return response.OKWithMessage[response.Any](nil, msg), nil
+}
+
+// SetRetention sets or clears a WORM retention lock on a file (admin).
+func (h *Handler) SetRetention(c fuego.ContextWithBody[models.RetentionRequest]) (*response.Envelope[response.Any], error) {
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	var until *time.Time
+	if body.Until != nil && *body.Until != "" {
+		t, perr := time.Parse(time.RFC3339, *body.Until)
+		if perr != nil {
+			return nil, fuego.BadRequestError{Title: "until must be an RFC3339 timestamp"}
+		}
+		until = &t
+	}
+	if err := h.svc.SetRetention(c.Context(), id, until); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Retention updated"), nil
 }
 
 // ── Uploads (session control) ─────────────────────────────

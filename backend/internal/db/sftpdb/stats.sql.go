@@ -45,7 +45,7 @@ func (q *Queries) CountTrashByOwner(ctx context.Context, ownerID uuid.UUID) (int
 }
 
 const largestFilesByOwner = `-- name: LargestFilesByOwner :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL
 ORDER BY size_bytes DESC
 LIMIT $2
@@ -86,6 +86,8 @@ func (q *Queries) LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwn
 			&i.TransferPending,
 			&i.TransferDeadline,
 			&i.TransferFrom,
+			&i.LegalHold,
+			&i.RetainUntil,
 		); err != nil {
 			return nil, err
 		}

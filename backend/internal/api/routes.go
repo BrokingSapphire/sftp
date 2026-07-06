@@ -189,6 +189,9 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Post(gf, "/{id}/trash", h.TrashFile, write, option.Summary("Move file to trash"))
 	fuego.Post(gf, "/{id}/restore", h.RestoreFile, write, option.Summary("Restore file from trash"))
 	fuego.Post(gf, "/{id}/make-common", h.MakeCommon, option.Middleware(deps.Perms.Require("files.share")), option.Summary("Share a file to Common"))
+	compliance := option.Middleware(deps.Perms.Require("storage.manage"))
+	fuego.Post(gf, "/{id}/legal-hold", h.SetLegalHold, compliance, option.Summary("Place/release a legal hold (admin)"))
+	fuego.Post(gf, "/{id}/retention", h.SetRetention, compliance, option.Summary("Set/clear a WORM retention lock (admin)"))
 	fuego.Delete(gf, "/{id}", h.DeleteFile, del, option.Summary("Permanently delete file"))
 
 	// Resumable uploads (own group to avoid mux wildcard collisions with /files/{id}).

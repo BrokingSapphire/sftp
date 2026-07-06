@@ -64,6 +64,19 @@ type FileResponse struct {
 	// Set when this file was inherited from a deleted user and awaits action.
 	TransferPending  bool   `json:"transfer_pending,omitempty"`
 	TransferDeadline string `json:"transfer_deadline,omitempty"`
+	// Compliance controls.
+	LegalHold   bool   `json:"legal_hold,omitempty"`
+	RetainUntil string `json:"retain_until,omitempty"`
+}
+
+// LegalHoldRequest places or releases a legal hold.
+type LegalHoldRequest struct {
+	Hold bool `json:"hold"`
+}
+
+// RetentionRequest sets/clears a WORM retention lock (RFC3339, or null to clear).
+type RetentionRequest struct {
+	Until *string `json:"until"`
 }
 
 // CommonFileResponse is a file in the organisation-wide Common area.

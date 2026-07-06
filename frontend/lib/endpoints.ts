@@ -34,6 +34,8 @@ export const filesApi = {
   inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
   searchContent: (q: string) => unwrap<SearchHit[]>(http.get<Envelope<SearchHit[]>>(`/files/search/content?q=${encodeURIComponent(q)}`)),
+  setLegalHold: (id: string, hold: boolean) => http.post(`/files/${id}/legal-hold`, { hold }),
+  setRetention: (id: string, until: string | null) => http.post(`/files/${id}/retention`, { until }),
   versions: (id: string) => unwrap<FileVersion[]>(http.get<Envelope<FileVersion[]>>(`/files/${id}/versions`)),
   restoreVersion: (id: string, v: number) => http.post(`/files/${id}/versions/${v}/restore`, {}),
   versionDownloadUrl: (id: string, v: number) => {

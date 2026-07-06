@@ -21,6 +21,8 @@ var (
 	ErrRoleNotFound      = errors.New("role not found")
 	ErrRoleImmutable     = errors.New("system role cannot be modified")
 	ErrForbidden         = errors.New("forbidden")
+	ErrLegalHold         = errors.New("file is under legal hold and cannot be modified")
+	ErrUnderRetention    = errors.New("file is under a retention lock and cannot be deleted or modified yet")
 	ErrUnauthorized      = errors.New("unauthorized")
 	ErrSSODomainNotAllowed = errors.New("email domain not permitted for SSO")
 	ErrSSONotConfigured    = errors.New("sso provider not configured")

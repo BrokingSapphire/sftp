@@ -5,8 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History, Lock, LockOpen, ShieldCheck,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { filesApi, commonApi } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,21 @@ export default function FilesPage() {
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
   const uploads = useUploads();
+  const { has } = useAuth();
+
+  async function toggleHold(f: FileItem) {
+    try { await filesApi.setLegalHold(f.id, !f.legal_hold); toast.success(f.legal_hold ? "Legal hold released" : "Legal hold placed"); refresh(); }
+    catch { toast.error("Could not update legal hold"); }
+  }
+  async function setRetention(f: FileItem) {
+    const days = prompt("Lock this file from deletion/modification for how many days? (WORM retention)", "365");
+    if (!days) return;
+    const n = Number(days);
+    if (!n || n <= 0) return toast.error("Enter a positive number of days");
+    const until = new Date(Date.now() + n * 86400000).toISOString();
+    try { await filesApi.setRetention(f.id, until); toast.success(`Retained until ${new Date(until).toLocaleDateString()}`); refresh(); }
+    catch { toast.error("Could not set retention (it cannot be shortened)"); }
+  }
   const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
   const [versionOf, setVersionOf] = useState<{ id: string; name: string; version: number } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
@@ -186,7 +202,7 @@ export default function FilesPage() {
   }
 
   function fileMenu(f: FileItem, i: number): MenuItem[] {
-    return [
+    const items: MenuItem[] = [
       { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
       { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
       { label: "Get share link", icon: Share2, onClick: () => share(f) },
@@ -195,9 +211,15 @@ export default function FilesPage() {
       { label: f.is_starred ? "Remove star" : "Add star", icon: Star, onClick: () => star(f) },
       { label: "Rename", icon: Pencil, onClick: () => rename("file", f.id, f.name) },
       { label: "Version history", icon: History, onClick: () => setVersionOf({ id: f.id, name: f.name, version: f.version_no }) },
-      { separator: true, label: "" },
-      { label: "Move to trash", icon: Trash2, danger: true, onClick: () => trash(f) },
     ];
+    if (has("storage.manage")) {
+      items.push({ separator: true, label: "" });
+      items.push({ label: f.legal_hold ? "Release legal hold" : "Place legal hold", icon: f.legal_hold ? LockOpen : Lock, onClick: () => toggleHold(f) });
+      items.push({ label: "Set retention (WORM)…", icon: ShieldCheck, onClick: () => setRetention(f) });
+    }
+    items.push({ separator: true, label: "" });
+    items.push({ label: "Move to trash", icon: Trash2, danger: true, onClick: () => trash(f) });
+    return items;
   }
   async function setColor(f: FolderItem, color: string) {
     try { await filesApi.setFolderColor(f.id, color); refresh(); }
@@ -323,6 +345,8 @@ export default function FilesPage() {
                     </SelectBox>
                     <button onClick={() => setPreview(i)} className="min-w-0 flex-1 truncate text-left text-sm font-medium">{f.name}</button>
                     {f.is_starred && <Star size={13} className="shrink-0 fill-amber-400 text-amber-400" />}
+                    {f.legal_hold && <Lock size={13} className="shrink-0 text-danger" aria-label="Legal hold" />}
+                    {!f.legal_hold && f.retain_until && <ShieldCheck size={13} className="shrink-0 text-warning" aria-label="Retention lock" />}
                   </div>
                   <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
                   <div className="flex items-center justify-end gap-1">

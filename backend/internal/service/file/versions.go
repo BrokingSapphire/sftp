@@ -20,6 +20,10 @@ func (s *Service) commitContent(ctx context.Context, owner uuid.UUID, folder *uu
 	if existing, err := s.q.GetFileByOwnerFolderName(ctx, sftpdb.GetFileByOwnerFolderNameParams{
 		OwnerID: owner, Name: name, FolderID: folder,
 	}); err == nil {
+		// A legal hold or active retention lock blocks overwriting the content.
+		if err := mutationBlocked(existing, true); err != nil {
+			return sftpdb.File{}, false, err
+		}
 		f, err := s.versionedReplace(ctx, existing, key, checksum, size, owner)
 		return f, true, err
 	}

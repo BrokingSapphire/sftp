@@ -126,7 +126,7 @@ func (q *Queries) ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]List
 }
 
 const listSharedWithMe = `-- name: ListSharedWithMe :many
-SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, rp.can_write, rp.created_at AS shared_at,
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, rp.can_write, rp.created_at AS shared_at,
        u.full_name AS owner_name, u.username AS owner_username,
        (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS owner_has_avatar
 FROM resource_permissions rp
@@ -157,6 +157,8 @@ type ListSharedWithMeRow struct {
 	TransferPending  bool               `json:"transfer_pending"`
 	TransferDeadline pgtype.Timestamptz `json:"transfer_deadline"`
 	TransferFrom     *uuid.UUID         `json:"transfer_from"`
+	LegalHold        bool               `json:"legal_hold"`
+	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
 	CanWrite         bool               `json:"can_write"`
 	SharedAt         pgtype.Timestamptz `json:"shared_at"`
 	OwnerName        string             `json:"owner_name"`
@@ -194,6 +196,8 @@ func (q *Queries) ListSharedWithMe(ctx context.Context, granteeUserID *uuid.UUID
 			&i.TransferPending,
 			&i.TransferDeadline,
 			&i.TransferFrom,
+			&i.LegalHold,
+			&i.RetainUntil,
 			&i.CanWrite,
 			&i.SharedAt,
 			&i.OwnerName,

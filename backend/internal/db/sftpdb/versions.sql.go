@@ -20,7 +20,7 @@ SET storage_key = $1,
     version_no = version_no + 1,
     updated_at = now()
 WHERE id = $4
-RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from
+RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until
 `
 
 type BumpFileContentParams struct {
@@ -59,6 +59,8 @@ func (q *Queries) BumpFileContent(ctx context.Context, arg BumpFileContentParams
 		&i.TransferPending,
 		&i.TransferDeadline,
 		&i.TransferFrom,
+		&i.LegalHold,
+		&i.RetainUntil,
 	)
 	return i, err
 }

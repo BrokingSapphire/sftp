@@ -90,6 +90,8 @@ type File struct {
 	TransferPending  bool               `json:"transfer_pending"`
 	TransferDeadline pgtype.Timestamptz `json:"transfer_deadline"`
 	TransferFrom     *uuid.UUID         `json:"transfer_from"`
+	LegalHold        bool               `json:"legal_hold"`
+	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
 }
 
 type FileTag struct {
