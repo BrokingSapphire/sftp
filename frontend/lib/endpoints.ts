@@ -34,6 +34,11 @@ export const filesApi = {
   inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
   emptyTrash: () => http.post("/files/trash/empty", {}),
+  copyFile: (id: string) => unwrap<FileItem>(http.post<Envelope<FileItem>>(`/files/${id}/copy`, {})),
+  folderDownloadUrl: (id: string) => {
+    const t = tokens.access();
+    return `/api/v1/folders/${id}/download${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
+  },
   searchContent: (q: string) => unwrap<SearchHit[]>(http.get<Envelope<SearchHit[]>>(`/files/search/content?q=${encodeURIComponent(q)}`)),
   setLegalHold: (id: string, hold: boolean) => http.post(`/files/${id}/legal-hold`, { hold }),
   setRetention: (id: string, until: string | null) => http.post(`/files/${id}/retention`, { until }),

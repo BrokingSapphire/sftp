@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History, Lock, LockOpen, ShieldCheck, FileText,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check, History, Lock, LockOpen, ShieldCheck, FileText, Files,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { filesApi, commonApi } from "@/lib/endpoints";
@@ -219,6 +219,7 @@ export default function FilesPage() {
       { label: "Add to Common", icon: Globe, onClick: () => addToCommon(f) },
       { separator: true, label: "" },
       { label: f.is_starred ? "Remove star" : "Add star", icon: Star, onClick: () => star(f) },
+      { label: "Make a copy", icon: Files, onClick: () => copyFile(f) },
       { label: "Rename", icon: Pencil, onClick: () => rename("file", f.id, f.name) },
       { label: "Version history", icon: History, onClick: () => setVersionOf({ id: f.id, name: f.name, version: f.version_no }) },
     ];
@@ -238,12 +239,16 @@ export default function FilesPage() {
   function folderMenu(f: FolderItem): MenuItem[] {
     return [
       { label: "Open", icon: FolderOpen, onClick: () => openFolder(f) },
+      { label: "Download (zip)", icon: Download, onClick: () => { window.location.href = filesApi.folderDownloadUrl(f.id); } },
       { label: "Rename", icon: Pencil, onClick: () => rename("folder", f.id, f.name) },
       { separator: true, label: "" },
       { label: "colour", node: <ColorSwatches current={f.color} onPick={(c) => setColor(f, c)} /> },
       { separator: true, label: "" },
       { label: "Delete", icon: Trash2, danger: true, onClick: () => removeFolder(f) },
     ];
+  }
+  function copyFile(f: FileItem) {
+    filesApi.copyFile(f.id).then(() => { toast.success(`Copied "${f.name}"`); refresh(); }).catch(() => toast.error("Could not copy"));
   }
   function removeFolder(f: FolderItem) {
     if (!confirm(`Delete folder "${f.name}"? Everything inside it will be moved to Trash.`)) return;

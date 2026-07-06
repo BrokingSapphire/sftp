@@ -176,6 +176,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Put(gd, "/{id}/star", h.StarFolder, fwrite, option.Summary("Star/unstar folder"))
 	fuego.Put(gd, "/{id}/color", h.SetFolderColor, fwrite, option.Summary("Set folder colour"))
 	fuego.Delete(gd, "/{id}", h.DeleteFolder, fdel, option.Summary("Delete folder"))
+	fuego.GetStd(gd, "/{id}/download", h.FolderDownload, read, option.Summary("Download a folder as a zip"))
 
 	// Files.
 	gf := fuego.Group(g, "/files", option.Tags("Files"), secured, respUnauthorized, respForbidden)
@@ -216,6 +217,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Post(gf, "/{id}/trash", h.TrashFile, write, option.Summary("Move file to trash"))
 	fuego.Post(gf, "/{id}/restore", h.RestoreFile, write, option.Summary("Restore file from trash"))
 	fuego.Post(gf, "/{id}/make-common", h.MakeCommon, option.Middleware(deps.Perms.Require("files.share")), option.Summary("Share a file to Common"))
+	fuego.Post(gf, "/{id}/copy", h.CopyFile, upload, option.Summary("Duplicate a file"))
 	compliance := option.Middleware(deps.Perms.Require("storage.manage"))
 	fuego.Post(gf, "/{id}/legal-hold", h.SetLegalHold, compliance, option.Summary("Place/release a legal hold (admin)"))
 	fuego.Post(gf, "/{id}/retention", h.SetRetention, compliance, option.Summary("Set/clear a WORM retention lock (admin)"))

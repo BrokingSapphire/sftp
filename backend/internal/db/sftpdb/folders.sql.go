@@ -166,6 +166,49 @@ func (q *Queries) GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwner
 	return i, err
 }
 
+const listFilesInFolder = `-- name: ListFilesInFolder :many
+SELECT id, name, storage_key, size_bytes
+FROM files
+WHERE owner_id = $1 AND folder_id = $2 AND deleted_at IS NULL
+`
+
+type ListFilesInFolderParams struct {
+	OwnerID  uuid.UUID  `json:"owner_id"`
+	FolderID *uuid.UUID `json:"folder_id"`
+}
+
+type ListFilesInFolderRow struct {
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	StorageKey string    `json:"storage_key"`
+	SizeBytes  int64     `json:"size_bytes"`
+}
+
+func (q *Queries) ListFilesInFolder(ctx context.Context, arg ListFilesInFolderParams) ([]ListFilesInFolderRow, error) {
+	rows, err := q.db.Query(ctx, listFilesInFolder, arg.OwnerID, arg.FolderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListFilesInFolderRow{}
+	for rows.Next() {
+		var i ListFilesInFolderRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.StorageKey,
+			&i.SizeBytes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFoldersByParent = `-- name: ListFoldersByParent :many
 SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders
 WHERE owner_id = $1

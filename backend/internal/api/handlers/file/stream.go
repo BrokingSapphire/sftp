@@ -135,6 +135,25 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)
 }
 
+// FolderDownload streams a folder (recursively) as a zip archive.
+func (h *Handler) FolderDownload(w http.ResponseWriter, r *http.Request) {
+	uid, ok := userID(r)
+	if !ok {
+		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid folder id")
+		return
+	}
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", `attachment; filename="folder.zip"`)
+	if _, err := h.svc.WriteFolderZip(r.Context(), uid, id, w); err != nil {
+		h.log.Error("folder zip failed", "folder", id, "err", err)
+	}
+}
+
 // SaveContent overwrites a file's content from the raw request body (used by
 // the in-app editor). Creates a new version.
 func (h *Handler) SaveContent(w http.ResponseWriter, r *http.Request) {

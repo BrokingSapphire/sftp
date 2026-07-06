@@ -266,6 +266,19 @@ func (h *Handler) Trash(c fuego.ContextNoBody) (*response.Envelope[[]models.File
 	return response.OK(files), nil
 }
 
+// CopyFile duplicates a file.
+func (h *Handler) CopyFile(c fuego.ContextNoBody) (*response.Envelope[models.FileResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	f, err := h.svc.CopyFile(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*f, "File copied"), nil
+}
+
 // EmptyTrash permanently deletes all of the caller's trashed files.
 func (h *Handler) EmptyTrash(c fuego.ContextNoBody) (*response.Envelope[map[string]int], error) {
 	uid, err := currentUserID(c.Context())

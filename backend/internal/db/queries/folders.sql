@@ -51,3 +51,8 @@ UPDATE folders SET size_bytes = $2, updated_at = now() WHERE id = $1;
 -- name: SoftDeleteFolders :exec
 UPDATE folders SET deleted_at = now(), updated_at = now()
 WHERE id = ANY(@folder_ids::uuid[]) AND owner_id = @owner_id AND deleted_at IS NULL;
+
+-- name: ListFilesInFolder :many
+SELECT id, name, storage_key, size_bytes
+FROM files
+WHERE owner_id = @owner_id AND folder_id = @folder_id AND deleted_at IS NULL;

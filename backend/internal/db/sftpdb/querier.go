@@ -96,6 +96,7 @@ type Querier interface {
 	ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]ListFileGrantsRow, error)
 	ListFileVersions(ctx context.Context, fileID uuid.UUID) ([]ListFileVersionsRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
+	ListFilesInFolder(ctx context.Context, arg ListFilesInFolderParams) ([]ListFilesInFolderRow, error)
 	ListFilesMissingText(ctx context.Context, limit int32) ([]ListFilesMissingTextRow, error)
 	ListFilesNeedingEmbedding(ctx context.Context, rowLimit int32) ([]ListFilesNeedingEmbeddingRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
