@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
 import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FilePreview } from "@/components/files/file-preview";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { StaggerList, StaggerItem } from "@/components/motion";
@@ -75,10 +76,11 @@ export default function CommonPage() {
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}
           </div>
         ) : files.length === 0 ? (
-          <div className="flex min-h-[20rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface text-muted">
-            <Globe size={40} />
-            <p className="text-sm">No common files yet. Drop files here to share with everyone.</p>
-          </div>
+          <EmptyState
+            icon={Globe}
+            title="The Common room is quiet"
+            subtitle="No org-wide files yet. Drop something here — everyone can see it, and it's unlimited (your quota won't even flinch)."
+          />
         ) : (
           <div className="rounded-xl border border-border bg-surface">
             <div className="grid grid-cols-[1fr_11rem_6rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">

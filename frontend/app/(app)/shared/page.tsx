@@ -8,6 +8,7 @@ import type { FileItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
 import { Skeleton } from "@/components/ui/misc";
 import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
 import { StaggerList, StaggerItem } from "@/components/motion";
@@ -25,10 +26,11 @@ export default function SharedPage() {
       {q.isLoading && <div className="rounded-xl border border-border bg-surface p-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}</div>}
 
       {!q.isLoading && files.length === 0 && (
-        <div className="flex min-h-[18rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface text-muted">
-          <Users size={40} />
-          <p className="text-sm">Nothing shared with you yet.</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No one's shared with you… yet"
+          subtitle="When a colleague shares a file, it lands right here. Popularity is only a matter of time."
+        />
       )}
 
       {files.length > 0 && (

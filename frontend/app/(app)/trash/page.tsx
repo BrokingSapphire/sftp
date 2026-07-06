@@ -31,7 +31,7 @@ export default function TrashPage() {
           </Button>
         )}
       </div>
-      <FileList files={q.data} loading={q.isLoading} queryKey="trash" emptyLabel="Trash is empty." mode="trash" />
+      <FileList files={q.data} loading={q.isLoading} queryKey="trash" emptyLabel="Squeaky clean" emptyIcon={Trash2} emptySubtitle="Your trash is emptier than a Monday-morning inbox. Nothing to see here." mode="trash" />
     </div>
   );
 }

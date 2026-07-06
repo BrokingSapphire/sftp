@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, RotateCcw, Trash2, Star, Eye } from "lucide-react";
+import { Download, RotateCcw, Trash2, Star, Eye, FileQuestion } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FileItem } from "@/lib/types";
@@ -9,6 +9,7 @@ import { filesApi } from "@/lib/endpoints";
 import { fileIcon } from "./icon";
 import { FilePreview } from "./file-preview";
 import { Skeleton } from "@/components/ui/misc";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatBytes, timeAgo } from "@/lib/utils";
 import { StaggerList, StaggerItem } from "@/components/motion";
 
@@ -16,11 +17,13 @@ interface Props {
   files?: FileItem[];
   loading?: boolean;
   emptyLabel: string;
+  emptyIcon?: React.ElementType;
+  emptySubtitle?: string;
   queryKey: string;
   mode?: "default" | "trash";
 }
 
-export function FileList({ files, loading, emptyLabel, queryKey, mode = "default" }: Props) {
+export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle, queryKey, mode = "default" }: Props) {
   const qc = useQueryClient();
   const [preview, setPreview] = useState<number | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: [queryKey] });
@@ -30,15 +33,16 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
     catch { toast.error("Action failed"); }
   }
 
+  if (!loading && files?.length === 0) {
+    return <EmptyState icon={emptyIcon ?? FileQuestion} title={emptyLabel} subtitle={emptySubtitle} />;
+  }
+
   return (
     <div className="rounded-xl border border-border bg-surface">
       <div className="grid grid-cols-[1fr_auto_8rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
         <span>Name</span><span>Size</span><span className="text-right">Modified</span>
       </div>
       {loading && [...Array(5)].map((_, i) => <div key={i} className="px-4 py-2.5"><Skeleton className="h-6 w-full" /></div>)}
-      {!loading && files?.length === 0 && (
-        <p className="py-16 text-center text-sm text-muted">{emptyLabel}</p>
-      )}
       <StaggerList>
       {files?.map((f, i) => (
         <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
