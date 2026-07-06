@@ -4,16 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  FolderPlus, Upload, Folder, Download, Star, Share2, Trash2,
-  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye,
+  FolderPlus, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
+  Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe,
 } from "lucide-react";
-import { filesApi, sharesApi } from "@/lib/endpoints";
+import { filesApi, sharesApi, commonApi } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
+import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
 import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
@@ -29,6 +30,7 @@ export default function FilesPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<View>("list");
   const [preview, setPreview] = useState<number | null>(null);
+  const ctx = useContextMenu();
 
   useEffect(() => {
     const v = localStorage.getItem("sftp_view") as View | null;
@@ -79,8 +81,34 @@ export default function FilesPage() {
     try { await filesApi.starFile(f.id, !f.is_starred); refresh(); } catch { toast.error("Failed"); }
   }
   async function share(f: FileItem) {
-    try { const res = await sharesApi.create(f.id, {}); await navigator.clipboard.writeText(res.url).catch(() => {}); toast.success("Share link copied"); }
+    try { const res = await sharesApi.create(f.id, {}); await navigator.clipboard.writeText(res.url).catch(() => {}); toast.success("Share link copied to clipboard"); }
     catch { toast.error("Could not create share"); }
+  }
+  async function addToCommon(f: FileItem) {
+    try { await commonApi.makeCommon(f.id); toast.success(`"${f.name}" shared to Common`); }
+    catch { toast.error("Could not share to Common"); }
+  }
+
+  function fileMenu(f: FileItem, i: number): MenuItem[] {
+    return [
+      { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
+      { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
+      { label: "Get share link", icon: Share2, onClick: () => share(f) },
+      { label: "Add to Common", icon: Globe, onClick: () => addToCommon(f) },
+      { separator: true, label: "" },
+      { label: f.is_starred ? "Remove star" : "Add star", icon: Star, onClick: () => star(f) },
+      { label: "Rename", icon: Pencil, onClick: () => rename("file", f.id, f.name) },
+      { separator: true, label: "" },
+      { label: "Move to trash", icon: Trash2, danger: true, onClick: () => trash(f) },
+    ];
+  }
+  function folderMenu(f: FolderItem): MenuItem[] {
+    return [
+      { label: "Open", icon: FolderOpen, onClick: () => openFolder(f) },
+      { label: "Rename", icon: Pencil, onClick: () => rename("folder", f.id, f.name) },
+      { separator: true, label: "" },
+      { label: "Delete", icon: Trash2, danger: true, onClick: () => filesApi.deleteFolder(f.id).then(refresh).catch(() => toast.error("Folder not empty")) },
+    ];
   }
 
   const empty = !listing.isLoading && folders.length === 0 && files.length === 0;
@@ -136,7 +164,7 @@ export default function FilesPage() {
             </div>
             <StaggerList>
               {folders.map((f) => (
-                <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
                     <motion.span whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}><Folder size={18} className="text-primary" /></motion.span>
                     <span className="truncate text-sm font-medium">{f.name}</span>
@@ -152,7 +180,7 @@ export default function FilesPage() {
                 </StaggerItem>
               ))}
               {files.map((f, i) => (
-                <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
                     {fileIcon(f.extension, 18)}
                     <span className="truncate text-sm font-medium">{f.name}</span>
@@ -181,6 +209,7 @@ export default function FilesPage() {
                 <motion.button
                   whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
                   onClick={() => openFolder(f)}
+                  onContextMenu={(e) => ctx.open(e, folderMenu(f))}
                   className="group flex w-full items-center gap-2 rounded-xl border border-border bg-surface p-3 text-left transition-shadow hover:shadow-md"
                 >
                   <Folder size={20} className="shrink-0 text-primary" />
@@ -193,6 +222,7 @@ export default function FilesPage() {
                 <motion.button
                   whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
                   onClick={() => setPreview(i)}
+                  onContextMenu={(e) => ctx.open(e, fileMenu(f, i))}
                   className="group flex w-full flex-col overflow-hidden rounded-xl border border-border bg-surface text-left transition-shadow hover:shadow-md"
                 >
                   <div className="flex h-28 items-center justify-center overflow-hidden border-b border-border bg-surface-2">
@@ -223,6 +253,8 @@ export default function FilesPage() {
           onChanged={refresh}
         />
       )}
+
+      <ContextMenu menu={ctx.menu} onClose={ctx.close} />
     </div>
   );
 }
