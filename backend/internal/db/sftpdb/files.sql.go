@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countCommonFiles = `-- name: CountCommonFiles :one
+SELECT count(*) FROM files WHERE is_common = TRUE AND deleted_at IS NULL
+`
+
+func (q *Queries) CountCommonFiles(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countCommonFiles)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countFilesByFolder = `-- name: CountFilesByFolder :one
 SELECT count(*) FROM files
 WHERE owner_id = $1
@@ -36,7 +47,7 @@ INSERT INTO files (
     owner_id, folder_id, name, extension, mime_type,
     size_bytes, checksum_sha256, storage_key
 ) VALUES ($1, $8, $2, $3, $4, $5, $6, $7)
-RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at
+RETURNING id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common
 `
 
 type CreateFileParams struct {
@@ -79,12 +90,13 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsCommon,
 	)
 	return i, err
 }
 
 const getFileByID = `-- name: GetFileByID :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files WHERE id = $1 AND deleted_at IS NULL
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFileByID(ctx context.Context, id uuid.UUID) (File, error) {
@@ -107,12 +119,13 @@ func (q *Queries) GetFileByID(ctx context.Context, id uuid.UUID) (File, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsCommon,
 	)
 	return i, err
 }
 
 const getFileByIDIncludingTrashed = `-- name: GetFileByIDIncludingTrashed :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files WHERE id = $1
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files WHERE id = $1
 `
 
 func (q *Queries) GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error) {
@@ -135,6 +148,7 @@ func (q *Queries) GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsCommon,
 	)
 	return i, err
 }
@@ -159,8 +173,84 @@ func (q *Queries) IncrementDownloadCount(ctx context.Context, id uuid.UUID) erro
 	return err
 }
 
+const listCommonFiles = `-- name: ListCommonFiles :many
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, u.full_name AS uploader_name, u.username AS uploader_username
+FROM files f
+JOIN users u ON u.id = f.owner_id
+WHERE f.is_common = TRUE AND f.deleted_at IS NULL
+ORDER BY f.created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListCommonFilesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type ListCommonFilesRow struct {
+	ID               uuid.UUID          `json:"id"`
+	OwnerID          uuid.UUID          `json:"owner_id"`
+	FolderID         *uuid.UUID         `json:"folder_id"`
+	Name             string             `json:"name"`
+	Extension        string             `json:"extension"`
+	MimeType         string             `json:"mime_type"`
+	SizeBytes        int64              `json:"size_bytes"`
+	ChecksumSha256   *string            `json:"checksum_sha256"`
+	StorageKey       string             `json:"storage_key"`
+	ThumbnailKey     *string            `json:"thumbnail_key"`
+	IsStarred        bool               `json:"is_starred"`
+	VersionNo        int32              `json:"version_no"`
+	DownloadCount    int64              `json:"download_count"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
+	IsCommon         bool               `json:"is_common"`
+	UploaderName     string             `json:"uploader_name"`
+	UploaderUsername string             `json:"uploader_username"`
+}
+
+func (q *Queries) ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error) {
+	rows, err := q.db.Query(ctx, listCommonFiles, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCommonFilesRow{}
+	for rows.Next() {
+		var i ListCommonFilesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.FolderID,
+			&i.Name,
+			&i.Extension,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.ChecksumSha256,
+			&i.StorageKey,
+			&i.ThumbnailKey,
+			&i.IsStarred,
+			&i.VersionNo,
+			&i.DownloadCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsCommon,
+			&i.UploaderName,
+			&i.UploaderUsername,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFilesByFolder = `-- name: ListFilesByFolder :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
 WHERE owner_id = $1
   AND folder_id IS NOT DISTINCT FROM $4
   AND deleted_at IS NULL
@@ -206,6 +296,7 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, arg ListFilesByFolderPa
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}
@@ -218,7 +309,7 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, arg ListFilesByFolderPa
 }
 
 const listRecentFiles = `-- name: ListRecentFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2
@@ -255,6 +346,7 @@ func (q *Queries) ListRecentFiles(ctx context.Context, arg ListRecentFilesParams
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}
@@ -267,7 +359,7 @@ func (q *Queries) ListRecentFiles(ctx context.Context, arg ListRecentFilesParams
 }
 
 const listStarredFiles = `-- name: ListStarredFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
 WHERE owner_id = $1 AND is_starred = TRUE AND deleted_at IS NULL
 ORDER BY updated_at DESC
 `
@@ -298,6 +390,7 @@ func (q *Queries) ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]Fi
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}
@@ -310,7 +403,7 @@ func (q *Queries) ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]Fi
 }
 
 const listTrash = `-- name: ListTrash :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
 WHERE owner_id = $1 AND deleted_at IS NOT NULL
 ORDER BY deleted_at DESC
 LIMIT $2 OFFSET $3
@@ -348,6 +441,7 @@ func (q *Queries) ListTrash(ctx context.Context, arg ListTrashParams) ([]File, e
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}
@@ -424,7 +518,7 @@ func (q *Queries) RestoreFile(ctx context.Context, id uuid.UUID) error {
 }
 
 const searchFiles = `-- name: SearchFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL
   AND name ILIKE '%' || $2 || '%'
 ORDER BY name ASC
@@ -469,6 +563,7 @@ func (q *Queries) SearchFiles(ctx context.Context, arg SearchFilesParams) ([]Fil
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}
@@ -478,6 +573,20 @@ func (q *Queries) SearchFiles(ctx context.Context, arg SearchFilesParams) ([]Fil
 		return nil, err
 	}
 	return items, nil
+}
+
+const setFileCommon = `-- name: SetFileCommon :exec
+UPDATE files SET is_common = $2, updated_at = now() WHERE id = $1
+`
+
+type SetFileCommonParams struct {
+	ID       uuid.UUID `json:"id"`
+	IsCommon bool      `json:"is_common"`
+}
+
+func (q *Queries) SetFileCommon(ctx context.Context, arg SetFileCommonParams) error {
+	_, err := q.db.Exec(ctx, setFileCommon, arg.ID, arg.IsCommon)
+	return err
 }
 
 const setFileStar = `-- name: SetFileStar :exec

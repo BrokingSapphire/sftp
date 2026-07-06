@@ -402,6 +402,53 @@ func currentUserID(ctx context.Context) (uuid.UUID, error) {
 	return uuid.Parse(*claims.Sub)
 }
 
+// isAdmin reports whether the caller holds an administrative role.
+func isAdmin(ctx context.Context) bool {
+	claims := jwt.GetClaimsFromContext(ctx)
+	return claims != nil && (claims.Role == "super_admin" || claims.Role == "admin")
+}
+
+// ── Common (organisation-wide) files ──────────────────────
+
+// CommonList returns the organisation-wide Common files.
+func (h *Handler) CommonList(c fuego.ContextNoBody) (*response.Envelope[[]models.CommonFileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	limit := params.IntQueryDefault(c, "limit", 200)
+	offset := params.IntQueryDefault(c, "offset", 0)
+	files, total, err := h.svc.ListCommon(c.Context(), uid, isAdmin(c.Context()), limit, offset)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.Paginated(files, models.ListMeta{Total: total, Limit: limit, Offset: offset}), nil
+}
+
+// MakeCommon shares the caller's file into the Common area.
+func (h *Handler) MakeCommon(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.MakeCommon(c.Context(), uid, id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Shared to Common"), nil
+}
+
+// CommonDelete removes a Common file (uploader or admin only).
+func (h *Handler) CommonDelete(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.DeleteCommon(c.Context(), uid, isAdmin(c.Context()), id); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Deleted from Common"), nil
+}
+
 func optionalUUID(s string) (*uuid.UUID, error) {
 	if s == "" {
 		return nil, nil

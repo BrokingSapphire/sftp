@@ -73,6 +73,33 @@ func (h *Handler) SimpleUpload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, envelope{Success: true, Message: "File uploaded", Data: f})
 }
 
+// CommonUpload stores a file directly into the organisation-wide Common area.
+// Route: POST /files/common/upload  (multipart, any authenticated user)
+func (h *Handler) CommonUpload(w http.ResponseWriter, r *http.Request) {
+	uid, ok := userID(r)
+	if !ok {
+		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid multipart form")
+		return
+	}
+	part, header, err := r.FormFile("file")
+	if err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "missing file field")
+		return
+	}
+	defer part.Close()
+
+	f, err := h.svc.UploadCommon(r.Context(), uid, header.Filename, part)
+	if err != nil {
+		writeServiceError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{Success: true, Message: "Added to Common", Data: f})
+}
+
 // Download streams a file with HTTP range support.
 // Route: GET /files/{id}/download
 func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {

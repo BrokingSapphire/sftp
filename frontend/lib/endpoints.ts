@@ -73,6 +73,41 @@ export const filesApi = {
   },
 };
 
+// ── Common (organisation-wide) ─────────────────────────────
+export interface CommonFile {
+  id: string;
+  name: string;
+  extension: string;
+  mime_type: string;
+  size_bytes: number;
+  is_starred: boolean;
+  uploader_id: string;
+  uploader_name: string;
+  can_delete: boolean;
+  created_at: string;
+  updated_at: string;
+  folder_id?: string;
+  version_no: number;
+  download_count: number;
+  checksum_sha256?: string;
+}
+
+export const commonApi = {
+  list: () => unwrap<CommonFile[]>(http.get<Envelope<CommonFile[]>>("/files/common")),
+  remove: (id: string) => http.delete(`/files/common/${id}`),
+  makeCommon: (id: string) => http.post(`/files/${id}/make-common`, {}),
+  upload: (file: File, onProgress?: (pct: number) => void) => {
+    const form = new FormData();
+    form.append("file", file);
+    return http.post("/files/common/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+      },
+    });
+  },
+};
+
 // ── Shares ─────────────────────────────────────────────────
 export const sharesApi = {
   list: () => unwrap<ShareLink[]>(http.get<Envelope<ShareLink[]>>("/shares/")),

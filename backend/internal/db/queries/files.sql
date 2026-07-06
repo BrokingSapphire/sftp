@@ -78,3 +78,17 @@ RETURNING storage_key;
 -- name: SumFileSizesByOwner :one
 SELECT COALESCE(sum(size_bytes), 0)::bigint FROM files
 WHERE owner_id = $1 AND deleted_at IS NULL;
+
+-- name: SetFileCommon :exec
+UPDATE files SET is_common = $2, updated_at = now() WHERE id = $1;
+
+-- name: ListCommonFiles :many
+SELECT f.*, u.full_name AS uploader_name, u.username AS uploader_username
+FROM files f
+JOIN users u ON u.id = f.owner_id
+WHERE f.is_common = TRUE AND f.deleted_at IS NULL
+ORDER BY f.created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountCommonFiles :one
+SELECT count(*) FROM files WHERE is_common = TRUE AND deleted_at IS NULL;

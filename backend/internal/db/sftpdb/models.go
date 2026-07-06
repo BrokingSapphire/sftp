@@ -86,6 +86,7 @@ type File struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	IsCommon       bool               `json:"is_common"`
 }
 
 type FileTag struct {

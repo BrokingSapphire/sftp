@@ -17,6 +17,7 @@ type Querier interface {
 	CompleteUpload(ctx context.Context, arg CompleteUploadParams) error
 	CountActiveUsers(ctx context.Context) (int64, error)
 	CountAuditLogs(ctx context.Context) (int64, error)
+	CountCommonFiles(ctx context.Context) (int64, error)
 	CountDownloadsSince(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error)
 	CountFilesByFolder(ctx context.Context, arg CountFilesByFolderParams) (int64, error)
 	CountFilesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
@@ -68,6 +69,7 @@ type Querier interface {
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
 	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)
+	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
@@ -101,6 +103,7 @@ type Querier interface {
 	RevokeShare(ctx context.Context, arg RevokeShareParams) error
 	RotateSession(ctx context.Context, arg RotateSessionParams) error
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
+	SetFileCommon(ctx context.Context, arg SetFileCommonParams) error
 	SetFileStar(ctx context.Context, arg SetFileStarParams) error
 	SetFolderStar(ctx context.Context, arg SetFolderStarParams) error
 	SetRolePermissions(ctx context.Context, arg SetRolePermissionsParams) error

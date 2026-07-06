@@ -57,6 +57,26 @@ type FileResponse struct {
 	DeletedAt     string  `json:"deleted_at,omitempty"`
 }
 
+// CommonFileResponse is a file in the organisation-wide Common area.
+type CommonFileResponse struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Extension    string `json:"extension"`
+	MimeType     string `json:"mime_type"`
+	SizeBytes    int64  `json:"size_bytes"`
+	IsStarred    bool   `json:"is_starred"`
+	UploaderID   string `json:"uploader_id"`
+	UploaderName string `json:"uploader_name"`
+	CanDelete    bool   `json:"can_delete"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+	// Mirror of FileResponse fields the viewer needs.
+	FolderID      *string `json:"folder_id,omitempty"`
+	VersionNo     int32   `json:"version_no"`
+	DownloadCount int64   `json:"download_count"`
+	Checksum      string  `json:"checksum_sha256,omitempty"`
+}
+
 // ListingResponse is a combined folder + file listing.
 type ListingResponse struct {
 	Folders []FolderResponse `json:"folders"`

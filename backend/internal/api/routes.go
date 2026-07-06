@@ -139,6 +139,11 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/starred", h.Starred, read, option.Summary("List starred files"))
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
 
+	// Organisation-wide Common area.
+	fuego.Get(gf, "/common", h.CommonList, read, option.Summary("List organisation-wide Common files"))
+	fuego.PostStd(gf, "/common/upload", h.CommonUpload, upload, option.Summary("Upload a file to Common"))
+	fuego.Delete(gf, "/common/{id}", h.CommonDelete, option.Summary("Delete a Common file (uploader or admin)"))
+
 	// Simple single-request multipart upload.
 	fuego.PostStd(gf, "/upload", h.SimpleUpload, upload, option.Summary("Upload a single file (multipart)"))
 
@@ -150,6 +155,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Put(gf, "/{id}/star", h.StarFile, write, option.Summary("Star/unstar file"))
 	fuego.Post(gf, "/{id}/trash", h.TrashFile, write, option.Summary("Move file to trash"))
 	fuego.Post(gf, "/{id}/restore", h.RestoreFile, write, option.Summary("Restore file from trash"))
+	fuego.Post(gf, "/{id}/make-common", h.MakeCommon, option.Middleware(deps.Perms.Require("files.share")), option.Summary("Share a file to Common"))
 	fuego.Delete(gf, "/{id}", h.DeleteFile, del, option.Summary("Permanently delete file"))
 
 	// Resumable uploads (own group to avoid mux wildcard collisions with /files/{id}).
