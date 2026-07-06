@@ -33,6 +33,11 @@ export const filesApi = {
   starred: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/starred")),
   inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
+  sharedWithMe: () => unwrap<SharedFile[]>(http.get<Envelope<SharedFile[]>>("/files/shared-with-me")),
+  shareWithUser: (id: string, recipient_email: string, can_write: boolean) =>
+    unwrap<FileGrant>(http.post<Envelope<FileGrant>>(`/files/${id}/share-user`, { recipient_email, can_write })),
+  listGrants: (id: string) => unwrap<FileGrant[]>(http.get<Envelope<FileGrant[]>>(`/files/${id}/shares`)),
+  revokeGrant: (id: string, userId: string) => http.delete(`/files/${id}/shares/${userId}`),
   trash: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/trash")),
   search: (q: string) =>
     unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/search", { params: { q } })),
@@ -127,6 +132,16 @@ export const commonApi = {
 };
 
 // ── Shares ─────────────────────────────────────────────────
+export interface FileGrant {
+  user_id: string; name: string; email: string; has_avatar: boolean; can_write: boolean;
+}
+export interface SharedFile {
+  id: string; name: string; extension: string; mime_type: string; size_bytes: number;
+  is_starred: boolean; version_no: number; download_count: number;
+  created_at: string; updated_at: string;
+  owner_id: string; owner_name: string; owner_has_avatar: boolean;
+  can_write: boolean; shared_at: string;
+}
 export interface ShareCreateResult {
   token: string; url: string; has_password: boolean;
   emailed: boolean; external: boolean; expires_at?: string;

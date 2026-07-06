@@ -128,3 +128,37 @@ type UploadStatusResponse struct {
 	ReceivedBytes  int64  `json:"received_bytes"`
 	ReceivedChunks []int  `json:"received_chunks"`
 }
+
+// ShareUserRequest shares a file with a specific internal user.
+type ShareUserRequest struct {
+	RecipientEmail string `json:"recipient_email" validate:"required,email"`
+	CanWrite       bool   `json:"can_write"` // false = viewer, true = editor
+}
+
+// FileGrantResponse is one recipient of an internal file share.
+type FileGrantResponse struct {
+	UserID    string `json:"user_id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	HasAvatar bool   `json:"has_avatar"`
+	CanWrite  bool   `json:"can_write"`
+}
+
+// SharedFileResponse is a file shared with the caller by someone else.
+type SharedFileResponse struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Extension      string `json:"extension"`
+	MimeType       string `json:"mime_type"`
+	SizeBytes      int64  `json:"size_bytes"`
+	IsStarred      bool   `json:"is_starred"`
+	VersionNo      int32  `json:"version_no"`
+	DownloadCount  int64  `json:"download_count"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	OwnerID        string `json:"owner_id"`
+	OwnerName      string `json:"owner_name"`
+	OwnerHasAvatar bool   `json:"owner_has_avatar"`
+	CanWrite       bool   `json:"can_write"`
+	SharedAt       string `json:"shared_at"`
+}

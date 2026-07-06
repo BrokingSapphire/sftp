@@ -153,6 +153,10 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/search", h.Search, read, option.Summary("Search files by name"))
 	fuego.Get(gf, "/inherited", h.Inherited, read, option.Summary("List files inherited from a deleted user"))
 	fuego.Post(gf, "/{id}/keep", h.KeepFile, write, option.Summary("Keep an inherited file"))
+	fuego.Get(gf, "/shared-with-me", h.SharedWithMe, read, option.Summary("List files shared with me"))
+	fuego.Post(gf, "/{id}/share-user", h.ShareWithUser, write, option.Summary("Share a file with a specific user"))
+	fuego.Get(gf, "/{id}/shares", h.ListGrants, read, option.Summary("List a file's internal recipients"))
+	fuego.Delete(gf, "/{id}/shares/{uid}", h.RevokeGrant, write, option.Summary("Remove a user's access to a file"))
 
 	// Organisation-wide Common area.
 	fuego.Get(gf, "/common", h.CommonList, read, option.Summary("List organisation-wide Common files"))

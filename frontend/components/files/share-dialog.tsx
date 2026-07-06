@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Link2, Copy, Check, Mail, Lock, Clock, X, ShieldAlert, Loader2 } from "lucide-react";
-import { sharesApi, type ShareCreateResult } from "@/lib/endpoints";
+import {
+  Link2, Copy, Check, Lock, Clock, X, ShieldAlert, Loader2, Users, Globe, ChevronDown, Trash2, UserPlus,
+} from "lucide-react";
+import { sharesApi, filesApi, type ShareCreateResult, type FileGrant } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/ui/avatar";
 
 const ORG_DOMAINS = (process.env.NEXT_PUBLIC_ORG_DOMAINS ?? "")
   .split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
@@ -19,112 +22,181 @@ function isExternal(email: string) {
 }
 
 export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fileName: string; onClose: () => void }) {
+  // People-with-access (internal shares)
+  const [grants, setGrants] = useState<FileGrant[]>([]);
+  const [personEmail, setPersonEmail] = useState("");
+  const [canWrite, setCanWrite] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  // General access (link)
+  const [showLink, setShowLink] = useState(false);
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
   const [expires, setExpires] = useState<number | "">("");
   const [limit, setLimit] = useState<number | "">("");
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<ShareCreateResult | null>(null);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [link, setLink] = useState<ShareCreateResult | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const external = email ? isExternal(email) : false;
+  useEffect(() => {
+    filesApi.listGrants(fileId).then(setGrants).catch(() => {});
+  }, [fileId]);
 
-  async function create() {
-    setBusy(true);
+  const personExternal = personEmail ? isExternal(personEmail) : false;
+
+  async function addPerson() {
+    if (!personEmail) return;
+    setAdding(true);
+    try {
+      const g = await filesApi.shareWithUser(fileId, personEmail, canWrite);
+      setGrants((gs) => [...gs.filter((x) => x.user_id !== g.user_id), g]);
+      setPersonEmail("");
+      toast.success(`Shared with ${g.name}`);
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      toast.error(msg?.includes("not found") ? "No user with that email" : "Could not share");
+    } finally { setAdding(false); }
+  }
+  async function removePerson(g: FileGrant) {
+    try { await filesApi.revokeGrant(fileId, g.user_id); setGrants((gs) => gs.filter((x) => x.user_id !== g.user_id)); }
+    catch { toast.error("Could not remove access"); }
+  }
+  async function setRole(g: FileGrant, write: boolean) {
+    try { const ng = await filesApi.shareWithUser(fileId, g.email, write); setGrants((gs) => gs.map((x) => (x.user_id === g.user_id ? ng : x))); }
+    catch { toast.error("Could not update role"); }
+  }
+
+  async function createLink() {
+    setLinkBusy(true);
     try {
       const res = await sharesApi.create(fileId, {
         password: password || undefined,
         expires_in_days: expires === "" ? undefined : Number(expires),
         download_limit: limit === "" ? undefined : Number(limit),
-        recipient_email: email || undefined,
       });
-      setResult(res);
-      if (res.emailed) toast.success(`Link emailed to ${email}`);
-      else toast.success("Share link created");
-    } catch { toast.error("Could not create share"); }
-    finally { setBusy(false); }
+      setLink(res);
+      toast.success("Link created");
+    } catch { toast.error("Could not create link"); }
+    finally { setLinkBusy(false); }
   }
-
   function copyLink() {
-    if (!result) return;
-    navigator.clipboard.writeText(result.url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+    if (!link) return;
+    navigator.clipboard.writeText(link.url);
+    setCopied(true); setTimeout(() => setCopied(false), 1200);
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Link2 size={18} /></div>
-            <div>
-              <h3 className="text-sm font-semibold">Share file</h3>
-              <p className="truncate text-xs text-muted">{fileName}</p>
-            </div>
-          </div>
+          <h3 className="truncate text-base font-semibold">Share &ldquo;{fileName}&rdquo;</h3>
           <button onClick={onClose} className="text-muted hover:text-foreground"><X size={18} /></button>
         </div>
 
-        {!result ? (
-          <div className="space-y-3">
-            <Field icon={Lock} label="Password (optional)">
-              <Input type="password" placeholder="Leave empty for a public link" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field icon={Clock} label="Expires (days)">
-                <Input type="number" min={1} placeholder="Never" value={expires} onChange={(e) => setExpires(e.target.value === "" ? "" : Number(e.target.value))} />
-              </Field>
-              <Field icon={Link2} label="Download limit">
-                <Input type="number" min={1} placeholder="Unlimited" value={limit} onChange={(e) => setLimit(e.target.value === "" ? "" : Number(e.target.value))} />
-              </Field>
+        {/* Add people */}
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 rounded-lg border border-border px-2 focus-within:ring-2 focus-within:ring-ring/40">
+              <UserPlus size={15} className="shrink-0 text-muted" />
+              <input
+                value={personEmail}
+                onChange={(e) => setPersonEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addPerson()}
+                placeholder="Add people by email"
+                className="h-10 min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
+              />
             </div>
-            <Field icon={Mail} label="Email to (optional)">
-              <Input type="email" placeholder="person@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </Field>
-
-            {external && (
-              <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-                <ShieldAlert size={15} className="mt-0.5 shrink-0" />
-                <p><strong>{email.slice(email.lastIndexOf("@") + 1)}</strong> is outside your organisation. This external share will be logged.</p>
-              </div>
+            {personExternal && (
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-warning"><ShieldAlert size={12} /> Outside your organisation</p>
             )}
-
-            <Button className="w-full" onClick={create} disabled={busy}>
-              {busy ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-              {email ? "Create & send link" : "Create link"}
-            </Button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {result.external && (
-              <div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-                <ShieldAlert size={15} /> Shared outside the organisation — this action was recorded.
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-md bg-surface-2 px-3 py-2 font-mono text-xs">{result.url}</code>
-              <Button size="sm" variant="outline" onClick={copyLink}>
-                {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />} Copy
-              </Button>
+          <select value={canWrite ? "edit" : "view"} onChange={(e) => setCanWrite(e.target.value === "edit")}
+            className="h-10 rounded-lg border border-border bg-surface px-2 text-sm">
+            <option value="view">Viewer</option>
+            <option value="edit">Editor</option>
+          </select>
+          <Button size="sm" className="h-10" onClick={addPerson} disabled={adding || !personEmail}>
+            {adding ? <Loader2 size={15} className="animate-spin" /> : "Share"}
+          </Button>
+        </div>
+
+        {/* People with access */}
+        <div className="mt-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted"><Users size={13} /> People with access</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 rounded-lg px-1 py-1.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">Me</span>
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">You</p><p className="text-xs text-muted">Owner</p></div>
             </div>
-            {result.emailed && <p className="text-xs text-success">✓ Link emailed to {email}</p>}
-            <Button variant="ghost" className="w-full" onClick={onClose}>Done</Button>
+            {grants.map((g) => (
+              <div key={g.user_id} className="flex items-center gap-2 rounded-lg px-1 py-1.5 hover:bg-surface-2">
+                <Avatar userId={g.user_id} name={g.name} hasAvatar={g.has_avatar} size={32} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{g.name}</p>
+                  <p className="truncate text-xs text-muted">{g.email}</p>
+                </div>
+                <select value={g.can_write ? "edit" : "view"} onChange={(e) => setRole(g, e.target.value === "edit")}
+                  className="h-8 rounded-md border border-border bg-surface px-1.5 text-xs">
+                  <option value="view">Viewer</option>
+                  <option value="edit">Editor</option>
+                </select>
+                <button title="Remove" onClick={() => removePerson(g)} className="flex h-8 w-8 items-center justify-center rounded-md text-danger hover:bg-surface-2"><Trash2 size={14} /></button>
+              </div>
+            ))}
+            {grants.length === 0 && <p className="px-1 text-xs text-muted">Only you have access.</p>}
           </div>
-        )}
+        </div>
+
+        {/* General access — link */}
+        <div className="mt-4 rounded-xl border border-border p-3">
+          <button onClick={() => setShowLink((s) => !s)} className="flex w-full items-center gap-2 text-left">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted"><Globe size={15} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">General access — link</p>
+              <p className="text-xs text-muted">{link ? "Anyone with the link" : "Create a link anyone can open"}</p>
+            </div>
+            <motion.span animate={{ rotate: showLink ? 180 : 0 }} className="text-muted"><ChevronDown size={16} /></motion.span>
+          </button>
+
+          {showLink && (
+            <div className="mt-3 space-y-3">
+              {!link ? (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    <IconField icon={Lock} label="Password"><Input type="password" placeholder="None" value={password} onChange={(e) => setPassword(e.target.value)} /></IconField>
+                    <IconField icon={Clock} label="Expiry (d)"><Input type="number" min={1} placeholder="Never" value={expires} onChange={(e) => setExpires(e.target.value === "" ? "" : Number(e.target.value))} /></IconField>
+                    <IconField icon={Link2} label="Max dl"><Input type="number" min={1} placeholder="∞" value={limit} onChange={(e) => setLimit(e.target.value === "" ? "" : Number(e.target.value))} /></IconField>
+                  </div>
+                  <Button className="w-full" size="sm" onClick={createLink} disabled={linkBusy}>
+                    {linkBusy ? <Loader2 size={15} className="animate-spin" /> : <Link2 size={15} />} Create link
+                  </Button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-md bg-surface-2 px-3 py-2 font-mono text-xs">{link.url}</code>
+                  <Button size="sm" variant="outline" onClick={copyLink}>{copied ? <Check size={14} className="text-success" /> : <Copy size={14} />} Copy</Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          {link && <Button variant="outline" size="sm" onClick={copyLink} className="mr-auto"><Link2 size={14} /> Copy link</Button>}
+          <Button size="sm" onClick={onClose}>Done</Button>
+        </div>
       </motion.div>
     </div>
   );
 }
 
-function Field({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
+function IconField({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <label className="flex items-center gap-1.5 text-xs font-medium text-muted"><Icon size={13} /> {label}</label>
+      <label className="flex items-center gap-1 text-[11px] font-medium text-muted"><Icon size={11} /> {label}</label>
       {children}
     </div>
   );

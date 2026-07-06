@@ -22,6 +22,7 @@ const primary: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/files", label: "My Files", icon: Folder },
   { href: "/common", label: "Common", icon: Globe },
+  { href: "/shared", label: "Shared with me", icon: Users },
   { href: "/inherited", label: "Inherited", icon: Inbox },
   { href: "/starred", label: "Starred", icon: Star },
   { href: "/shares", label: "Shared", icon: Share2 },

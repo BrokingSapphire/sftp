@@ -35,9 +35,9 @@ func (s *Service) OpenForDownload(ctx context.Context, owner, id uuid.UUID, meta
 	if err != nil {
 		return nil, apperrors.ErrFileNotFound
 	}
-	// Owners can download their files; anyone can download organisation-wide
-	// Common files.
-	if f.OwnerID != owner && !f.IsCommon {
+	// Owners can download their files; anyone can download Common files; and
+	// users with an explicit per-file grant can download shared files.
+	if !s.canAccessFile(ctx, owner, f) {
 		return nil, apperrors.ErrForbidden
 	}
 	fh, err := s.store.Open(f.StorageKey)

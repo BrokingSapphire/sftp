@@ -380,6 +380,72 @@ func (h *Handler) AbortUpload(c fuego.ContextNoBody) (*response.Envelope[respons
 
 // ── shared helpers ────────────────────────────────────────
 
+// ShareWithUser grants a specific internal user access to a file.
+func (h *Handler) ShareWithUser(c fuego.ContextWithBody[models.ShareUserRequest]) (*response.Envelope[models.FileGrantResponse], error) {
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	if err := utils.Validate(body); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	grant, err := h.svc.ShareWithUser(c.Context(), uid, id, body.RecipientEmail, body.CanWrite)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*grant, "File shared"), nil
+}
+
+// ListGrants lists a file's internal recipients (owner only).
+func (h *Handler) ListGrants(c fuego.ContextNoBody) (*response.Envelope[[]models.FileGrantResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	grants, err := h.svc.ListFileGrants(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(grants), nil
+}
+
+// RevokeGrant removes a user's access to a file (owner only).
+func (h *Handler) RevokeGrant(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	rid, err := params.UUIDPath(c, "uid")
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RevokeUserShare(c.Context(), uid, id, rid); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Access removed"), nil
+}
+
+// SharedWithMe lists files other users have shared with the caller.
+func (h *Handler) SharedWithMe(c fuego.ContextNoBody) (*response.Envelope[[]models.SharedFileResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	files, err := h.svc.ListSharedWithMe(c.Context(), uid)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(files), nil
+}
+
 func (h *Handler) idOnly(c fuego.ContextNoBody) (uuid.UUID, uuid.UUID, error) {
 	uid, err := currentUserID(c.Context())
 	if err != nil {
