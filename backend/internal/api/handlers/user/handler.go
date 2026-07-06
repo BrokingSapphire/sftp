@@ -169,6 +169,15 @@ func (h *Handler) Delete(c fuego.ContextNoBody) (*response.Envelope[response.Any
 	return response.OKWithMessage[response.Any](nil, "User deleted"), nil
 }
 
+// StorageOverview returns per-user usage + system media breakdown (admin).
+func (h *Handler) StorageOverview(c fuego.ContextNoBody) (*response.Envelope[usersvc.StorageOverview], error) {
+	ov, err := h.svc.StorageOverview(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(*ov), nil
+}
+
 // ListRoles returns all roles with permissions.
 func (h *Handler) ListRoles(c fuego.ContextNoBody) (*response.Envelope[[]usersvc.RoleInfo], error) {
 	roles, err := h.svc.ListRoles(c.Context())

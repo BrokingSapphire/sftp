@@ -237,6 +237,67 @@ func (s *Service) ListPermissions(ctx context.Context) ([]sftpdb.Permission, err
 	return s.q.ListPermissions(ctx)
 }
 
+// UserStorage is a per-user storage usage row.
+type UserStorage struct {
+	ID           string `json:"id"`
+	Username     string `json:"username"`
+	FullName     string `json:"full_name"`
+	Email        string `json:"email"`
+	Role         string `json:"role"`
+	StorageUsed  int64  `json:"storage_used"`
+	StorageQuota int64  `json:"storage_quota"`
+	Unlimited    bool   `json:"unlimited"`
+	FileCount    int64  `json:"file_count"`
+	PercentUsed  int    `json:"percent_used"`
+}
+
+// MediaSlice is a media-category size bucket.
+type MediaSlice struct {
+	Category string `json:"category"`
+	Total    int64  `json:"total"`
+	Files    int64  `json:"files"`
+}
+
+// StorageOverview is the admin storage-monitoring payload.
+type StorageOverview struct {
+	Users      []UserStorage `json:"users"`
+	Media      []MediaSlice  `json:"media"`
+	SystemUsed int64         `json:"system_used"`
+}
+
+// StorageOverview aggregates per-user usage and a system-wide media breakdown.
+func (s *Service) StorageOverview(ctx context.Context) (*StorageOverview, error) {
+	rows, err := s.q.StorageByUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	media, err := s.q.MediaBreakdown(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &StorageOverview{Users: make([]UserStorage, 0, len(rows)), Media: make([]MediaSlice, 0, len(media))}
+	for _, r := range rows {
+		pct := 0
+		if r.StorageQuota > 0 {
+			pct = int(float64(r.StorageUsed) / float64(r.StorageQuota) * 100)
+			if pct > 100 {
+				pct = 100
+			}
+		}
+		out.Users = append(out.Users, UserStorage{
+			ID: r.ID.String(), Username: r.Username, FullName: r.FullName, Email: r.Email, Role: r.Role,
+			StorageUsed: r.StorageUsed, StorageQuota: r.StorageQuota, Unlimited: r.StorageQuota == 0,
+			FileCount: r.FileCount, PercentUsed: pct,
+		})
+	}
+	for _, m := range media {
+		out.Media = append(out.Media, MediaSlice{Category: m.Category, Total: m.Total, Files: m.Files})
+		out.SystemUsed += m.Total
+	}
+	return out, nil
+}
+
 // ── mapping helpers ────────────────────────────────────────
 
 func (s *Service) toResponse(ctx context.Context, u sftpdb.User) *models.Response {

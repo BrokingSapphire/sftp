@@ -151,7 +151,7 @@ export interface RoleInfo {
 export const usersApi = {
   list: (limit = 50, offset = 0) =>
     unwrap<AdminUser[]>(http.get<Envelope<AdminUser[]>>("/users/", { params: { limit, offset } })),
-  create: (body: { email: string; username: string; password: string; full_name: string; role: string }) =>
+  create: (body: { email: string; username: string; password: string; full_name: string; role: string; storage_quota: number }) =>
     http.post("/users/", body),
   setActive: (id: string, is_active: boolean) => http.put(`/users/${id}/status`, { is_active }),
   setRole: (id: string, role: string) => http.put(`/users/${id}/role`, { role }),
@@ -161,6 +161,18 @@ export const usersApi = {
 
 export const rolesApi = {
   list: () => unwrap<RoleInfo[]>(http.get<Envelope<RoleInfo[]>>("/roles/")),
+};
+
+export interface UserStorage {
+  id: string; username: string; full_name: string; email: string; role: string;
+  storage_used: number; storage_quota: number; unlimited: boolean;
+  file_count: number; percent_used: number;
+}
+export interface MediaSlice { category: string; total: number; files: number; }
+export interface StorageOverview { users: UserStorage[]; media: MediaSlice[]; system_used: number; }
+
+export const storageApi = {
+  overview: () => unwrap<StorageOverview>(http.get<Envelope<StorageOverview>>("/users/storage")),
 };
 
 // ── Audit + telemetry ──────────────────────────────────────

@@ -87,6 +87,7 @@ type Querier interface {
 	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]Session, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	LockUser(ctx context.Context, arg LockUserParams) error
+	MediaBreakdown(ctx context.Context) ([]MediaBreakdownRow, error)
 	MoveFile(ctx context.Context, arg MoveFileParams) error
 	MoveFolder(ctx context.Context, arg MoveFolderParams) error
 	PurgeActivityBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
@@ -114,6 +115,7 @@ type Querier interface {
 	SoftDeleteFile(ctx context.Context, id uuid.UUID) error
 	SoftDeleteFolder(ctx context.Context, id uuid.UUID) error
 	SoftDeleteUser(ctx context.Context, id uuid.UUID) error
+	StorageByUser(ctx context.Context) ([]StorageByUserRow, error)
 	SumFileSizesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	SystemFileCount(ctx context.Context) (int64, error)
 	SystemStorageUsed(ctx context.Context) (int64, error)

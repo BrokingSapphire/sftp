@@ -18,7 +18,8 @@ export default function AdminUsersPage() {
   const users = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list() });
   const roles = useQuery({ queryKey: ["roles"], queryFn: () => rolesApi.list() });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", username: "", full_name: "", password: "", role: "employee" });
+  const [form, setForm] = useState({ email: "", username: "", full_name: "", password: "", role: "employee", quota_gb: 15 });
+  const isSuper = form.role === "super_admin";
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["users"] });
 
@@ -28,12 +29,15 @@ export default function AdminUsersPage() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) return toast.error("Enter a valid email address");
     if (form.username.trim().length < 3) return toast.error("Username must be at least 3 characters");
     if (form.password.length < 12) return toast.error("Password must be at least 12 characters");
+    if (!isSuper && (!form.quota_gb || form.quota_gb <= 0)) return toast.error("Set a storage quota (GB)");
 
+    // Super admins are unlimited (quota 0); everyone else gets a fixed quota.
+    const storage_quota = isSuper ? 0 : Math.round(form.quota_gb * 1024 ** 3);
     try {
-      await usersApi.create(form);
+      await usersApi.create({ email: form.email, username: form.username, password: form.password, full_name: form.full_name, role: form.role, storage_quota });
       toast.success("User created");
       setOpen(false);
-      setForm({ email: "", username: "", full_name: "", password: "", role: "employee" });
+      setForm({ email: "", username: "", full_name: "", password: "", role: "employee", quota_gb: 15 });
       refresh();
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Could not create user");
@@ -65,6 +69,17 @@ export default function AdminUsersPage() {
             <select className="h-10 rounded-lg border border-border bg-surface px-3 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               {roles.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}
             </select>
+            <div className="relative">
+              <Input
+                type="number" min={1} placeholder="Max storage (GB)"
+                value={isSuper ? "" : form.quota_gb}
+                disabled={isSuper}
+                onChange={(e) => setForm({ ...form, quota_gb: Number(e.target.value) })}
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted">
+                {isSuper ? "Unlimited" : "GB"}
+              </span>
+            </div>
             <Button size="sm" onClick={create}><Plus size={16} /> Create</Button>
           </div>
 
