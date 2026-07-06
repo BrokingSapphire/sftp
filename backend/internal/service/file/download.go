@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"sapphirebroking.com/sftp_service/internal/apperrors"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 )
 
@@ -30,9 +31,14 @@ type DownloadMeta struct {
 // OpenForDownload opens a file for streaming and records the download.
 // The caller must Close the returned handle's File.
 func (s *Service) OpenForDownload(ctx context.Context, owner, id uuid.UUID, meta DownloadMeta) (*DownloadHandle, error) {
-	f, err := s.ownedFile(ctx, owner, id)
+	f, err := s.q.GetFileByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.ErrFileNotFound
+	}
+	// Owners can download their files; anyone can download organisation-wide
+	// Common files.
+	if f.OwnerID != owner && !f.IsCommon {
+		return nil, apperrors.ErrForbidden
 	}
 	fh, err := s.store.Open(f.StorageKey)
 	if err != nil {

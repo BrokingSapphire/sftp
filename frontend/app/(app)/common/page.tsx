@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
+import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { StaggerList, StaggerItem } from "@/components/motion";
 import { formatBytes, timeAgo } from "@/lib/utils";
 
@@ -20,9 +21,22 @@ export default function CommonPage() {
   const q = useQuery({ queryKey: ["common"], queryFn: () => commonApi.list() });
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<number | null>(null);
+  const ctx = useContextMenu();
 
   const files = q.data ?? [];
   const refresh = () => qc.invalidateQueries({ queryKey: ["common"] });
+
+  function fileMenu(f: CommonFile, i: number): MenuItem[] {
+    const items: MenuItem[] = [
+      { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
+      { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
+    ];
+    if (f.can_delete) {
+      items.push({ separator: true, label: "" });
+      items.push({ label: "Delete from Common", icon: Trash2, danger: true, onClick: () => remove(f) });
+    }
+    return items;
+  }
 
   async function upload(fs: File[]) {
     for (const file of fs) {
@@ -71,7 +85,7 @@ export default function CommonPage() {
             </div>
             <StaggerList>
               {files.map((f, i) => (
-                <StaggerItem key={f.id} className="group grid grid-cols-[1fr_10rem_auto_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className="group grid grid-cols-[1fr_10rem_auto_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
                     {fileIcon(f.extension, 18)}
                     <span className="truncate text-sm font-medium">{f.name}</span>
@@ -102,6 +116,8 @@ export default function CommonPage() {
           onChanged={refresh}
         />
       )}
+
+      <ContextMenu menu={ctx.menu} onClose={ctx.close} />
     </div>
   );
 }
