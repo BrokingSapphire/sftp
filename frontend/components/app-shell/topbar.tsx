@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { PingIndicator } from "@/components/app-shell/ping";
 
 export function Topbar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [q, setQ] = useState("");
 
@@ -49,7 +49,7 @@ export function Topbar() {
             <div className="text-xs capitalize text-muted">{user?.role?.replace("_", " ")}</div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" aria-label="Sign out" onClick={() => logout()}>
+        <Button variant="ghost" size="icon" aria-label="Sign out" onClick={() => router.push("/logout")}>
           <LogOut size={18} />
         </Button>
       </div>
