@@ -27,7 +27,7 @@ func (q *Queries) CountFolderChildren(ctx context.Context, parentID *uuid.UUID) 
 const createFolder = `-- name: CreateFolder :one
 INSERT INTO folders (owner_id, parent_id, name, path, depth)
 VALUES ($1, $5, $2, $3, $4)
-RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at
+RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color
 `
 
 type CreateFolderParams struct {
@@ -60,6 +60,7 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Color,
 	)
 	return i, err
 }
@@ -103,7 +104,7 @@ func (q *Queries) GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwn
 }
 
 const getFolderByID = `-- name: GetFolderByID :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at FROM folders WHERE id = $1 AND deleted_at IS NULL
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error) {
@@ -122,12 +123,13 @@ func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Color,
 	)
 	return i, err
 }
 
 const getFolderByOwnerPath = `-- name: GetFolderByOwnerPath :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders
 WHERE owner_id = $1 AND path = $2 AND deleted_at IS NULL
 `
 
@@ -152,12 +154,13 @@ func (q *Queries) GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwner
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Color,
 	)
 	return i, err
 }
 
 const listFoldersByParent = `-- name: ListFoldersByParent :many
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders
 WHERE owner_id = $1
   AND parent_id IS NOT DISTINCT FROM $2
   AND deleted_at IS NULL
@@ -191,6 +194,7 @@ func (q *Queries) ListFoldersByParent(ctx context.Context, arg ListFoldersByPare
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Color,
 		); err != nil {
 			return nil, err
 		}
@@ -237,6 +241,20 @@ type RenameFolderParams struct {
 
 func (q *Queries) RenameFolder(ctx context.Context, arg RenameFolderParams) error {
 	_, err := q.db.Exec(ctx, renameFolder, arg.ID, arg.Name, arg.Path)
+	return err
+}
+
+const setFolderColor = `-- name: SetFolderColor :exec
+UPDATE folders SET color = $2, updated_at = now() WHERE id = $1
+`
+
+type SetFolderColorParams struct {
+	ID    uuid.UUID `json:"id"`
+	Color string    `json:"color"`
+}
+
+func (q *Queries) SetFolderColor(ctx context.Context, arg SetFolderColorParams) error {
+	_, err := q.db.Exec(ctx, setFolderColor, arg.ID, arg.Color)
 	return err
 }
 

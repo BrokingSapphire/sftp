@@ -192,6 +192,17 @@ func (s *Service) StarFolder(ctx context.Context, owner, id uuid.UUID, starred b
 	return s.q.SetFolderStar(ctx, sftpdb.SetFolderStarParams{ID: id, IsStarred: starred})
 }
 
+// SetFolderColor sets (or clears, when color=="") a folder's colour.
+func (s *Service) SetFolderColor(ctx context.Context, owner, id uuid.UUID, color string) error {
+	if len(color) > 16 {
+		return apperrors.ErrInvalidRequest
+	}
+	if _, err := s.ownedFolder(ctx, owner, id); err != nil {
+		return err
+	}
+	return s.q.SetFolderColor(ctx, sftpdb.SetFolderColorParams{ID: id, Color: color})
+}
+
 // ── shared helpers ────────────────────────────────────────
 
 func (s *Service) ownedFolder(ctx context.Context, owner, id uuid.UUID) (sftpdb.Folder, error) {

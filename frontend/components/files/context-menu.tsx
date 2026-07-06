@@ -11,6 +11,8 @@ export interface MenuItem {
   danger?: boolean;
   separator?: boolean;
   disabled?: boolean;
+  /** Custom node rendered instead of a button row (e.g. a colour-swatch strip). */
+  node?: React.ReactNode;
 }
 
 export interface MenuState {
@@ -79,7 +81,9 @@ export function ContextMenu({ menu, onClose }: { menu: MenuState | null; onClose
           className="fixed z-[60] min-w-52 overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-xl"
         >
           {menu.items.map((it, i) =>
-            it.separator ? (
+            it.node ? (
+              <div key={i} className="px-2 py-1.5">{it.node}</div>
+            ) : it.separator ? (
               <div key={i} className="my-1 h-px bg-border" />
             ) : (
               <button

@@ -33,6 +33,7 @@ func toFolderResponse(f sftpdb.Folder) *models.FolderResponse {
 		Path:      f.Path,
 		Depth:     f.Depth,
 		SizeBytes: f.SizeBytes,
+		Color:     f.Color,
 		IsStarred: f.IsStarred,
 		IsPinned:  f.IsPinned,
 		CreatedAt: fmtTS(f.CreatedAt),

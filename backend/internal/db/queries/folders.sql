@@ -37,6 +37,9 @@ UPDATE folders SET deleted_at = now(), updated_at = now() WHERE id = $1;
 -- name: SetFolderStar :exec
 UPDATE folders SET is_starred = $2, updated_at = now() WHERE id = $1;
 
+-- name: SetFolderColor :exec
+UPDATE folders SET color = $2, updated_at = now() WHERE id = $1;
+
 -- name: CountFolderChildren :one
 SELECT
   (SELECT count(*) FROM folders WHERE parent_id = $1 AND deleted_at IS NULL) +

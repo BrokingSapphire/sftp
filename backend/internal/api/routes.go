@@ -127,6 +127,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Put(gd, "/{id}/rename", h.RenameFolder, fwrite, option.Summary("Rename folder"))
 	fuego.Put(gd, "/{id}/move", h.MoveFolder, fwrite, option.Summary("Move folder"))
 	fuego.Put(gd, "/{id}/star", h.StarFolder, fwrite, option.Summary("Star/unstar folder"))
+	fuego.Put(gd, "/{id}/color", h.SetFolderColor, fwrite, option.Summary("Set folder colour"))
 	fuego.Delete(gd, "/{id}", h.DeleteFolder, fdel, option.Summary("Delete folder"))
 
 	// Files.

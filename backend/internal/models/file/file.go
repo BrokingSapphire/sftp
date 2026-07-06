@@ -24,6 +24,11 @@ type StarRequest struct {
 	Starred bool `json:"starred"`
 }
 
+// ColorRequest sets a folder's colour ("" clears it).
+type ColorRequest struct {
+	Color string `json:"color"`
+}
+
 // FolderResponse is the public projection of a folder.
 type FolderResponse struct {
 	ID        string  `json:"id"`
@@ -32,6 +37,7 @@ type FolderResponse struct {
 	Path      string  `json:"path"`
 	Depth     int32   `json:"depth"`
 	SizeBytes int64   `json:"size_bytes"`
+	Color     string  `json:"color,omitempty"`
 	IsStarred bool    `json:"is_starred"`
 	IsPinned  bool    `json:"is_pinned"`
 	CreatedAt string  `json:"created_at"`

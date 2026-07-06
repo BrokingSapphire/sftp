@@ -143,10 +143,16 @@ export default function FilesPage() {
       { label: "Move to trash", icon: Trash2, danger: true, onClick: () => trash(f) },
     ];
   }
+  async function setColor(f: FolderItem, color: string) {
+    try { await filesApi.setFolderColor(f.id, color); refresh(); }
+    catch { toast.error("Could not set colour"); }
+  }
   function folderMenu(f: FolderItem): MenuItem[] {
     return [
       { label: "Open", icon: FolderOpen, onClick: () => openFolder(f) },
       { label: "Rename", icon: Pencil, onClick: () => rename("folder", f.id, f.name) },
+      { separator: true, label: "" },
+      { label: "colour", node: <ColorSwatches current={f.color} onPick={(c) => setColor(f, c)} /> },
       { separator: true, label: "" },
       { label: "Delete", icon: Trash2, danger: true, onClick: () => filesApi.deleteFolder(f.id).then(refresh).catch(() => toast.error("Folder not empty")) },
     ];
@@ -222,7 +228,9 @@ export default function FilesPage() {
               {folders.map((f) => (
                 <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
-                    <motion.span whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}><Folder size={18} className="text-primary" /></motion.span>
+                    <motion.span whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                      <Folder size={18} style={f.color ? { color: f.color } : undefined} className={f.color ? "" : "text-primary"} />
+                    </motion.span>
                     <span className="truncate text-sm font-medium">{f.name}</span>
                   </button>
                   <span className="text-xs text-muted">—</span>
@@ -268,7 +276,7 @@ export default function FilesPage() {
                   onContextMenu={(e) => ctx.open(e, folderMenu(f))}
                   className="group flex w-full items-center gap-2 rounded-xl border border-border bg-surface p-3 text-left transition-shadow hover:shadow-md"
                 >
-                  <Folder size={20} className="shrink-0 text-primary" />
+                  <Folder size={20} style={f.color ? { color: f.color } : undefined} className={f.color ? "shrink-0" : "shrink-0 text-primary"} />
                   <span className="truncate text-sm font-medium">{f.name}</span>
                 </motion.button>
               </StaggerItem>
@@ -328,5 +336,33 @@ function ViewBtn({ children, active, onClick }: { children: React.ReactNode; act
     <button onClick={onClick} className={cn("flex h-7 w-7 items-center justify-center rounded transition-colors", active ? "bg-primary/10 text-primary" : "text-muted hover:text-foreground")}>
       {children}
     </button>
+  );
+}
+
+const FOLDER_PALETTE = [
+  "", "#064D51", "#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#6b7280",
+];
+
+function ColorSwatches({ current, onPick }: { current?: string; onPick: (c: string) => void }) {
+  return (
+    <div>
+      <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-muted">Folder colour</p>
+      <div className="flex flex-wrap gap-1.5">
+        {FOLDER_PALETTE.map((c) => (
+          <button
+            key={c || "none"}
+            title={c || "Default"}
+            onClick={() => onPick(c)}
+            className={cn(
+              "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+              (current || "") === c ? "ring-2 ring-ring ring-offset-1 ring-offset-surface" : "",
+            )}
+            style={{ backgroundColor: c || "var(--surface-2)", borderColor: c ? "transparent" : "var(--border)" }}
+          >
+            {!c && <span className="text-[9px] text-muted">×</span>}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

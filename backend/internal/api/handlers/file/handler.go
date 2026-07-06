@@ -132,6 +132,23 @@ func (h *Handler) StarFolder(c fuego.ContextWithBody[models.StarRequest]) (*resp
 	return response.OKWithMessage[response.Any](nil, "Folder updated"), nil
 }
 
+// SetFolderColor sets a folder's colour.
+func (h *Handler) SetFolderColor(c fuego.ContextWithBody[models.ColorRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := c.Body()
+	if err := h.svc.SetFolderColor(c.Context(), uid, id, body.Color); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder colour updated"), nil
+}
+
 // ── Files ─────────────────────────────────────────────────
 
 // GetFile returns file metadata.

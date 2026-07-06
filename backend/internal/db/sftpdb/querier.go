@@ -105,6 +105,7 @@ type Querier interface {
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
 	SetFileCommon(ctx context.Context, arg SetFileCommonParams) error
 	SetFileStar(ctx context.Context, arg SetFileStarParams) error
+	SetFolderColor(ctx context.Context, arg SetFolderColorParams) error
 	SetFolderStar(ctx context.Context, arg SetFolderStarParams) error
 	SetRolePermissions(ctx context.Context, arg SetRolePermissionsParams) error
 	SetUploadStatus(ctx context.Context, arg SetUploadStatusParams) error

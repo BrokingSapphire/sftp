@@ -41,6 +41,7 @@ export const filesApi = {
   renameFile: (id: string, name: string) => http.put(`/files/${id}/rename`, { name }),
   renameFolder: (id: string, name: string) => http.put(`/folders/${id}/rename`, { name }),
   starFile: (id: string, starred: boolean) => http.put(`/files/${id}/star`, { starred }),
+  setFolderColor: (id: string, color: string) => http.put(`/folders/${id}/color`, { color }),
   trashFile: (id: string) => http.post(`/files/${id}/trash`, {}),
   restoreFile: (id: string) => http.post(`/files/${id}/restore`, {}),
   deleteFile: (id: string) => http.delete(`/files/${id}`),

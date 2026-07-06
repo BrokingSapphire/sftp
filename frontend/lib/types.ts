@@ -25,6 +25,7 @@ export interface FolderItem {
   path: string;
   depth: number;
   size_bytes: number;
+  color?: string;
   is_starred: boolean;
   is_pinned: boolean;
   created_at: string;
