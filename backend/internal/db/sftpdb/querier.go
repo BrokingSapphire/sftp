@@ -49,6 +49,7 @@ type Querier interface {
 	DeactivateExpiredShares(ctx context.Context) error
 	DeleteExpiredSessions(ctx context.Context) error
 	DeleteExpiredUploads(ctx context.Context) ([]DeleteExpiredUploadsRow, error)
+	DeleteFileEmbeddings(ctx context.Context, fileID uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) error
 	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
@@ -81,6 +82,7 @@ type Querier interface {
 	InsertActivity(ctx context.Context, arg InsertActivityParams) error
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
+	InsertFileEmbedding(ctx context.Context, arg InsertFileEmbeddingParams) error
 	InsertFileVersion(ctx context.Context, arg InsertFileVersionParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
 	InsertSecurityAlert(ctx context.Context, arg InsertSecurityAlertParams) (SecurityAlert, error)
@@ -90,10 +92,12 @@ type Querier interface {
 	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
 	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)
 	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
+	ListEmbeddingsByOwner(ctx context.Context, arg ListEmbeddingsByOwnerParams) ([]ListEmbeddingsByOwnerRow, error)
 	ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]ListFileGrantsRow, error)
 	ListFileVersions(ctx context.Context, fileID uuid.UUID) ([]ListFileVersionsRow, error)
 	ListFilesByFolder(ctx context.Context, arg ListFilesByFolderParams) ([]File, error)
 	ListFilesMissingText(ctx context.Context, limit int32) ([]ListFilesMissingTextRow, error)
+	ListFilesNeedingEmbedding(ctx context.Context, rowLimit int32) ([]ListFilesNeedingEmbeddingRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)

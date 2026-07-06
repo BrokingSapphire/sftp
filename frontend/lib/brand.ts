@@ -23,6 +23,8 @@ export interface Brand {
   mail: { from: string };
   // Only microsoft.enabled reaches the browser — credentials are backend-only.
   sso?: { microsoft?: { enabled: boolean } };
+  // Only enabled reaches the browser — Ollama URL/models are backend-only.
+  ai?: { enabled: boolean };
 }
 
 export const BRAND = brand as Brand;

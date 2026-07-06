@@ -10,6 +10,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
+	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
@@ -40,6 +41,7 @@ type Deps struct {
 	APIKeyHandler *apikeyhandler.Handler
 	AuditHandler    *audithandler.Handler
 	SecurityHandler *securityhandler.Handler
+	AIHandler       *aihandler.Handler
 	ShareHandler  *sharehandler.Handler
 	NotifHandler  *notifhandler.Handler
 }
@@ -77,6 +79,15 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerAuditRoutes(g, deps)
 	registerShareRoutes(g, deps)
 	registerNotificationRoutes(g, deps)
+	registerAIRoutes(g, deps)
+}
+
+func registerAIRoutes(g *fuego.Server, deps Deps) {
+	gai := fuego.Group(g, "/ai", option.Tags("AI"), secured, respUnauthorized)
+	fuego.Use(gai, deps.Auth.Require)
+	fuego.Get(gai, "/status", deps.AIHandler.Status, option.Summary("AI availability"))
+	fuego.Post(gai, "/ask", deps.AIHandler.Ask, option.Summary("Ask a question about your files"))
+	fuego.Get(gai, "/search", deps.AIHandler.Search, option.Summary("Semantic search over your files"))
 }
 
 func registerNotificationRoutes(g *fuego.Server, deps Deps) {

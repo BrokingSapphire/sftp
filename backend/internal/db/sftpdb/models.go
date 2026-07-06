@@ -96,6 +96,16 @@ type File struct {
 	PiiTypes         []string           `json:"pii_types"`
 }
 
+type FileEmbedding struct {
+	ID        uuid.UUID          `json:"id"`
+	FileID    uuid.UUID          `json:"file_id"`
+	OwnerID   uuid.UUID          `json:"owner_id"`
+	ChunkNo   int32              `json:"chunk_no"`
+	Content   string             `json:"content"`
+	Embedding []byte             `json:"embedding"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type FileTag struct {
 	FileID uuid.UUID `json:"file_id"`
 	TagID  uuid.UUID `json:"tag_id"`

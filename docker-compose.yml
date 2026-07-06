@@ -78,8 +78,22 @@ services:
       - backend
       - frontend
 
+  # Optional on-prem AI backend. Off by default — start with:
+  #   docker compose --profile ai up -d
+  # then pull the models once:
+  #   docker compose exec ollama ollama pull nomic-embed-text
+  #   docker compose exec ollama ollama pull llama3.1
+  # and set ai.enabled=true in brand.config.json (deploy.sh can do this for you).
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["ai"]
+    volumes:
+      - ollama-data:/root/.ollama
+
 volumes:
   postgres-data:
   sftp-files:
   sftp-tmp:
   sftp-logs:
+  ollama-data:

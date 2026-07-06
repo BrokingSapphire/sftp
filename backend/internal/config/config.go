@@ -30,9 +30,19 @@ type Config struct {
 	SSO       SSOConfig           `mapstructure:"sso"`
 	Bootstrap BootstrapConfig     `mapstructure:"bootstrap"`
 	Mail      MailConfig          `mapstructure:"mail"`
+	AI        AIConfig            `mapstructure:"ai"`
 	// OrgDomains lists the organisation's own email domains. Sharing to any
 	// other domain is treated as an "external" share (audited + warned).
 	OrgDomains []string `mapstructure:"org_domains"`
+}
+
+// AIConfig enables on-premise AI (semantic search + ask-your-files) backed by a
+// self-hosted Ollama server. Disabled by default — the app runs fully without it.
+type AIConfig struct {
+	Enabled    bool   `mapstructure:"enabled"     default:"false"`
+	OllamaURL  string `mapstructure:"ollama_url"  default:"http://ollama:11434"`
+	EmbedModel string `mapstructure:"embed_model" default:"nomic-embed-text"`
+	ChatModel  string `mapstructure:"chat_model"  default:"llama3.1"`
 }
 
 // MailConfig configures the on-premise SMTP mailer (share notifications).

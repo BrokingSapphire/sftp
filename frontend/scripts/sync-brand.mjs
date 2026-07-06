@@ -39,6 +39,9 @@ delete clean.smtp;
 if (clean.sso?.microsoft) {
   clean.sso = { microsoft: { enabled: !!clean.sso.microsoft.enabled } };
 }
+if (clean.ai) {
+  clean.ai = { enabled: !!clean.ai.enabled }; // ollama URL/models stay server-side
+}
 
 const out = join(frontendRoot, "config", "brand.json");
 mkdirSync(dirname(out), { recursive: true });

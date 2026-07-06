@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Folder, Globe, Star, Share2, Trash2, Inbox,
-  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert,
+  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert, Sparkles,
 } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
 import { cn, formatBytes } from "@/lib/utils";
 import { Logo } from "@/components/logo";
@@ -21,6 +22,7 @@ interface NavItem {
 const primary: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/files", label: "My Files", icon: Folder },
+  ...(BRAND.ai?.enabled ? [{ href: "/ask", label: "Ask AI", icon: Sparkles }] : []),
   { href: "/common", label: "Common", icon: Globe },
   { href: "/shared", label: "Shared with me", icon: Users },
   { href: "/inherited", label: "Inherited", icon: Inbox },

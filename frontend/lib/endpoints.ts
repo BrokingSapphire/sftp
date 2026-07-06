@@ -255,6 +255,16 @@ export const securityApi = {
   resolve: (id: string) => http.post(`/security/alerts/${id}/resolve`, {}),
 };
 
+// ── AI (semantic search + ask-your-files) ─────────────────
+export interface AiSource { file_id: string; name: string }
+export interface AiAnswer { answer: string; sources?: AiSource[] }
+export interface AiHit { file_id: string; name: string; score: number; snippet: string }
+export const aiApi = {
+  status: () => unwrap<{ enabled: boolean }>(http.get<Envelope<{ enabled: boolean }>>("/ai/status")),
+  ask: (question: string) => unwrap<AiAnswer>(http.post<Envelope<AiAnswer>>("/ai/ask", { question })),
+  search: (q: string) => unwrap<AiHit[]>(http.get<Envelope<AiHit[]>>(`/ai/search?q=${encodeURIComponent(q)}`)),
+};
+
 // ── Notifications ──────────────────────────────────────────
 export interface Notification {
   id: string; type: string; title: string; body: string;

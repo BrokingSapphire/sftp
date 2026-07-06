@@ -17,6 +17,7 @@ import (
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
+	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
@@ -24,6 +25,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
+	aisvc "sapphirebroking.com/sftp_service/internal/service/ai"
 	apikeysvc "sapphirebroking.com/sftp_service/internal/service/apikey"
 	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
@@ -35,6 +37,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/internal/worker"
 	"sapphirebroking.com/sftp_service/migrations"
+	"sapphirebroking.com/sftp_service/pkg/ai"
 	"sapphirebroking.com/sftp_service/pkg/cache"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -134,6 +137,16 @@ func main() {
 	detector.Start()
 	defer detector.Stop()
 
+	// Optional on-premise AI (semantic search + ask-your-files) via Ollama.
+	var aiClient *ai.Client
+	if cfg.AI.Enabled {
+		aiClient = ai.New(cfg.AI.OllamaURL, cfg.AI.EmbedModel, cfg.AI.ChatModel)
+		appLogger.Info("ai features enabled", "ollama", cfg.AI.OllamaURL, "embed", cfg.AI.EmbedModel, "chat", cfg.AI.ChatModel)
+	}
+	aiService := aisvc.New(queries, aiClient, cfg.AI.Enabled, appLogger)
+	aiService.StartBackfill(30 * time.Second)
+	defer aiService.Stop()
+
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
 		appLogger.Error("bootstrap super-admin failed", "error", err)
@@ -164,6 +177,7 @@ func main() {
 		ShareHandler:  sharehandler.NewHandler(shareService, appLogger),
 		NotifHandler:    notifhandler.NewHandler(queries, appLogger),
 		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
+		AIHandler:       aihandler.NewHandler(aiService, appLogger),
 	})
 
 	go httpServer.Start()
