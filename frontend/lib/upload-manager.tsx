@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { filesApi } from "./endpoints";
+import { ApiError } from "./api";
 
 export type UploadStatus = "uploading" | "paused" | "done" | "error" | "canceled";
 
@@ -89,9 +90,13 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         patch(id, { status: "done", progress: 100 });
         qc.invalidateQueries({ queryKey: ["files"] });
         qc.invalidateQueries({ queryKey: ["recent"] });
-      } catch {
+      } catch (err) {
         patch(id, { status: "error" });
-        toast.error(`Upload failed: ${c.file.name}`, { position: "bottom-right" });
+        if (err instanceof ApiError && err.status === 401) {
+          toast.error("Your session expired — please sign in again.", { position: "bottom-right" });
+        } else {
+          toast.error(`Upload failed: ${c.file.name}`, { position: "bottom-right" });
+        }
       }
     },
     [patch, qc],
