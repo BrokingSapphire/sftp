@@ -204,3 +204,11 @@ type FileVersionResponse struct {
 	Author    string `json:"author,omitempty"`
 	CreatedAt string `json:"created_at"`
 }
+
+// InheritedGroup groups inherited files by the (deleted) user they came from.
+type InheritedGroup struct {
+	FromID    string         `json:"from_id"`
+	FromName  string         `json:"from_name"`
+	FromEmail string         `json:"from_email,omitempty"`
+	Files     []FileResponse `json:"files"`
+}

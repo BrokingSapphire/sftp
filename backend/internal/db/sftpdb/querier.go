@@ -101,6 +101,7 @@ type Querier interface {
 	ListFilesNeedingEmbedding(ctx context.Context, rowLimit int32) ([]ListFilesNeedingEmbeddingRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
+	ListInheritedWithSource(ctx context.Context, ownerID uuid.UUID) ([]ListInheritedWithSourceRow, error)
 	ListLoginHistoryForUser(ctx context.Context, arg ListLoginHistoryForUserParams) ([]LoginHistory, error)
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error)
 	ListPermissions(ctx context.Context) ([]Permission, error)

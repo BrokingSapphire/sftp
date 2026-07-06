@@ -20,8 +20,9 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      # Repo root so the canonical brand.config.json is baked into the image.
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     ports:
       - "2222:2222"   # native SFTP-over-SSH endpoint
@@ -47,8 +48,6 @@ services:
       - sftp-files:/app/storage/files
       - sftp-tmp:/app/storage/tmp
       - sftp-logs:/app/storage/logs
-      # Canonical white-label config, shared with the frontend.
-      - ./brand.config.json:/app/brand.config.json:ro
     depends_on:
       postgres:
         condition: service_healthy

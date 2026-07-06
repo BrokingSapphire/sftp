@@ -53,3 +53,11 @@ UPDATE notifications SET is_read = TRUE, read_at = now() WHERE id = $1 AND user_
 
 -- name: MarkAllNotificationsRead :exec
 UPDATE notifications SET is_read = TRUE, read_at = now() WHERE user_id = $1 AND is_read = FALSE;
+
+-- name: ListInheritedWithSource :many
+SELECT f.*,
+       u.full_name AS from_name, u.username AS from_username, u.email AS from_email
+FROM files f
+LEFT JOIN users u ON u.id = f.transfer_from
+WHERE f.owner_id = $1 AND f.transfer_pending = TRUE AND f.deleted_at IS NULL
+ORDER BY COALESCE(u.full_name, u.username, 'zzz'), f.name;

@@ -1,13 +1,17 @@
+# Build context is the REPO ROOT (see docker-compose.yml) so the canonical
+# brand.config.json can be baked in — bind-mounting a single file fails on some
+# hosts (e.g. external/mounted drives).
+
 # ── Build stage ──────────────────────────────────────────────
 FROM golang:1.26-alpine AS build
 WORKDIR /src
 
 RUN apk add --no-cache git ca-certificates
 
-COPY go.mod go.sum ./
+COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY backend/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" \
     -o /out/sftp_service ./cmd/server
 
@@ -18,7 +22,9 @@ RUN apk add --no-cache ca-certificates tzdata && \
 WORKDIR /app
 
 COPY --from=build /out/sftp_service /app/sftp_service
-COPY config.example.yaml /app/config.yaml
+COPY backend/config.example.yaml /app/config.yaml
+# Canonical white-label config (read at /app/brand.config.json).
+COPY brand.config.json /app/brand.config.json
 
 # Storage + logs mounted as volumes in production.
 RUN mkdir -p /app/storage/files /app/storage/tmp /app/storage/logs && \

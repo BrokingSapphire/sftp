@@ -31,7 +31,7 @@ export const filesApi = {
     unwrap<Listing>(http.get<Envelope<Listing>>("/files/", { params: { folder_id: folderId } })),
   recent: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/recent")),
   starred: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/starred")),
-  inherited: () => unwrap<FileItem[]>(http.get<Envelope<FileItem[]>>("/files/inherited")),
+  inherited: () => unwrap<InheritedGroup[]>(http.get<Envelope<InheritedGroup[]>>("/files/inherited")),
   keepFile: (id: string) => http.post(`/files/${id}/keep`, {}),
   emptyTrash: () => http.post("/files/trash/empty", {}),
   copyFile: (id: string) => unwrap<FileItem>(http.post<Envelope<FileItem>>(`/files/${id}/copy`, {})),
@@ -150,6 +150,9 @@ export const commonApi = {
 };
 
 // ── Shares ─────────────────────────────────────────────────
+export interface InheritedGroup {
+  from_id: string; from_name: string; from_email?: string; files: FileItem[];
+}
 export interface FileVersion {
   version_no: number; size_bytes: number; checksum_sha256?: string; author?: string; created_at: string;
 }

@@ -155,6 +155,93 @@ func (q *Queries) ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]
 	return items, nil
 }
 
+const listInheritedWithSource = `-- name: ListInheritedWithSource :many
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types,
+       u.full_name AS from_name, u.username AS from_username, u.email AS from_email
+FROM files f
+LEFT JOIN users u ON u.id = f.transfer_from
+WHERE f.owner_id = $1 AND f.transfer_pending = TRUE AND f.deleted_at IS NULL
+ORDER BY COALESCE(u.full_name, u.username, 'zzz'), f.name
+`
+
+type ListInheritedWithSourceRow struct {
+	ID               uuid.UUID          `json:"id"`
+	OwnerID          uuid.UUID          `json:"owner_id"`
+	FolderID         *uuid.UUID         `json:"folder_id"`
+	Name             string             `json:"name"`
+	Extension        string             `json:"extension"`
+	MimeType         string             `json:"mime_type"`
+	SizeBytes        int64              `json:"size_bytes"`
+	ChecksumSha256   *string            `json:"checksum_sha256"`
+	StorageKey       string             `json:"storage_key"`
+	ThumbnailKey     *string            `json:"thumbnail_key"`
+	IsStarred        bool               `json:"is_starred"`
+	VersionNo        int32              `json:"version_no"`
+	DownloadCount    int64              `json:"download_count"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
+	IsCommon         bool               `json:"is_common"`
+	TransferPending  bool               `json:"transfer_pending"`
+	TransferDeadline pgtype.Timestamptz `json:"transfer_deadline"`
+	TransferFrom     *uuid.UUID         `json:"transfer_from"`
+	LegalHold        bool               `json:"legal_hold"`
+	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
+	Sensitivity      string             `json:"sensitivity"`
+	PiiTypes         []string           `json:"pii_types"`
+	FromName         *string            `json:"from_name"`
+	FromUsername     *string            `json:"from_username"`
+	FromEmail        *string            `json:"from_email"`
+}
+
+func (q *Queries) ListInheritedWithSource(ctx context.Context, ownerID uuid.UUID) ([]ListInheritedWithSourceRow, error) {
+	rows, err := q.db.Query(ctx, listInheritedWithSource, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListInheritedWithSourceRow{}
+	for rows.Next() {
+		var i ListInheritedWithSourceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.FolderID,
+			&i.Name,
+			&i.Extension,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.ChecksumSha256,
+			&i.StorageKey,
+			&i.ThumbnailKey,
+			&i.IsStarred,
+			&i.VersionNo,
+			&i.DownloadCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
+			&i.LegalHold,
+			&i.RetainUntil,
+			&i.Sensitivity,
+			&i.PiiTypes,
+			&i.FromName,
+			&i.FromUsername,
+			&i.FromEmail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotifications = `-- name: ListNotifications :many
 SELECT id, user_id, type, title, body, link, is_read, metadata, created_at, read_at FROM notifications
 WHERE user_id = $1

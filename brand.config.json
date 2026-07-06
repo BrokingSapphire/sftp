@@ -67,6 +67,6 @@
     "enabled": true,
     "ollamaUrl": "http://ollama:11434",
     "embedModel": "nomic-embed-text",
-    "chatModel": "llama3.2"
+    "chatModel": "llama3.2:1b"
   }
 }

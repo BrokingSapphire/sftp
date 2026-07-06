@@ -9,6 +9,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/apperrors"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	models "sapphirebroking.com/sftp_service/internal/models/file"
+	"sapphirebroking.com/sftp_service/internal/utils"
 )
 
 // ListInherited returns files assigned to the caller from a deleted user.
@@ -18,6 +19,60 @@ func (s *Service) ListInherited(ctx context.Context, owner uuid.UUID) ([]models.
 		return nil, err
 	}
 	return mapFiles(rows), nil
+}
+
+// ListInheritedGrouped returns inherited files grouped by the (deleted) user
+// they were transferred from — so the heir sees one section per source user.
+func (s *Service) ListInheritedGrouped(ctx context.Context, owner uuid.UUID) ([]models.InheritedGroup, error) {
+	rows, err := s.q.ListInheritedWithSource(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	order := make([]string, 0)
+	groups := make(map[string]*models.InheritedGroup)
+	for _, r := range rows {
+		key := ""
+		if r.TransferFrom != nil {
+			key = r.TransferFrom.String()
+		}
+		g, ok := groups[key]
+		if !ok {
+			name := derefStr(r.FromName)
+			if name == "" {
+				name = derefStr(r.FromUsername)
+			}
+			if name == "" {
+				name = "Unknown user"
+			}
+			g = &models.InheritedGroup{FromID: key, FromName: name, FromEmail: derefStr(r.FromEmail)}
+			groups[key] = g
+			order = append(order, key)
+		}
+		g.Files = append(g.Files, *toFileResponse(inheritedRowToFile(r)))
+	}
+	out := make([]models.InheritedGroup, 0, len(order))
+	for _, k := range order {
+		out = append(out, *groups[k])
+	}
+	return out, nil
+}
+
+func inheritedRowToFile(r sftpdb.ListInheritedWithSourceRow) sftpdb.File {
+	return sftpdb.File{
+		ID: r.ID, OwnerID: r.OwnerID, FolderID: r.FolderID, Name: r.Name, Extension: r.Extension,
+		MimeType: r.MimeType, SizeBytes: r.SizeBytes, ChecksumSha256: r.ChecksumSha256, StorageKey: r.StorageKey,
+		ThumbnailKey: r.ThumbnailKey, IsStarred: r.IsStarred, VersionNo: r.VersionNo, DownloadCount: r.DownloadCount,
+		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, DeletedAt: r.DeletedAt, IsCommon: r.IsCommon,
+		TransferPending: r.TransferPending, TransferDeadline: r.TransferDeadline, TransferFrom: r.TransferFrom,
+		LegalHold: r.LegalHold, RetainUntil: r.RetainUntil, Sensitivity: r.Sensitivity, PiiTypes: r.PiiTypes,
+	}
+}
+
+func derefStr(p *string) string {
+	if p != nil {
+		return *p
+	}
+	return ""
 }
 
 // KeepInherited clears the pending flag (the heir chooses to keep the file).
@@ -60,25 +115,58 @@ func (s *Service) ListCommon(ctx context.Context, caller uuid.UUID, isAdmin bool
 	return out, total, nil
 }
 
-// MakeCommon shares one of the caller's own files into the Common area.
+// MakeCommon shares one of the caller's own files into the Common area. The
+// Common area is unlimited, so the file's size is freed from the owner's quota.
 func (s *Service) MakeCommon(ctx context.Context, owner, fileID uuid.UUID) error {
-	if _, err := s.ownedFile(ctx, owner, fileID); err != nil {
+	f, err := s.ownedFile(ctx, owner, fileID)
+	if err != nil {
 		return err
 	}
-	return s.q.SetFileCommon(ctx, sftpdb.SetFileCommonParams{ID: fileID, IsCommon: true})
+	if f.IsCommon {
+		return nil
+	}
+	if err := s.q.SetFileCommon(ctx, sftpdb.SetFileCommonParams{ID: fileID, IsCommon: true}); err != nil {
+		return err
+	}
+	// Common files don't count against personal storage — free the space.
+	if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: owner, StorageUsed: -f.SizeBytes}); err != nil {
+		s.log.Error("make-common storage accounting failed", "err", err)
+	}
+	return nil
 }
 
 // UploadCommon stores a file directly into the Common area (any user may add).
+// The Common area is UNLIMITED — this bypasses the per-user quota and does not
+// count toward the uploader's storage usage.
 func (s *Service) UploadCommon(ctx context.Context, owner uuid.UUID, filename string, r io.Reader) (*models.FileResponse, error) {
-	f, err := s.SimpleUpload(ctx, owner, nil, filename, r)
+	name, err := utils.SanitizeName(filename)
 	if err != nil {
 		return nil, err
 	}
-	id, _ := uuid.Parse(f.ID)
-	if err := s.q.SetFileCommon(ctx, sftpdb.SetFileCommonParams{ID: id, IsCommon: true}); err != nil {
+	res, err := s.store.Save(r)
+	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	if s.maxUploadSize > 0 && res.Size > s.maxUploadSize {
+		_ = s.store.Delete(res.Key)
+		return nil, apperrors.ErrPayloadTooLarge
+	}
+	checksum := res.Checksum
+	file, err := s.q.CreateFile(ctx, sftpdb.CreateFileParams{
+		OwnerID: owner, FolderID: nil, Name: name,
+		Extension: utils.FileExtension(name), MimeType: mimeByName(name),
+		SizeBytes: res.Size, ChecksumSha256: &checksum, StorageKey: res.Key,
+	})
+	if err != nil {
+		_ = s.store.Delete(res.Key)
+		return nil, mapConflict(err)
+	}
+	// No AddStorageUsed — Common is free/unlimited.
+	if err := s.q.SetFileCommon(ctx, sftpdb.SetFileCommonParams{ID: file.ID, IsCommon: true}); err != nil {
+		return nil, err
+	}
+	s.indexAsync(file.ID)
+	return toFileResponse(file), nil
 }
 
 // DeleteCommon permanently removes a Common file. Only the uploader or an
@@ -98,8 +186,6 @@ func (s *Service) DeleteCommon(ctx context.Context, caller uuid.UUID, isAdmin bo
 	if err := s.store.Delete(key); err != nil {
 		s.log.Error("delete common storage object failed", "key", key, "err", err)
 	}
-	if err := s.q.AddStorageUsed(ctx, sftpdb.AddStorageUsedParams{ID: f.OwnerID, StorageUsed: -f.SizeBytes}); err != nil {
-		s.log.Error("decrement uploader storage failed", "err", err)
-	}
+	// Common files are not counted against the owner's quota, so nothing to free.
 	return nil
 }

@@ -634,17 +634,17 @@ func (h *Handler) MakeCommon(c fuego.ContextNoBody) (*response.Envelope[response
 	return response.OKWithMessage[response.Any](nil, "Shared to Common"), nil
 }
 
-// Inherited lists files transferred to the caller from a deleted user.
-func (h *Handler) Inherited(c fuego.ContextNoBody) (*response.Envelope[[]models.FileResponse], error) {
+// Inherited lists files transferred to the caller, grouped by source user.
+func (h *Handler) Inherited(c fuego.ContextNoBody) (*response.Envelope[[]models.InheritedGroup], error) {
 	uid, err := currentUserID(c.Context())
 	if err != nil {
 		return nil, handlers.Fail(err)
 	}
-	files, err := h.svc.ListInherited(c.Context(), uid)
+	groups, err := h.svc.ListInheritedGrouped(c.Context(), uid)
 	if err != nil {
 		return nil, handlers.Fail(err)
 	}
-	return response.OK(files), nil
+	return response.OK(groups), nil
 }
 
 // KeepFile clears the inherited-pending flag (heir keeps the file).
