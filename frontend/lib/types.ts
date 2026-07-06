@@ -85,5 +85,10 @@ export interface AuditLog {
   ip_address?: string;
   browser?: string;
   os?: string;
+  object_id?: string;
+  object_name?: string;
+  user_agent?: string;
+  request_id?: string;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }

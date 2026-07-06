@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge, Skeleton } from "@/components/ui/misc";
 import { StaggerList, StaggerItem } from "@/components/motion";
+import { AnimatePresence, motion } from "motion/react";
 import { timeAgo, cn } from "@/lib/utils";
 
 const resultColor: Record<string, string> = {
@@ -24,6 +25,7 @@ export default function AuditPage() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<(typeof RESULTS)[number]>("all");
   const [category, setCategory] = useState<string>("all");
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -105,20 +107,62 @@ export default function AuditPage() {
         <div className="max-h-[68vh] overflow-y-auto">
           {!q.isLoading && rows.length === 0 && <p className="py-16 text-center text-sm text-muted">No matching events.</p>}
           <StaggerList>
-            {rows.map((a) => (
-              <StaggerItem key={a.id} className="grid grid-cols-[10rem_1fr_6rem_7rem] items-center gap-3 border-b border-border/50 px-4 py-2 text-sm transition-colors hover:bg-surface-2">
-                <span className="truncate text-muted">{a.actor_email || "system"}</span>
-                <span className="flex min-w-0 items-center gap-2">
-                  <Badge>{a.category}</Badge>
-                  <span className="truncate font-mono text-xs">{a.action}</span>
-                </span>
-                <span className={`text-xs font-medium capitalize ${resultColor[a.result] ?? ""}`}>{a.result}</span>
-                <span className="text-right text-xs text-muted">{timeAgo(a.created_at)}</span>
-              </StaggerItem>
-            ))}
+            {rows.map((a) => {
+              const open = expanded === a.id;
+              return (
+                <StaggerItem key={a.id} className="border-b border-border/50">
+                  <button
+                    onClick={() => setExpanded(open ? null : a.id)}
+                    className="grid w-full grid-cols-[10rem_1fr_6rem_7rem] items-center gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-surface-2"
+                  >
+                    <span className="truncate text-muted">{a.actor_email || "system"}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Badge>{a.category}</Badge>
+                      <span className="truncate font-mono text-xs">{a.action}</span>
+                    </span>
+                    <span className={`text-xs font-medium capitalize ${resultColor[a.result] ?? ""}`}>{a.result}</span>
+                    <span className="text-right text-xs text-muted">{timeAgo(a.created_at)}</span>
+                  </button>
+                  <AnimatePresence>
+                    {open && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden bg-surface-2/50"
+                      >
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 px-4 py-3 text-xs sm:grid-cols-3">
+                          <Detail label="Timestamp" value={new Date(a.created_at).toLocaleString()} />
+                          <Detail label="Actor" value={a.actor_email || "system"} />
+                          <Detail label="Result" value={a.result} />
+                          <Detail label="IP address" value={a.ip_address || "—"} />
+                          <Detail label="Browser" value={a.browser || "—"} />
+                          <Detail label="OS" value={a.os || "—"} />
+                          <Detail label="Method" value={String(a.metadata?.method ?? "—")} />
+                          <Detail label="Path" value={String(a.metadata?.path ?? "—")} mono />
+                          <Detail label="Status" value={String(a.metadata?.status ?? "—")} />
+                          {a.object_id && <Detail label="Object ID" value={a.object_id} mono />}
+                          {a.request_id && <Detail label="Request ID" value={a.request_id} mono />}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </StaggerItem>
+              );
+            })}
           </StaggerList>
         </div>
       </Card>
+    </div>
+  );
+}
+
+function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] uppercase tracking-wider text-muted">{label}</p>
+      <p className={`mt-0.5 break-words ${mono ? "font-mono text-[11px]" : ""}`}>{value}</p>
     </div>
   );
 }

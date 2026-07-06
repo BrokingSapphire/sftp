@@ -23,6 +23,9 @@ type LogResponse struct {
 	IPAddress  string         `json:"ip_address,omitempty"`
 	Browser    string         `json:"browser,omitempty"`
 	OS         string         `json:"os,omitempty"`
+	UserAgent  string         `json:"user_agent,omitempty"`
+	RequestID  string         `json:"request_id,omitempty"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
 	CreatedAt  string         `json:"created_at"`
 }
 

@@ -2,6 +2,7 @@
 package audit
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/go-fuego/fuego"
@@ -82,8 +83,16 @@ func toLogResponse(a sftpdb.AuditLog) models.LogResponse {
 	r.ObjectName = deref(a.ObjectName)
 	r.Browser = deref(a.Browser)
 	r.OS = deref(a.Os)
+	r.UserAgent = deref(a.UserAgent)
+	r.RequestID = deref(a.RequestID)
 	if a.IpAddress != nil {
 		r.IPAddress = a.IpAddress.String()
+	}
+	if len(a.Metadata) > 0 {
+		var m map[string]any
+		if err := json.Unmarshal(a.Metadata, &m); err == nil {
+			r.Metadata = m
+		}
 	}
 	if a.CreatedAt.Valid {
 		r.CreatedAt = a.CreatedAt.Time.Format(time.RFC3339)
