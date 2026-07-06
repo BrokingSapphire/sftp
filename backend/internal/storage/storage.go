@@ -5,6 +5,7 @@
 package storage
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -89,9 +90,17 @@ func (e *Engine) Save(r io.Reader) (SaveResult, error) {
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName) // no-op after successful rename
 
+	// Batch disk writes through a large buffered writer and copy with a 1 MiB
+	// buffer to minimise syscalls — materially faster for big uploads.
+	bw := bufio.NewWriterSize(tmp, 1<<20)
 	h := sha256.New()
-	size, err := io.Copy(io.MultiWriter(tmp, h), r)
+	buf := make([]byte, 1<<20)
+	size, err := io.CopyBuffer(io.MultiWriter(bw, h), r, buf)
 	if err != nil {
+		tmp.Close()
+		return SaveResult{}, err
+	}
+	if err := bw.Flush(); err != nil {
 		tmp.Close()
 		return SaveResult{}, err
 	}
