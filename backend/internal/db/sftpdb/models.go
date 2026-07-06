@@ -202,6 +202,23 @@ type RolePermission struct {
 	PermissionID uuid.UUID `json:"permission_id"`
 }
 
+type SecurityAlert struct {
+	ID          uuid.UUID          `json:"id"`
+	Type        string             `json:"type"`
+	Severity    string             `json:"severity"`
+	ActorID     *uuid.UUID         `json:"actor_id"`
+	ActorEmail  *string            `json:"actor_email"`
+	Summary     string             `json:"summary"`
+	EventCount  int32              `json:"event_count"`
+	WindowStart pgtype.Timestamptz `json:"window_start"`
+	WindowEnd   pgtype.Timestamptz `json:"window_end"`
+	Metadata    []byte             `json:"metadata"`
+	Resolved    bool               `json:"resolved"`
+	ResolvedBy  *uuid.UUID         `json:"resolved_by"`
+	ResolvedAt  pgtype.Timestamptz `json:"resolved_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type Session struct {
 	ID               uuid.UUID          `json:"id"`
 	UserID           uuid.UUID          `json:"user_id"`

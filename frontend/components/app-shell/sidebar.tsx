@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Folder, Globe, Star, Share2, Trash2, Inbox,
-  Users, ScrollText, KeyRound, HardDrive, PieChart,
+  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn, formatBytes } from "@/lib/utils";
@@ -33,6 +33,7 @@ const admin: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: Users, perm: "users.read" },
   { href: "/admin/storage", label: "Storage", icon: PieChart, perm: "storage.manage" },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText, perm: "audit.read" },
+  { href: "/admin/security", label: "Security", icon: ShieldAlert, perm: "audit.read" },
   { href: "/api-keys", label: "API Keys", icon: KeyRound, perm: "apikeys.manage" },
 ];
 

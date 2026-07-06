@@ -229,6 +229,18 @@ export const storageApi = {
   overview: () => unwrap<StorageOverview>(http.get<Envelope<StorageOverview>>("/users/storage")),
 };
 
+// ── Security alerts (audit anomaly detection) ──────────────
+export interface SecurityAlert {
+  id: string; type: string; severity: string; actor_email?: string;
+  summary: string; event_count: number; window_start?: string; window_end?: string;
+  resolved: boolean; created_at: string;
+}
+export const securityApi = {
+  list: () => unwrap<SecurityAlert[]>(http.get<Envelope<SecurityAlert[]>>("/security/alerts")),
+  unresolvedCount: () => unwrap<{ unresolved: number }>(http.get<Envelope<{ unresolved: number }>>("/security/alerts/unresolved-count")),
+  resolve: (id: string) => http.post(`/security/alerts/${id}/resolve`, {}),
+};
+
 // ── Notifications ──────────────────────────────────────────
 export interface Notification {
   id: string; type: string; title: string; body: string;

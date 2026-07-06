@@ -17,10 +17,15 @@ type Querier interface {
 	ClearFilePending(ctx context.Context, arg ClearFilePendingParams) error
 	ClearRolePermissions(ctx context.Context, roleID uuid.UUID) error
 	CompleteUpload(ctx context.Context, arg CompleteUploadParams) error
+	// Detection aggregations over the audit stream --------------------------------
+	// Groups matching actions by actor within a window, flagging actors at/over the
+	// threshold. Pass a set of actions (e.g. ARRAY['file.download']).
+	CountActionsByActor(ctx context.Context, arg CountActionsByActorParams) ([]CountActionsByActorRow, error)
 	CountActiveUsers(ctx context.Context) (int64, error)
 	CountAuditLogs(ctx context.Context) (int64, error)
 	CountCommonFiles(ctx context.Context) (int64, error)
 	CountDownloadsSince(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error)
+	CountFailedLoginsByEmail(ctx context.Context, arg CountFailedLoginsByEmailParams) ([]CountFailedLoginsByEmailRow, error)
 	CountFilesByFolder(ctx context.Context, arg CountFilesByFolderParams) (int64, error)
 	CountFilesByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	CountFolderChildren(ctx context.Context, parentID *uuid.UUID) (int32, error)
@@ -29,6 +34,7 @@ type Querier interface {
 	CountRecentNotifications(ctx context.Context, arg CountRecentNotificationsParams) (int64, error)
 	CountTrashByOwner(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int64, error)
+	CountUnresolvedAlerts(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
@@ -74,6 +80,7 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertDownload(ctx context.Context, arg InsertDownloadParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
+	InsertSecurityAlert(ctx context.Context, arg InsertSecurityAlertParams) (SecurityAlert, error)
 	LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwnerParams) ([]File, error)
 	ListActivityByUser(ctx context.Context, arg ListActivityByUserParams) ([]UserActivity, error)
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
@@ -94,9 +101,11 @@ type Querier interface {
 	ListRecentFiles(ctx context.Context, arg ListRecentFilesParams) ([]File, error)
 	ListRecentLoginHistory(ctx context.Context, arg ListRecentLoginHistoryParams) ([]LoginHistory, error)
 	ListRoles(ctx context.Context) ([]Role, error)
+	ListSecurityAlerts(ctx context.Context, arg ListSecurityAlertsParams) ([]SecurityAlert, error)
 	ListSharedWithMe(ctx context.Context, granteeUserID *uuid.UUID) ([]ListSharedWithMeRow, error)
 	ListSharesByOwner(ctx context.Context, ownerID uuid.UUID) ([]Share, error)
 	ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
+	ListSuperAdminIDs(ctx context.Context) ([]uuid.UUID, error)
 	ListTrash(ctx context.Context, arg ListTrashParams) ([]File, error)
 	ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]ApiKey, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]Session, error)
@@ -113,11 +122,14 @@ type Querier interface {
 	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
 	ReassignUserFiles(ctx context.Context, arg ReassignUserFilesParams) error
 	ReassignUserFolders(ctx context.Context, arg ReassignUserFoldersParams) error
+	// Alert lifecycle -------------------------------------------------------------
+	RecentAlertExists(ctx context.Context, arg RecentAlertExistsParams) (bool, error)
 	RecordChunk(ctx context.Context, arg RecordChunkParams) error
 	RenameFile(ctx context.Context, arg RenameFileParams) error
 	RenameFolder(ctx context.Context, arg RenameFolderParams) error
 	// Admin reset: force the user to change it on next login.
 	ResetUserPassword(ctx context.Context, arg ResetUserPasswordParams) error
+	ResolveSecurityAlert(ctx context.Context, arg ResolveSecurityAlertParams) error
 	RestoreFile(ctx context.Context, id uuid.UUID) error
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) error
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID) error

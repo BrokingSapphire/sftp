@@ -17,6 +17,7 @@ import (
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
+	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
@@ -129,6 +130,10 @@ func main() {
 	cleaner.Start()
 	defer cleaner.Stop()
 
+	detector := worker.NewDetector(queries, appLogger, 5*time.Minute)
+	detector.Start()
+	defer detector.Stop()
+
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
 		appLogger.Error("bootstrap super-admin failed", "error", err)
@@ -157,7 +162,8 @@ func main() {
 		APIKeyHandler: apikeyhandler.NewHandler(apiKeyService, appLogger),
 		AuditHandler:  audithandler.NewHandler(auditRecorder, appLogger),
 		ShareHandler:  sharehandler.NewHandler(shareService, appLogger),
-		NotifHandler:  notifhandler.NewHandler(queries, appLogger),
+		NotifHandler:    notifhandler.NewHandler(queries, appLogger),
+		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
 	})
 
 	go httpServer.Start()

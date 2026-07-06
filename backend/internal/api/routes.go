@@ -10,6 +10,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
+	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
@@ -37,7 +38,8 @@ type Deps struct {
 	UserHandler   *userhandler.Handler
 	FileHandler   *filehandler.Handler
 	APIKeyHandler *apikeyhandler.Handler
-	AuditHandler  *audithandler.Handler
+	AuditHandler    *audithandler.Handler
+	SecurityHandler *securityhandler.Handler
 	ShareHandler  *sharehandler.Handler
 	NotifHandler  *notifhandler.Handler
 }
@@ -112,6 +114,14 @@ func registerAuditRoutes(g *fuego.Server, deps Deps) {
 	fuego.Use(gl, deps.Auth.Require)
 	fuego.Get(gl, "/", deps.AuditHandler.List,
 		option.Middleware(deps.Perms.Require("audit.read")), option.Summary("List audit log"))
+
+	// Security alerts (audit anomaly detection): same audit.read gate.
+	gs := fuego.Group(g, "/security", option.Tags("Security"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gs, deps.Auth.Require)
+	sec := option.Middleware(deps.Perms.Require("audit.read"))
+	fuego.Get(gs, "/alerts", deps.SecurityHandler.List, sec, option.Summary("List security alerts"))
+	fuego.Get(gs, "/alerts/unresolved-count", deps.SecurityHandler.UnresolvedCount, sec, option.Summary("Unresolved alert count"))
+	fuego.Post(gs, "/alerts/{id}/resolve", deps.SecurityHandler.Resolve, sec, option.Summary("Resolve a security alert"))
 }
 
 func registerAPIKeyRoutes(g *fuego.Server, deps Deps) {
