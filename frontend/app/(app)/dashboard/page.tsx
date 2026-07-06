@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
 import { fileIcon } from "@/components/files/icon";
+import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export default function DashboardPage() {
         <p className="text-sm text-muted">Here is what is happening in your workspace.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={HardDrive} label="Storage used" value={formatBytes(used)}
           sub={quota > 0 ? `of ${formatBytes(quota)}` : "unlimited"} />
         <Stat icon={File} label="Recent files" value={String(recent.data?.length ?? 0)}
@@ -37,7 +38,7 @@ export default function DashboardPage() {
           sub="quick access" loading={starred.isLoading} />
         <Stat icon={FolderOpen} label="Role" value={user?.role?.replace("_", " ") ?? ""}
           sub="access level" capitalize />
-      </div>
+      </StaggerList>
 
       {quota > 0 && (
         <Card>
@@ -92,21 +93,25 @@ function Stat({
   icon: React.ElementType; label: string; value: string; sub?: string; loading?: boolean; capitalize?: boolean;
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between p-5">
-        <div>
-          <p className="text-sm text-muted">{label}</p>
-          {loading ? (
-            <Skeleton className="mt-1 h-7 w-16" />
-          ) : (
-            <p className={`mt-1 text-2xl font-semibold tracking-tight ${capitalize ? "capitalize" : ""}`}>{value}</p>
-          )}
-          {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
-        </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon size={20} />
-        </div>
-      </CardContent>
-    </Card>
+    <StaggerItem>
+      <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 380, damping: 30 }}>
+        <Card className="transition-shadow hover:shadow-md">
+          <CardContent className="flex items-start justify-between p-5">
+            <div>
+              <p className="eyebrow">{label}</p>
+              {loading ? (
+                <Skeleton className="mt-2 h-7 w-16" />
+              ) : (
+                <p className={`mt-1.5 text-2xl font-semibold tracking-tight ${capitalize ? "capitalize" : ""}`}>{value}</p>
+              )}
+              {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Icon size={20} />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </StaggerItem>
   );
 }

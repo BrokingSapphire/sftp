@@ -40,6 +40,14 @@ func (a *Authenticator) resolve(r *http.Request) *jwt.Claims {
 			return claims
 		}
 	}
+	// Access token as a query param — required for browser-initiated file
+	// downloads (an <a>/window.location navigation cannot set headers). Only
+	// short-lived access tokens are accepted here, never refresh tokens.
+	if token := r.URL.Query().Get("access_token"); token != "" {
+		if claims, err := a.jwt.Verify(token); err == nil {
+			return claims
+		}
+	}
 	if key := r.Header.Get("X-API-Key"); key != "" && a.apiKey != nil {
 		if p, err := a.apiKey.Authenticate(r.Context(), key, headers.GetClientIP(r)); err == nil {
 			sub := p.UserID.String()

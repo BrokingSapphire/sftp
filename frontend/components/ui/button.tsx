@@ -5,11 +5,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-foreground hover:opacity-90 shadow-sm",
+  primary: "bg-primary text-primary-foreground hover:brightness-110 shadow-sm",
   secondary: "bg-surface-2 text-foreground hover:bg-border",
   ghost: "hover:bg-surface-2 text-foreground",
-  danger: "bg-danger text-white hover:opacity-90",
-  outline: "border border-border bg-transparent hover:bg-surface-2",
+  danger: "bg-danger text-white hover:brightness-110",
+  outline: "border border-border bg-transparent hover:bg-surface-2 hover:border-primary/40",
 };
 
 const sizes: Record<Size, string> = {
@@ -29,8 +29,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        "inline-flex items-center justify-center gap-2 rounded-md font-medium",
+        "transition-[background,transform,filter,box-shadow] duration-150 active:scale-[0.97]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         "disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],

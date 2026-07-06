@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
 import { formatBytes, timeAgo } from "@/lib/utils";
+import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
 interface Crumb { id?: string; name: string; }
 
@@ -151,10 +152,13 @@ export default function FilesPage() {
               </div>
             )}
 
+          <StaggerList>
           {listing.data?.folders.map((f) => (
-            <div key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 hover:bg-surface-2">
+            <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
               <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
-                <Folder size={18} className="text-primary" />
+                <motion.span whileHover={{ scale: 1.15 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                  <Folder size={18} className="text-primary" />
+                </motion.span>
                 <span className="truncate text-sm font-medium">{f.name}</span>
               </button>
               <span className="text-xs text-muted">—</span>
@@ -165,11 +169,11 @@ export default function FilesPage() {
                   <IconBtn title="Delete" onClick={() => filesApi.deleteFolder(f.id).then(refresh).catch(() => toast.error("Folder not empty"))}><Trash2 size={15} /></IconBtn>
                 </div>
               </div>
-            </div>
+            </StaggerItem>
           ))}
 
           {listing.data?.files.map((f) => (
-            <div key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 hover:bg-surface-2">
+            <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
               <a href={filesApi.downloadUrl(f.id)} className="flex min-w-0 items-center gap-3">
                 {fileIcon(f.extension, 18)}
                 <span className="truncate text-sm font-medium">{f.name}</span>
@@ -186,8 +190,9 @@ export default function FilesPage() {
                   <IconBtn title="Trash" onClick={() => trash(f)}><Trash2 size={15} /></IconBtn>
                 </div>
               </div>
-            </div>
+            </StaggerItem>
           ))}
+          </StaggerList>
         </div>
       </UploadZone>
     </div>

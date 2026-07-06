@@ -8,6 +8,7 @@ import { filesApi } from "@/lib/endpoints";
 import { fileIcon } from "./icon";
 import { Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
+import { StaggerList, StaggerItem } from "@/components/motion";
 
 interface Props {
   files?: FileItem[];
@@ -35,8 +36,9 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
       {!loading && files?.length === 0 && (
         <p className="py-16 text-center text-sm text-muted">{emptyLabel}</p>
       )}
+      <StaggerList>
       {files?.map((f) => (
-        <div key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 hover:bg-surface-2">
+        <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
           <div className="flex min-w-0 items-center gap-3">
             {fileIcon(f.extension, 18)}
             <span className="truncate text-sm font-medium">{f.name}</span>
@@ -62,8 +64,9 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
               )}
             </div>
           </div>
-        </div>
+        </StaggerItem>
       ))}
+      </StaggerList>
     </div>
   );
 }

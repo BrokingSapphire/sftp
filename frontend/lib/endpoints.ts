@@ -43,7 +43,10 @@ export const filesApi = {
   restoreFile: (id: string) => http.post(`/files/${id}/restore`, {}),
   deleteFile: (id: string) => http.delete(`/files/${id}`),
   deleteFolder: (id: string) => http.delete(`/folders/${id}`),
-  downloadUrl: (id: string) => `/api/v1/files/${id}/download`,
+  downloadUrl: (id: string) => {
+    const t = tokens.access();
+    return `/api/v1/files/${id}/download${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
+  },
   simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append("file", file);

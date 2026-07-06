@@ -5,11 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { HardDrive, Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck, Server, Lock } from "lucide-react";
+import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/logo";
 import { ApiError } from "@/lib/api";
 
 const schema = z.object({
@@ -18,6 +20,8 @@ const schema = z.object({
   remember: z.boolean().optional(),
 });
 type FormValues = z.infer<typeof schema>;
+
+const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -43,23 +47,120 @@ export default function LoginPage() {
   const ssoEnabled = process.env.NEXT_PUBLIC_MICROSOFT_SSO === "true";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute right-4 top-4">
-        <ThemeToggle />
-      </div>
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {/* ── Brand panel ── */}
+      <div className="relative hidden overflow-hidden bg-[#053e42] text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5 blur-2xl"
+          animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-teal-400/10 blur-3xl"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* faint ledger grid — old-school detail */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
 
-      <div className="animate-in w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
-            <HardDrive size={24} />
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
+          <div className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Sapphire" width={34} height={34} className="drop-shadow" />
+            <span className="text-lg font-semibold tracking-tight">Sapphire</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Sapphire SFTP</h1>
-          <p className="mt-1 text-sm text-muted">Enterprise file transfer platform</p>
+        </motion.div>
+
+        <div className="relative max-w-md">
+          <motion.p
+            className="font-mono text-xs uppercase tracking-[0.2em] text-teal-200/80"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            Enterprise file transfer
+          </motion.p>
+          <motion.h1
+            className="mt-4 text-4xl font-semibold leading-tight tracking-tight"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28, duration: 0.6, ease }}
+          >
+            Your files, on your terms.
+          </motion.h1>
+          <motion.p
+            className="mt-4 text-sm leading-relaxed text-teal-100/70"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38, duration: 0.6, ease }}
+          >
+            Self-hosted, on-premise file management for the whole firm — resumable
+            uploads, granular access control, and a full compliance audit trail.
+          </motion.p>
+
+          <div className="mt-10 space-y-3">
+            {[
+              { icon: Server, text: "100% on-premise — data never leaves your network" },
+              { icon: ShieldCheck, text: "Argon2id, RBAC, and an immutable audit log" },
+              { icon: Lock, text: "Password-protected, expiring share links" },
+            ].map((f, i) => (
+              <motion.div
+                key={i}
+                className="flex items-center gap-3 text-sm text-teal-50/90"
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + i * 0.1, duration: 0.5, ease }}
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                  <f.icon size={16} />
+                </span>
+                {f.text}
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-xl">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <motion.p
+          className="relative font-mono text-xs text-teal-200/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        >
+          © {new Date().getFullYear()} Sapphire Broking
+        </motion.p>
+      </div>
+
+      {/* ── Form panel ── */}
+      <div className="relative flex items-center justify-center px-6 py-12">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
+
+        <motion.div
+          className="w-full max-w-sm"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease }}
+        >
+          <div className="mb-8 lg:hidden">
+            <Logo size={32} />
+          </div>
+
+          <p className="eyebrow">Welcome back</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Sign in to your workspace</h2>
+          <p className="mt-1 text-sm text-muted">Enter your credentials to continue.</p>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium" htmlFor="identifier">Email or username</label>
               <Input id="identifier" autoComplete="username" placeholder="you@company.com" {...register("identifier")} />
@@ -82,20 +183,19 @@ export default function LoginPage() {
 
           {ssoEnabled && (
             <>
-              <div className="my-5 flex items-center gap-3 text-xs text-muted">
+              <div className="my-6 flex items-center gap-3 text-xs text-muted">
                 <span className="h-px flex-1 bg-border" /> OR <span className="h-px flex-1 bg-border" />
               </div>
               <a href="/api/v1/auth/sso/microsoft/login">
-                <Button variant="outline" className="w-full" type="button">
-                  Continue with Microsoft
-                </Button>
+                <Button variant="outline" className="w-full" type="button">Continue with Microsoft</Button>
               </a>
             </>
           )}
-        </div>
-        <p className="mt-6 text-center text-xs text-muted">
-          Self-hosted • On-premise • Your data never leaves your network
-        </p>
+
+          <p className="mt-8 font-mono text-[11px] uppercase tracking-wider text-muted">
+            Self-hosted · On-premise · Zero cloud
+          </p>
+        </motion.div>
       </div>
     </div>
   );
