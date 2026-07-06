@@ -1,0 +1,10 @@
+# Default owners for everything in the repo.
+# Order matters; the last matching pattern wins.
+*                      @BrokingSapphire/maintainers
+
+/backend/              @BrokingSapphire/backend
+/frontend/             @BrokingSapphire/frontend
+/docs/                 @BrokingSapphire/docs
+/.github/              @BrokingSapphire/maintainers
+/docker-compose.yml    @BrokingSapphire/maintainers
+/deploy.sh             @BrokingSapphire/maintainers

@@ -1,0 +1,73 @@
+name: 🐛 Bug report
+description: Report a reproducible problem so we can fix it.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please search existing issues first to avoid duplicates.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: When I click Upload, the toast shows "Upload failed"…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic steps.
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend (Go API)
+        - Frontend (Next.js)
+        - SFTP protocol
+        - Deployment / Docker
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Output of the API `/api/v1/info`, a release tag, or a commit SHA.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, Docker version, deployment method.
+      placeholder: macOS 14, Chrome 120, Docker 25, docker compose
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste backend/browser logs. This is automatically formatted as code.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true

@@ -1,0 +1,43 @@
+name: ✨ Feature request
+description: Suggest an idea or enhancement.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the pain point. "I'm always frustrated when…"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What you'd like to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend (Go API)
+        - Frontend (Next.js)
+        - SFTP protocol
+        - AI / search
+        - Security / compliance
+        - Deployment
+        - Documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to help implement this.

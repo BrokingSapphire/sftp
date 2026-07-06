@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions & questions
+    url: https://github.com/BrokingSapphire/sftp/discussions
+    about: Ask questions, share ideas, and talk with the community.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/BrokingSapphire/sftp/security/advisories/new
+    about: Please report vulnerabilities privately — do not open a public issue.

@@ -1,0 +1,19 @@
+name: ❓ Question
+description: Ask a usage or how-to question.
+title: "question: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: For open-ended discussion, prefer [Discussions](https://github.com/BrokingSapphire/sftp/discussions).
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What have you tried? What docs have you read?
