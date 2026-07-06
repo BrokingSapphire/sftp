@@ -91,6 +91,9 @@ export const filesApi = {
   // Fetch raw bytes (for client-side Office rendering: xlsx, docx).
   fetchBinary: (id: string) =>
     http.get<ArrayBuffer>(`/files/${id}/download`, { responseType: "arraybuffer" }).then((r) => r.data),
+  // Save edited text content (in-app editor) — creates a new version.
+  saveContent: (id: string, text: string) =>
+    http.put(`/files/${id}/content`, text, { headers: { "Content-Type": "application/octet-stream" } }),
   simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append("file", file);

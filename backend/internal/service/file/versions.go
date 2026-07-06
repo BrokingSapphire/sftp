@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,6 +65,34 @@ func (s *Service) versionedReplace(ctx context.Context, cur sftpdb.File, newKey,
 		}
 	}
 	return updated, nil
+}
+
+// OverwriteContent replaces a file's content in place (used by the in-app
+// editor), archiving the previous content as a version. Respects legal hold and
+// retention, and re-indexes/re-classifies the new content.
+func (s *Service) OverwriteContent(ctx context.Context, owner, fileID uuid.UUID, r io.Reader) (*models.FileResponse, error) {
+	cur, err := s.ownedFile(ctx, owner, fileID)
+	if err != nil {
+		return nil, err
+	}
+	if err := mutationBlocked(cur, true); err != nil {
+		return nil, err
+	}
+	res, err := s.store.Save(r)
+	if err != nil {
+		return nil, err
+	}
+	if s.maxUploadSize > 0 && res.Size > s.maxUploadSize {
+		_ = s.store.Delete(res.Key)
+		return nil, apperrors.ErrPayloadTooLarge
+	}
+	updated, err := s.versionedReplace(ctx, cur, res.Key, res.Checksum, res.Size, owner)
+	if err != nil {
+		_ = s.store.Delete(res.Key)
+		return nil, err
+	}
+	s.indexAsync(updated.ID)
+	return toFileResponse(updated), nil
 }
 
 // ListVersions returns a file's archived (previous) versions, newest first. The

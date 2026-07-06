@@ -18,6 +18,7 @@ import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
 import { ShareDialog } from "@/components/files/share-dialog";
 import { VersionHistory } from "@/components/files/version-history";
+import { DocumentEditor, isEditable } from "@/components/files/document-editor";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { useUploads } from "@/lib/upload-manager";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export default function FilesPage() {
   }
   const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
   const [versionOf, setVersionOf] = useState<{ id: string; name: string; version: number } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
 
   const anySel = sel.size > 0;
@@ -204,6 +206,7 @@ export default function FilesPage() {
   function fileMenu(f: FileItem, i: number): MenuItem[] {
     const items: MenuItem[] = [
       { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
+      ...(isEditable(f.extension) ? [{ label: "Edit", icon: Pencil, onClick: () => setEditing({ id: f.id, name: f.name }) }] : []),
       { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
       { label: "Get share link", icon: Share2, onClick: () => share(f) },
       { label: "Add to Common", icon: Globe, onClick: () => addToCommon(f) },
@@ -424,6 +427,9 @@ export default function FilesPage() {
           fileId={versionOf.id} fileName={versionOf.name} currentVersion={versionOf.version}
           onClose={() => setVersionOf(null)} onRestored={refresh}
         />
+      )}
+      {editing && (
+        <DocumentEditor fileId={editing.id} fileName={editing.name} onClose={() => setEditing(null)} onSaved={refresh} />
       )}
     </div>
   );

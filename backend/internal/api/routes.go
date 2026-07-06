@@ -183,6 +183,7 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.GetStd(gf, "/{id}/versions/{version}/download", h.DownloadVersion, read, option.Summary("Download a previous version"))
 	fuego.Get(gf, "/{id}", h.GetFile, read, option.Summary("Get file metadata"))
 	fuego.GetStd(gf, "/{id}/download", h.Download, read, option.Summary("Download a file"))
+	fuego.PutStd(gf, "/{id}/content", h.SaveContent, write, option.Summary("Overwrite a file's content (in-app editor)"))
 	fuego.Put(gf, "/{id}/rename", h.RenameFile, write, option.Summary("Rename file"))
 	fuego.Put(gf, "/{id}/move", h.MoveFile, write, option.Summary("Move file"))
 	fuego.Put(gf, "/{id}/star", h.StarFile, write, option.Summary("Star/unstar file"))

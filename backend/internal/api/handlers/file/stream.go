@@ -135,6 +135,29 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)
 }
 
+// SaveContent overwrites a file's content from the raw request body (used by
+// the in-app editor). Creates a new version.
+func (h *Handler) SaveContent(w http.ResponseWriter, r *http.Request) {
+	uid, ok := userID(r)
+	if !ok {
+		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid file id")
+		return
+	}
+	defer r.Body.Close()
+	// Editor documents are text — cap the body generously at 25 MiB.
+	f, err := h.svc.OverwriteContent(r.Context(), uid, id, http.MaxBytesReader(w, r.Body, 25<<20))
+	if err != nil {
+		writeServiceError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, envelope{Success: true, Message: "Saved", Data: f})
+}
+
 // DownloadVersion streams a specific archived version of a file.
 func (h *Handler) DownloadVersion(w http.ResponseWriter, r *http.Request) {
 	uid, ok := userID(r)
