@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LogOut, Search, Camera } from "lucide-react";
@@ -18,6 +18,19 @@ export function Topbar() {
   const router = useRouter();
   const [q, setQ] = useState("");
   const avatarInput = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName || "");
+      if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") || (e.key === "/" && !inField)) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -38,11 +51,13 @@ export function Topbar() {
       <form onSubmit={onSearch} className="relative max-w-md flex-1">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <Input
+          ref={searchRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search files…"
-          className="pl-9"
+          className="pl-9 pr-14"
         />
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted sm:block">⌘K</kbd>
       </form>
       <div className="ml-auto flex items-center gap-2">
         <PingIndicator />
