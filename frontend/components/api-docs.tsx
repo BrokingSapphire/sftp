@@ -5,6 +5,7 @@ import { Copy, Check, Terminal, Download, FileJson, FileText, ShieldCheck } from
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/misc";
+import { BRAND } from "@/lib/brand";
 
 interface Endpoint {
   group: string;
@@ -67,7 +68,7 @@ export function ApiDocs() {
 
   function downloadPostman() {
     const collection = {
-      info: { name: "Sapphire SFTP API", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+      info: { name: `${BRAND.company.product} API`, schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
       variable: [
         { key: "baseUrl", value: base },
         { key: "apiKey", value: "" },
@@ -97,18 +98,19 @@ export function ApiDocs() {
     const rows = ENDPOINTS.map(
       (e) => `<tr><td class="m ${e.method}">${e.method}</td><td class="p">${e.path}</td><td>${e.desc}</td></tr>`,
     ).join("");
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Sapphire SFTP API</title>
+    const brandColor = BRAND.colors.primary;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${BRAND.company.product} API</title>
 <style>
   body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#18181b;margin:40px;}
-  h1{color:#064D51;margin:0 0 4px;} .sub{color:#666;margin:0 0 24px;font-size:13px;}
-  h2{color:#064D51;border-bottom:2px solid #eee;padding-bottom:4px;margin-top:28px;font-size:16px;}
+  h1{color:${brandColor};margin:0 0 4px;} .sub{color:#666;margin:0 0 24px;font-size:13px;}
+  h2{color:${brandColor};border-bottom:2px solid #eee;padding-bottom:4px;margin-top:28px;font-size:16px;}
   code{background:#f3f5f9;padding:2px 6px;border-radius:4px;font-size:12px;}
   table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;}
   td{border:1px solid #e5e7eb;padding:6px 8px;vertical-align:top;}
   .m{font-weight:700;width:60px;} .GET{color:#16a34a}.POST{color:#4f46e5}.PUT{color:#d97706}.DELETE{color:#dc2626}
   .p{font-family:monospace;white-space:nowrap;}
 </style></head><body>
-  <h1>Sapphire SFTP — API Reference</h1>
+  <h1>${BRAND.company.product} — API Reference</h1>
   <p class="sub">Base URL: <code>${base}</code> · Auth: <code>X-API-Key: &lt;key&gt;</code> or <code>Authorization: Bearer &lt;jwt&gt;</code></p>
   <h2>Endpoints</h2>
   <table><tr><td class="m">METHOD</td><td class="p">PATH</td><td>DESCRIPTION</td></tr>${rows}</table>

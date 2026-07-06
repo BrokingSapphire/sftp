@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { BRAND } from "@/lib/brand";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -17,14 +18,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sapphire SFTP — Enterprise File Transfer",
-  description: "Self-hosted enterprise file management platform by Sapphire Broking",
-  icons: { icon: "/logo.svg" },
+  title: `${BRAND.company.product} — ${BRAND.company.tagline}`,
+  description: BRAND.company.description,
+  icons: { icon: BRAND.logo.favicon },
 };
+
+// Inject brand colours as CSS variables so globals.css themes off them.
+const brandVars = `:root{--brand-primary:${BRAND.colors.primary};--brand-primary-foreground:${BRAND.colors.primaryForeground};--brand-primary-dark:${BRAND.colors.primaryDark};--brand-primary-foreground-dark:${BRAND.colors.primaryForegroundDark};}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${poppins.variable} ${geistMono.variable}`}>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: brandVars }} />
+      </head>
       <body className="min-h-screen antialiased">
         <Providers>{children}</Providers>
       </body>

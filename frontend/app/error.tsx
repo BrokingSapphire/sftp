@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/lib/brand";
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         </div>
       </motion.div>
 
-      <p className="mt-12 font-mono text-[11px] uppercase tracking-wider text-muted">Sapphire SFTP</p>
+      <p className="mt-12 font-mono text-[11px] uppercase tracking-wider text-muted">{BRAND.company.product}</p>
     </div>
   );
 }

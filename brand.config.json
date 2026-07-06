@@ -1,0 +1,41 @@
+{
+  "$comment": "Single source of truth for white-label branding. Edit these values and rebuild (docker compose up -d --build, or npm run dev) — the whole app (names, logo, colours, emails, org domains) reconfigures itself. This file is consumed by BOTH the frontend and the backend.",
+
+  "company": {
+    "name": "Sapphire Broking",
+    "shortName": "Sapphire",
+    "product": "Sapphire SFTP",
+    "productShort": "SFTP",
+    "tagline": "Enterprise self-hosted file transfer",
+    "description": "Self-hosted enterprise file management platform by Sapphire Broking.",
+    "url": "https://sapphirebroking.com",
+    "copyright": "Sapphire Broking"
+  },
+
+  "logo": {
+    "$comment": "Paths are served from the frontend /public directory. Drop your files there and point these at them, or use an absolute https URL.",
+    "full": "/logo.svg",
+    "light": "/logo-white.svg",
+    "dark": "/logo-black.svg",
+    "favicon": "/logo.svg"
+  },
+
+  "colors": {
+    "$comment": "Brand primary in light and dark themes (hex). Everything themed off --primary follows these.",
+    "primary": "#064D51",
+    "primaryForeground": "#FFFFFF",
+    "primaryDark": "#5CC5C9",
+    "primaryForegroundDark": "#04211F"
+  },
+
+  "org": {
+    "$comment": "Your own email domains. Shares to any other domain are flagged 'external' and audited.",
+    "domains": ["sapphirebroking.com"],
+    "supportEmail": "support@sapphirebroking.com"
+  },
+
+  "mail": {
+    "$comment": "Default From header for outgoing share emails.",
+    "from": "Sapphire SFTP <no-reply@sapphirebroking.com>"
+  }
+}

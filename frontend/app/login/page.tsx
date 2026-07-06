@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
+import { BRAND } from "@/lib/brand";
 import { ApiError } from "@/lib/api";
 
 const schema = z.object({
@@ -76,8 +77,8 @@ export default function LoginPage() {
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease }}>
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Sapphire" width={34} height={34} className="drop-shadow" />
-            <span className="text-lg font-semibold tracking-tight">Sapphire</span>
+            <img src={BRAND.logo.full} alt={BRAND.company.shortName} width={34} height={34} className="drop-shadow" />
+            <span className="text-lg font-semibold tracking-tight">{BRAND.company.shortName}</span>
           </div>
         </motion.div>
 
@@ -136,7 +137,7 @@ export default function LoginPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
         >
-          © {new Date().getFullYear()} Sapphire Broking
+          © {new Date().getFullYear()} {BRAND.company.copyright}
         </motion.p>
       </div>
 

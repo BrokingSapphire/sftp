@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -45,11 +46,48 @@ func Load(_ context.Context) (*Config, error) {
 
 	applyEnvOverrides(cfg)
 
+	// The canonical white-label brand.config.json (shared with the frontend)
+	// seeds org domains and the mail From header when they are not set via
+	// config/env — so one file drives both services.
+	applyBrandConfig(cfg)
+
 	if err := utils.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("validation: %w", err)
 	}
 
 	return cfg, nil
+}
+
+// applyBrandConfig reads BRAND_CONFIG_PATH (default /app/brand.config.json) and
+// fills OrgDomains / Mail.From from it unless already configured. Missing or
+// invalid files are ignored (env/config still win).
+func applyBrandConfig(cfg *Config) {
+	path := os.Getenv("BRAND_CONFIG_PATH")
+	if path == "" {
+		path = "/app/brand.config.json"
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var brand struct {
+		Org struct {
+			Domains []string `json:"domains"`
+		} `json:"org"`
+		Mail struct {
+			From string `json:"from"`
+		} `json:"mail"`
+	}
+	if json.Unmarshal(raw, &brand) != nil {
+		return
+	}
+	if len(cfg.OrgDomains) == 0 && len(brand.Org.Domains) > 0 {
+		cfg.OrgDomains = brand.Org.Domains
+	}
+	if cfg.Mail.From == "" && brand.Mail.From != "" {
+		cfg.Mail.From = brand.Mail.From
+	}
+	slog.Info("config: brand overrides applied", "path", path, "org_domains", cfg.OrgDomains)
 }
 
 func applyDefaults(cfg *Config) {

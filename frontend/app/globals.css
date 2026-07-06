@@ -14,13 +14,13 @@
   --foreground: #18181b;   /* zinc-900 */
   --muted: #6b7280;        /* zinc-500 */
   --border: #e2e5e7;
-  --primary: #064d51;      /* brand deep teal */
-  --primary-foreground: #ffffff;
-  --accent: #0b5e62;
+  --primary: var(--brand-primary, #064d51);      /* brand colour (see brand.config.json) */
+  --primary-foreground: var(--brand-primary-foreground, #ffffff);
+  --accent: var(--brand-primary, #0b5e62);
   --success: #0f766e;
   --danger: #b42318;
   --warning: #b45309;
-  --ring: #064d51;
+  --ring: var(--brand-primary, #064d51);
   --brand-blue: #daeaeb;   /* custom-table-blue */
   --radius: 0.5rem;
 }
@@ -32,8 +32,8 @@
   --foreground: #e7eae9;
   --muted: #8b9a99;
   --border: #212d30;
-  --primary: #5cc5c9;      /* teal, lightened for dark surfaces */
-  --primary-foreground: #04211f;
+  --primary: var(--brand-primary-dark, #5cc5c9);      /* brand colour (dark theme) */
+  --primary-foreground: var(--brand-primary-foreground-dark, #04211f);
   --accent: #4db6bb;
   --success: #34d399;
   --danger: #f2735f;

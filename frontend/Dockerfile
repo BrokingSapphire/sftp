@@ -1,14 +1,20 @@
+# Build context is the REPO ROOT (see docker-compose.yml) so the canonical
+# brand.config.json at the root can be baked into the image.
+
 # ── Dependencies ─────────────────────────────────────────────
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
 
 # ── Build ────────────────────────────────────────────────────
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY frontend/ ./
+# Canonical white-label config from the repo root — prebuild syncs it into
+# config/brand.json so the whole app reconfigures from it.
+COPY brand.config.json ./brand.config.json
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { BRAND } from "@/lib/brand";
 
 export default function Loading() {
   return (
@@ -10,7 +11,7 @@ export default function Loading() {
         transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="Sapphire" width={44} height={44} />
+        <img src={BRAND.logo.full} alt={BRAND.company.shortName} width={44} height={44} />
       </motion.div>
 
       <div className="h-1 w-40 overflow-hidden rounded-full bg-surface-2">

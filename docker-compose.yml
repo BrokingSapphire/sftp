@@ -33,7 +33,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (min 32 chars)}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost}
-      ORG_DOMAINS: ${ORG_DOMAINS:-sapphirebroking.com}
+      # Leave empty to let brand.config.json drive org domains (env still overrides).
+      ORG_DOMAINS: ${ORG_DOMAINS:-}
       STORAGE_ROOT_PATH: /app/storage/files
       STORAGE_TEMP_PATH: /app/storage/tmp
       # Uncomment to encrypt file content at rest (openssl rand -hex 32):
@@ -42,14 +43,17 @@ services:
       - sftp-files:/app/storage/files
       - sftp-tmp:/app/storage/tmp
       - sftp-logs:/app/storage/logs
+      # Canonical white-label config, shared with the frontend.
+      - ./brand.config.json:/app/brand.config.json:ro
     depends_on:
       postgres:
         condition: service_healthy
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      # Repo root so the canonical brand.config.json is in the build context.
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     environment:
       NODE_ENV: production

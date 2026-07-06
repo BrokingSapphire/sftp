@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { Home, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/lib/brand";
 
 export default function NotFound() {
   return (
@@ -18,7 +19,7 @@ export default function NotFound() {
       >
         <div className="flex items-center justify-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Sapphire" width={44} height={44} />
+          <img src={BRAND.logo.full} alt={BRAND.company.shortName} width={44} height={44} />
         </div>
         <h1 className="mt-6 bg-gradient-to-b from-foreground to-muted bg-clip-text text-8xl font-bold tracking-tighter text-transparent">
           404
@@ -33,7 +34,7 @@ export default function NotFound() {
         </div>
       </motion.div>
 
-      <p className="mt-12 font-mono text-[11px] uppercase tracking-wider text-muted">Sapphire SFTP</p>
+      <p className="mt-12 font-mono text-[11px] uppercase tracking-wider text-muted">{BRAND.company.product}</p>
     </div>
   );
 }

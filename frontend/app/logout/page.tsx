@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { authApi } from "@/lib/endpoints";
+import { BRAND } from "@/lib/brand";
 
 const FACTS = [
   "All your files live on-premise — nothing ever touches the cloud.",
@@ -62,8 +63,8 @@ export default function LogoutPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Sapphire" width={40} height={40} className="drop-shadow" />
-          <span className="text-xl font-semibold tracking-tight">Sapphire</span>
+          <img src={BRAND.logo.full} alt={BRAND.company.shortName} width={40} height={40} className="drop-shadow" />
+          <span className="text-xl font-semibold tracking-tight">{BRAND.company.shortName}</span>
         </div>
       </motion.div>
 
@@ -91,7 +92,7 @@ export default function LogoutPage() {
         </motion.p>
       </div>
 
-      <p className="absolute bottom-8 font-mono text-[11px] text-teal-200/40">Sapphire SFTP · on-premise file transfer</p>
+      <p className="absolute bottom-8 font-mono text-[11px] text-teal-200/40">{BRAND.company.product} · on-premise file transfer</p>
     </div>
   );
 }

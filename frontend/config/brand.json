@@ -1,0 +1,33 @@
+{
+  "company": {
+    "name": "Sapphire Broking",
+    "shortName": "Sapphire",
+    "product": "Sapphire SFTP",
+    "productShort": "SFTP",
+    "tagline": "Enterprise self-hosted file transfer",
+    "description": "Self-hosted enterprise file management platform by Sapphire Broking.",
+    "url": "https://sapphirebroking.com",
+    "copyright": "Sapphire Broking"
+  },
+  "logo": {
+    "full": "/logo.svg",
+    "light": "/logo-white.svg",
+    "dark": "/logo-black.svg",
+    "favicon": "/logo.svg"
+  },
+  "colors": {
+    "primary": "#064D51",
+    "primaryForeground": "#FFFFFF",
+    "primaryDark": "#5CC5C9",
+    "primaryForegroundDark": "#04211F"
+  },
+  "org": {
+    "domains": [
+      "sapphirebroking.com"
+    ],
+    "supportEmail": "support@sapphirebroking.com"
+  },
+  "mail": {
+    "from": "Sapphire SFTP <no-reply@sapphirebroking.com>"
+  }
+}

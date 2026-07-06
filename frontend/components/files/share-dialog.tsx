@@ -10,16 +10,7 @@ import { sharesApi, filesApi, type ShareCreateResult, type FileGrant } from "@/l
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
-
-const ORG_DOMAINS = (process.env.NEXT_PUBLIC_ORG_DOMAINS ?? "")
-  .split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
-
-function isExternal(email: string) {
-  const at = email.lastIndexOf("@");
-  if (at < 0) return false;
-  const domain = email.slice(at + 1).toLowerCase();
-  return ORG_DOMAINS.length > 0 && !ORG_DOMAINS.includes(domain);
-}
+import { isExternalEmail as isExternal } from "@/lib/brand";
 
 export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fileName: string; onClose: () => void }) {
   // People-with-access (internal shares)
