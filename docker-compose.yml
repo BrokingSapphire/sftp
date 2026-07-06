@@ -33,8 +33,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (min 32 chars)}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost}
+      ORG_DOMAINS: ${ORG_DOMAINS:-sapphirebroking.com}
       STORAGE_ROOT_PATH: /app/storage/files
       STORAGE_TEMP_PATH: /app/storage/tmp
+      # Uncomment to encrypt file content at rest (openssl rand -hex 32):
+      # STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:-}
     volumes:
       - sftp-files:/app/storage/files
       - sftp-tmp:/app/storage/tmp
