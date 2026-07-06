@@ -37,6 +37,7 @@ import (
 	"sapphirebroking.com/sftp_service/pkg/cache"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
+	"sapphirebroking.com/sftp_service/pkg/mailer"
 )
 
 func main() {
@@ -109,8 +110,16 @@ func main() {
 		MaxUploadSize: cfg.Storage.MaxUploadSize,
 	})
 	apiKeyService := apikeysvc.New(queries, appLogger)
+	mailSender := mailer.New(mailer.Config{
+		Enabled: cfg.Mail.Enabled, Host: cfg.Mail.Host, Port: cfg.Mail.Port,
+		Username: cfg.Mail.Username, Password: cfg.Mail.Password, From: cfg.Mail.From, StartTLS: cfg.Mail.StartTLS,
+	}, appLogger)
+	if mailSender.Enabled() {
+		appLogger.Info("smtp mailer enabled", "host", cfg.Mail.Host)
+	}
 	shareService := sharesvc.New(sharesvc.Deps{
-		Queries: queries, Storage: storageEngine, BaseURL: cfg.App.SelfBaseURL, Logger: appLogger,
+		Queries: queries, Storage: storageEngine, BaseURL: cfg.App.SelfBaseURL,
+		Mailer: mailSender, OrgDomains: cfg.OrgDomains, Logger: appLogger,
 	})
 	auditRecorder := auditsvc.New(queries, appLogger)
 	defer auditRecorder.Close()

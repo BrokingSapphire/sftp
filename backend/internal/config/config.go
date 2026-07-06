@@ -29,6 +29,21 @@ type Config struct {
 	Redis     RedisConfig         `mapstructure:"redis"`
 	SSO       SSOConfig           `mapstructure:"sso"`
 	Bootstrap BootstrapConfig     `mapstructure:"bootstrap"`
+	Mail      MailConfig          `mapstructure:"mail"`
+	// OrgDomains lists the organisation's own email domains. Sharing to any
+	// other domain is treated as an "external" share (audited + warned).
+	OrgDomains []string `mapstructure:"org_domains"`
+}
+
+// MailConfig configures the on-premise SMTP mailer (share notifications).
+type MailConfig struct {
+	Enabled  bool   `mapstructure:"enabled"   default:"false"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"      default:"587"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"      default:"Sapphire SFTP <no-reply@sapphirebroking.com>"`
+	StartTLS bool   `mapstructure:"start_tls" default:"true"`
 }
 
 // BootstrapConfig seeds the first super-admin on an empty database.

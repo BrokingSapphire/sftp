@@ -7,13 +7,14 @@ import {
   FolderPlus, FolderUp, Upload, Folder, FolderOpen, Download, Star, Share2, Trash2,
   Pencil, ChevronRight, Home, LayoutGrid, List as ListIcon, Eye, Globe, Check,
 } from "lucide-react";
-import { filesApi, sharesApi, commonApi } from "@/lib/endpoints";
+import { filesApi, commonApi } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
 import { FilePreview } from "@/components/files/file-preview";
+import { ShareDialog } from "@/components/files/share-dialog";
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
 import { StaggerList, StaggerItem, motion } from "@/components/motion";
@@ -32,6 +33,7 @@ export default function FilesPage() {
   const [view, setView] = useState<View>("list");
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
+  const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
 
   const anySel = sel.size > 0;
@@ -159,9 +161,8 @@ export default function FilesPage() {
   async function star(f: FileItem) {
     try { await filesApi.starFile(f.id, !f.is_starred); refresh(); } catch { toast.error("Failed"); }
   }
-  async function share(f: FileItem) {
-    try { const res = await sharesApi.create(f.id, {}); await navigator.clipboard.writeText(res.url).catch(() => {}); toast.success("Share link copied to clipboard"); }
-    catch { toast.error("Could not create share"); }
+  function share(f: FileItem) {
+    setSharing({ id: f.id, name: f.name });
   }
   async function addToCommon(f: FileItem) {
     try { await commonApi.makeCommon(f.id); toast.success(`"${f.name}" shared to Common`); }
@@ -375,6 +376,7 @@ export default function FilesPage() {
       )}
 
       <ContextMenu menu={ctx.menu} onClose={ctx.close} />
+      {sharing && <ShareDialog fileId={sharing.id} fileName={sharing.name} onClose={() => setSharing(null)} />}
     </div>
   );
 }

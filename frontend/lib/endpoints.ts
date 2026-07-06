@@ -114,10 +114,14 @@ export const commonApi = {
 };
 
 // ── Shares ─────────────────────────────────────────────────
+export interface ShareCreateResult {
+  token: string; url: string; has_password: boolean;
+  emailed: boolean; external: boolean; expires_at?: string;
+}
 export const sharesApi = {
   list: () => unwrap<ShareLink[]>(http.get<Envelope<ShareLink[]>>("/shares/")),
-  create: (file_id: string, opts: { password?: string; expires_in_days?: number; download_limit?: number }) =>
-    unwrap<{ token: string; url: string }>(http.post<Envelope<{ token: string; url: string }>>("/shares/", { file_id, ...opts })),
+  create: (file_id: string, opts: { password?: string; expires_in_days?: number; download_limit?: number; recipient_email?: string }) =>
+    unwrap<ShareCreateResult>(http.post<Envelope<ShareCreateResult>>("/shares/", { file_id, ...opts })),
   revoke: (id: string) => http.delete(`/shares/${id}`),
 };
 

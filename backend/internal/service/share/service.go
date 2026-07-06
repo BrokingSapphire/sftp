@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,27 +18,35 @@ import (
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/pkg/argon2"
 	"sapphirebroking.com/sftp_service/pkg/logger"
+	"sapphirebroking.com/sftp_service/pkg/mailer"
 )
 
 // Deps are the share service dependencies.
 type Deps struct {
-	Queries *sftpdb.Queries
-	Storage *storage.Engine
-	BaseURL string
-	Logger  logger.Logger
+	Queries    *sftpdb.Queries
+	Storage    *storage.Engine
+	BaseURL    string
+	Mailer     *mailer.Mailer
+	OrgDomains []string
+	Logger     logger.Logger
 }
 
 // Service manages share links.
 type Service struct {
-	q       *sftpdb.Queries
-	store   *storage.Engine
-	baseURL string
-	log     logger.Logger
+	q          *sftpdb.Queries
+	store      *storage.Engine
+	baseURL    string
+	mail       *mailer.Mailer
+	orgDomains []string
+	log        logger.Logger
 }
 
 // New builds the share Service.
 func New(d Deps) *Service {
-	return &Service{q: d.Queries, store: d.Storage, baseURL: d.BaseURL, log: d.Logger.Named("service.share")}
+	return &Service{
+		q: d.Queries, store: d.Storage, baseURL: d.BaseURL,
+		mail: d.Mailer, orgDomains: d.OrgDomains, log: d.Logger.Named("service.share"),
+	}
 }
 
 // Create makes a share link for a file the caller owns.
@@ -89,14 +98,60 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, req models.Create
 		return nil, err
 	}
 
+	shareURL := s.baseURL + "/share/" + sh.Token
 	resp := &models.CreateResponse{
-		ID: sh.ID.String(), Token: sh.Token, URL: s.baseURL + "/share/" + sh.Token,
+		ID: sh.ID.String(), Token: sh.Token, URL: shareURL,
 		HasPassword: pwHash != nil, DownloadLimit: limit, CreatedAt: fmtTS(sh.CreatedAt),
 	}
 	if sh.ExpiresAt.Valid {
 		resp.ExpiresAt = sh.ExpiresAt.Time.Format(time.RFC3339)
 	}
+
+	// Optionally email the recipient. Flag external (outside-org) recipients.
+	if email := strings.TrimSpace(req.RecipientEmail); email != "" {
+		resp.External = s.isExternal(email)
+		if s.mail != nil && s.mail.Enabled() {
+			if err := s.mail.Send(email, "A file has been shared with you", shareEmailHTML(file.Name, shareURL, pwHash != nil)); err != nil {
+				s.log.Error("share email failed", "to", email, "err", err)
+			} else {
+				resp.Emailed = true
+			}
+		}
+		s.log.Info("share created", "file", file.Name, "recipient", email, "external", resp.External)
+	}
 	return resp, nil
+}
+
+// isExternal reports whether an email is outside the configured org domains.
+func (s *Service) isExternal(email string) bool {
+	if len(s.orgDomains) == 0 {
+		return false
+	}
+	at := strings.LastIndex(email, "@")
+	if at < 0 {
+		return true
+	}
+	domain := strings.ToLower(email[at+1:])
+	for _, d := range s.orgDomains {
+		if strings.EqualFold(strings.TrimSpace(d), domain) {
+			return false
+		}
+	}
+	return true
+}
+
+func shareEmailHTML(fileName, url string, hasPassword bool) string {
+	pw := ""
+	if hasPassword {
+		pw = `<p style="color:#b45309;font-size:13px">This link is password-protected — the sender will share the password separately.</p>`
+	}
+	return `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto">
+  <h2 style="color:#064D51">A file has been shared with you</h2>
+  <p style="color:#333">You have been given access to <strong>` + fileName + `</strong> on Sapphire SFTP.</p>
+  <p><a href="` + url + `" style="display:inline-block;background:#064D51;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px">Open the file</a></p>
+  ` + pw + `
+  <p style="color:#999;font-size:12px">If you were not expecting this, you can ignore this email.</p>
+</div>`
 }
 
 // List returns the caller's shares.

@@ -3,11 +3,12 @@ package share
 
 // CreateRequest creates a share link for a file.
 type CreateRequest struct {
-	FileID        string  `json:"file_id"        validate:"required,uuid"`
-	Password      string  `json:"password"`       // optional; empty = public
-	DownloadLimit *int    `json:"download_limit"` // optional; nil = unlimited
-	ExpiresInDays *int    `json:"expires_in_days"`
-	Permission    string  `json:"permission"`     // read (default)
+	FileID         string `json:"file_id"        validate:"required,uuid"`
+	Password       string `json:"password"`       // optional; empty = public
+	DownloadLimit  *int   `json:"download_limit"` // optional; nil = unlimited
+	ExpiresInDays  *int   `json:"expires_in_days"`
+	Permission     string `json:"permission"`      // read (default)
+	RecipientEmail string `json:"recipient_email"` // optional; emails the link
 }
 
 // CreateResponse returns the created share.
@@ -19,6 +20,8 @@ type CreateResponse struct {
 	DownloadLimit *int32 `json:"download_limit,omitempty"`
 	ExpiresAt     string `json:"expires_at,omitempty"`
 	CreatedAt     string `json:"created_at"`
+	Emailed       bool   `json:"emailed"`  // an email was sent to the recipient
+	External      bool   `json:"external"` // recipient is outside the organisation
 }
 
 // Response is the projection of a share for the owner's list.
