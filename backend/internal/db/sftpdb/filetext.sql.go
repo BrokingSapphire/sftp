@@ -138,6 +138,21 @@ func (q *Queries) SearchFileContent(ctx context.Context, arg SearchFileContentPa
 	return items, nil
 }
 
+const setFileClassification = `-- name: SetFileClassification :exec
+UPDATE files SET sensitivity = $1, pii_types = $2 WHERE id = $3
+`
+
+type SetFileClassificationParams struct {
+	Sensitivity string    `json:"sensitivity"`
+	PiiTypes    []string  `json:"pii_types"`
+	ID          uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SetFileClassification(ctx context.Context, arg SetFileClassificationParams) error {
+	_, err := q.db.Exec(ctx, setFileClassification, arg.Sensitivity, arg.PiiTypes, arg.ID)
+	return err
+}
+
 const upsertFileText = `-- name: UpsertFileText :exec
 INSERT INTO file_text (file_id, content, tsv, ocr, bytes, lang)
 VALUES ($1, $2, to_tsvector('english', $2), $3, $4, 'english')

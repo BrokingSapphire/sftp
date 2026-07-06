@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
+	"sapphirebroking.com/sftp_service/pkg/dlp"
 	"sapphirebroking.com/sftp_service/pkg/textextract"
 )
 
@@ -31,11 +32,19 @@ func (s *Service) IndexText(ctx context.Context, fileID uuid.UUID) error {
 		}
 	}
 
-	return s.q.UpsertFileText(ctx, sftpdb.UpsertFileTextParams{
+	if err := s.q.UpsertFileText(ctx, sftpdb.UpsertFileTextParams{
 		FileID:  fileID,
 		Content: text,
 		Ocr:     false,
 		Bytes:   int64(len(text)),
+	}); err != nil {
+		return err
+	}
+
+	// Classify content for DLP (PII types + sensitivity level).
+	res := dlp.Scan(text)
+	return s.q.SetFileClassification(ctx, sftpdb.SetFileClassificationParams{
+		ID: fileID, Sensitivity: res.Sensitivity, PiiTypes: res.PIITypes,
 	})
 }
 

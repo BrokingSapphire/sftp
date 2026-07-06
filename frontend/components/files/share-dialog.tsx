@@ -66,7 +66,10 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
       });
       setLink(res);
       toast.success("Link created");
-    } catch { toast.error("Could not create link"); }
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      toast.error(msg && msg.includes("restricted") ? msg : "Could not create link");
+    }
     finally { setLinkBusy(false); }
   }
   function copyLink() {

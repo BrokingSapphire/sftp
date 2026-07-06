@@ -92,6 +92,8 @@ type File struct {
 	TransferFrom     *uuid.UUID         `json:"transfer_from"`
 	LegalHold        bool               `json:"legal_hold"`
 	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
+	Sensitivity      string             `json:"sensitivity"`
+	PiiTypes         []string           `json:"pii_types"`
 }
 
 type FileTag struct {

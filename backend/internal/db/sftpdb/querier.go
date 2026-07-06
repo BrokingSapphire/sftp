@@ -144,6 +144,7 @@ type Querier interface {
 	RotateSession(ctx context.Context, arg RotateSessionParams) error
 	SearchFileContent(ctx context.Context, arg SearchFileContentParams) ([]SearchFileContentRow, error)
 	SearchFiles(ctx context.Context, arg SearchFilesParams) ([]File, error)
+	SetFileClassification(ctx context.Context, arg SetFileClassificationParams) error
 	SetFileCommon(ctx context.Context, arg SetFileCommonParams) error
 	SetFileLegalHold(ctx context.Context, arg SetFileLegalHoldParams) error
 	SetFileRetention(ctx context.Context, arg SetFileRetentionParams) error

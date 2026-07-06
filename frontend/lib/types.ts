@@ -51,6 +51,8 @@ export interface FileItem {
   transfer_deadline?: string;
   legal_hold?: boolean;
   retain_until?: string;
+  sensitivity?: string;
+  pii_types?: string[];
 }
 
 export interface Listing {

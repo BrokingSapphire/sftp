@@ -347,6 +347,7 @@ export default function FilesPage() {
                     {f.is_starred && <Star size={13} className="shrink-0 fill-amber-400 text-amber-400" />}
                     {f.legal_hold && <Lock size={13} className="shrink-0 text-danger" aria-label="Legal hold" />}
                     {!f.legal_hold && f.retain_until && <ShieldCheck size={13} className="shrink-0 text-warning" aria-label="Retention lock" />}
+                    <SensitivityTag level={f.sensitivity} types={f.pii_types} />
                   </div>
                   <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
                   <div className="flex items-center justify-end gap-1">
@@ -425,6 +426,19 @@ export default function FilesPage() {
         />
       )}
     </div>
+  );
+}
+
+function SensitivityTag({ level, types }: { level?: string; types?: string[] }) {
+  if (!level || level === "public" || level === "internal") return null;
+  const style = level === "restricted" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning";
+  return (
+    <span
+      title={types?.length ? `Detected: ${types.join(", ")}` : level}
+      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium capitalize ${style}`}
+    >
+      {level}
+    </span>
   );
 }
 

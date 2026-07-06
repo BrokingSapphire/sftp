@@ -62,6 +62,13 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, req models.Create
 	if file.OwnerID != owner {
 		return nil, apperrors.ErrForbidden
 	}
+	// DLP: a public share link exposes the file to anyone with the URL. Block it
+	// for files classified as restricted (PAN/Aadhaar/card etc.) — such files
+	// must be shared with specific internal people instead.
+	if file.Sensitivity == "restricted" {
+		s.log.Warn("dlp: blocked public link for restricted file", "file", file.Name, "owner", owner)
+		return nil, apperrors.ErrDLPBlocked
+	}
 
 	token, err := randomToken()
 	if err != nil {

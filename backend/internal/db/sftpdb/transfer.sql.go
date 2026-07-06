@@ -105,7 +105,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 }
 
 const listInheritedFiles = `-- name: ListInheritedFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types FROM files
 WHERE owner_id = $1 AND transfer_pending = TRUE AND deleted_at IS NULL
 ORDER BY transfer_deadline ASC
 `
@@ -142,6 +142,8 @@ func (q *Queries) ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]
 			&i.TransferFrom,
 			&i.LegalHold,
 			&i.RetainUntil,
+			&i.Sensitivity,
+			&i.PiiTypes,
 		); err != nil {
 			return nil, err
 		}

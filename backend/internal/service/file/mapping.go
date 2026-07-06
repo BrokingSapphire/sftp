@@ -67,5 +67,9 @@ func toFileResponse(f sftpdb.File) *models.FileResponse {
 	if f.RetainUntil.Valid {
 		r.RetainUntil = f.RetainUntil.Time.Format(time.RFC3339)
 	}
+	if f.Sensitivity != "" && f.Sensitivity != "public" {
+		r.Sensitivity = f.Sensitivity
+		r.PIITypes = f.PiiTypes
+	}
 	return r
 }

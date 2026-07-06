@@ -11,6 +11,7 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	"sapphirebroking.com/sftp_service/internal/storage"
+	"sapphirebroking.com/sftp_service/pkg/dlp"
 	"sapphirebroking.com/sftp_service/pkg/textextract"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
@@ -113,6 +114,10 @@ func (c *Cleaner) textIndexSweep(ctx context.Context) {
 			c.log.Warn("store file text failed", "file", r.ID, "err", err)
 			continue
 		}
+		res := dlp.Scan(text)
+		_ = c.q.SetFileClassification(ctx, sftpdb.SetFileClassificationParams{
+			ID: r.ID, Sensitivity: res.Sensitivity, PiiTypes: res.PIITypes,
+		})
 		indexed++
 	}
 	if indexed > 0 {

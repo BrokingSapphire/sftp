@@ -67,6 +67,9 @@ type FileResponse struct {
 	// Compliance controls.
 	LegalHold   bool   `json:"legal_hold,omitempty"`
 	RetainUntil string `json:"retain_until,omitempty"`
+	// DLP classification (derived from content).
+	Sensitivity string   `json:"sensitivity,omitempty"`
+	PIITypes    []string `json:"pii_types,omitempty"`
 }
 
 // LegalHoldRequest places or releases a legal hold.

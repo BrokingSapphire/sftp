@@ -33,3 +33,6 @@ WHERE f.owner_id = @owner_id
   AND t.tsv @@ websearch_to_tsquery('english', @query)
 ORDER BY rank DESC
 LIMIT @row_limit;
+
+-- name: SetFileClassification :exec
+UPDATE files SET sensitivity = @sensitivity, pii_types = @pii_types WHERE id = @id;
