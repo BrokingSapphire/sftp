@@ -34,6 +34,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/internal/worker"
 	"sapphirebroking.com/sftp_service/migrations"
+	"sapphirebroking.com/sftp_service/pkg/cache"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
@@ -61,6 +62,22 @@ func main() {
 		appLogger.Fatal("failed to run migrations", "error", err)
 	}
 	appLogger.Info("migrations applied")
+
+	// Cache for the hot RBAC/permission path: Redis when configured (shared
+	// across instances), otherwise an in-process TTL cache.
+	var appCache cache.Cache
+	if cfg.Redis.Enabled {
+		if rc, err := cache.NewRedis(cfg.Redis.Address, cfg.Redis.Password, cfg.Redis.DB); err != nil {
+			appLogger.Warn("redis unavailable; falling back to in-memory cache", "error", err)
+			appCache = cache.NewMemory()
+		} else {
+			appLogger.Info("redis cache connected", "addr", cfg.Redis.Address)
+			appCache = rc
+		}
+	} else {
+		appCache = cache.NewMemory()
+	}
+	defer func() { _ = appCache.Close() }()
 
 	// Build the data-access, auth and HTTP layers.
 	queries := sftpdb.New(pool)
@@ -120,7 +137,7 @@ func main() {
 		Logger:        appLogger,
 		DebugErrors:   cfg.IsDevelopment(),
 		Auth:          m.NewAuthenticator(jwtManager, apiKeyService),
-		Perms:         m.NewPermissions(queries),
+		Perms:         m.NewPermissions(queries, appCache),
 		Recorder:      auditRecorder,
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
 		AuthHandler:   authhandler.NewHandler(authService, appLogger),

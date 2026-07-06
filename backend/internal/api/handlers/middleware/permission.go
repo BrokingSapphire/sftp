@@ -1,25 +1,33 @@
 package middleware
 
 import (
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
+	"sapphirebroking.com/sftp_service/pkg/cache"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 )
 
+// permsTTL is short so role/permission changes propagate quickly.
+const permsTTL = 30 * time.Second
+
 // Permissions enforces RBAC by loading the caller's effective permissions
-// (derived from their role) and checking required capabilities. Must run
+// (derived from their role) and checking required capabilities. The lookup is
+// cached (per user) to keep it off the database on every request. Must run
 // after JWT.Require.
 type Permissions struct {
-	q *sftpdb.Queries
+	q     *sftpdb.Queries
+	cache cache.Cache
 }
 
-// NewPermissions constructs the RBAC middleware provider.
-func NewPermissions(q *sftpdb.Queries) *Permissions {
-	return &Permissions{q: q}
+// NewPermissions constructs the RBAC middleware provider. cache may be nil.
+func NewPermissions(q *sftpdb.Queries, c cache.Cache) *Permissions {
+	return &Permissions{q: q, cache: c}
 }
 
 // Require returns middleware that allows the request only if the caller holds
@@ -56,13 +64,34 @@ func (p *Permissions) load(r *http.Request) (map[string]bool, bool) {
 	if err != nil {
 		return nil, false
 	}
-	slugs, err := p.q.GetPermissionsForUser(r.Context(), uid)
+
+	ctx := r.Context()
+	key := "perms:" + uid.String()
+	if p.cache != nil {
+		if b, ok := p.cache.Get(ctx, key); ok {
+			var slugs []string
+			if json.Unmarshal(b, &slugs) == nil {
+				return toSet(slugs), true
+			}
+		}
+	}
+
+	slugs, err := p.q.GetPermissionsForUser(ctx, uid)
 	if err != nil {
 		return nil, false
 	}
+	if p.cache != nil {
+		if b, err := json.Marshal(slugs); err == nil {
+			p.cache.Set(ctx, key, b, permsTTL)
+		}
+	}
+	return toSet(slugs), true
+}
+
+func toSet(slugs []string) map[string]bool {
 	set := make(map[string]bool, len(slugs))
 	for _, s := range slugs {
 		set[s] = true
 	}
-	return set, true
+	return set
 }
