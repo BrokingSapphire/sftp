@@ -47,6 +47,16 @@ export const filesApi = {
     const t = tokens.access();
     return `/api/v1/files/${id}/download${t ? `?access_token=${encodeURIComponent(t)}` : ""}`;
   },
+  // Inline URL for in-browser rendering (img/pdf/video/audio previews).
+  previewUrl: (id: string) => {
+    const t = tokens.access();
+    const q = new URLSearchParams({ inline: "1" });
+    if (t) q.set("access_token", t);
+    return `/api/v1/files/${id}/download?${q.toString()}`;
+  },
+  // Fetch a text/code file's content (auth via interceptor).
+  fetchText: (id: string) =>
+    http.get<string>(`/files/${id}/download`, { responseType: "text", transformResponse: (d) => d }).then((r) => r.data),
   simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append("file", file);

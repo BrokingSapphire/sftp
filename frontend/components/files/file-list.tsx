@@ -1,11 +1,13 @@
 "use client";
 
-import { Download, RotateCcw, Trash2, Star } from "lucide-react";
+import { useState } from "react";
+import { Download, RotateCcw, Trash2, Star, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FileItem } from "@/lib/types";
 import { filesApi } from "@/lib/endpoints";
 import { fileIcon } from "./icon";
+import { FilePreview } from "./file-preview";
 import { Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
 import { StaggerList, StaggerItem } from "@/components/motion";
@@ -20,6 +22,7 @@ interface Props {
 
 export function FileList({ files, loading, emptyLabel, queryKey, mode = "default" }: Props) {
   const qc = useQueryClient();
+  const [preview, setPreview] = useState<number | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: [queryKey] });
 
   async function act(fn: () => Promise<unknown>, ok: string) {
@@ -37,13 +40,20 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
         <p className="py-16 text-center text-sm text-muted">{emptyLabel}</p>
       )}
       <StaggerList>
-      {files?.map((f) => (
+      {files?.map((f, i) => (
         <StaggerItem key={f.id} className="group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
-          <div className="flex min-w-0 items-center gap-3">
-            {fileIcon(f.extension, 18)}
-            <span className="truncate text-sm font-medium">{f.name}</span>
-            {f.is_starred && <Star size={13} className="fill-amber-400 text-amber-400" />}
-          </div>
+          {mode === "trash" ? (
+            <div className="flex min-w-0 items-center gap-3">
+              {fileIcon(f.extension, 18)}
+              <span className="truncate text-sm font-medium">{f.name}</span>
+            </div>
+          ) : (
+            <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
+              {fileIcon(f.extension, 18)}
+              <span className="truncate text-sm font-medium">{f.name}</span>
+              {f.is_starred && <Star size={13} className="fill-amber-400 text-amber-400" />}
+            </button>
+          )}
           <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
           <div className="flex items-center justify-end gap-1">
             <span className="text-xs text-muted group-hover:hidden">{timeAgo(mode === "trash" ? f.deleted_at : f.updated_at)}</span>
@@ -55,6 +65,7 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
                 </>
               ) : (
                 <>
+                  <IconBtn title="Preview" onClick={() => setPreview(i)}><Eye size={15} /></IconBtn>
                   <a href={filesApi.downloadUrl(f.id)}><IconBtn title="Download" onClick={() => {}}><Download size={15} /></IconBtn></a>
                   <IconBtn title="Star" onClick={() => act(() => filesApi.starFile(f.id, !f.is_starred), "Updated")}>
                     <Star size={15} className={f.is_starred ? "fill-amber-400 text-amber-400" : ""} />
@@ -67,6 +78,9 @@ export function FileList({ files, loading, emptyLabel, queryKey, mode = "default
         </StaggerItem>
       ))}
       </StaggerList>
+      {preview !== null && files?.[preview] && mode !== "trash" && (
+        <FilePreview files={files} index={preview} onChangeIndex={setPreview} onClose={() => setPreview(null)} onChanged={refresh} />
+      )}
     </div>
   );
 }

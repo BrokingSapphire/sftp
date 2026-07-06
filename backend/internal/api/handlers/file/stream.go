@@ -95,8 +95,14 @@ func (h *Handler) Download(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dl.File.Close()
 
+	// inline=1 lets the browser render the file in-page (preview/viewer);
+	// otherwise force a download.
+	disposition := "attachment"
+	if r.URL.Query().Get("inline") == "1" {
+		disposition = "inline"
+	}
 	w.Header().Set("Content-Type", dl.MimeType)
-	w.Header().Set("Content-Disposition", "attachment; filename=\""+dl.Name+"\"")
+	w.Header().Set("Content-Disposition", disposition+"; filename=\""+dl.Name+"\"")
 	w.Header().Set("Accept-Ranges", "bytes")
 	// ServeContent handles Range, If-Range, and conditional requests.
 	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)

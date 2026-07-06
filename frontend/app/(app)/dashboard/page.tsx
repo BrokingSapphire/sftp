@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { File, FolderOpen, HardDrive, Clock, Star, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { filesApi } from "@/lib/endpoints";
+import { FilePreview } from "@/components/files/file-preview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
@@ -15,6 +17,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const recent = useQuery({ queryKey: ["recent"], queryFn: () => filesApi.recent() });
   const starred = useQuery({ queryKey: ["starred"], queryFn: () => filesApi.starred() });
+  const [preview, setPreview] = useState<number | null>(null);
 
   const used = user?.storage_used ?? 0;
   const quota = user?.storage_quota ?? 0;
@@ -69,20 +72,30 @@ export default function DashboardPage() {
         <CardContent className="space-y-1">
           {recent.isLoading && [...Array(4)].map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}
           {recent.data?.length === 0 && <p className="py-6 text-center text-sm text-muted">No files yet — upload something.</p>}
-          {recent.data?.map((f) => (
-            <a
+          {recent.data?.map((f, i) => (
+            <button
               key={f.id}
-              href={filesApi.downloadUrl(f.id)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface-2"
+              onClick={() => setPreview(i)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2"
             >
               {fileIcon(f.extension, 18)}
               <span className="min-w-0 flex-1 truncate text-sm font-medium">{f.name}</span>
               <span className="text-xs text-muted">{formatBytes(f.size_bytes)}</span>
               <span className="hidden w-24 text-right text-xs text-muted sm:block">{timeAgo(f.created_at)}</span>
-            </a>
+            </button>
           ))}
         </CardContent>
       </Card>
+
+      {preview !== null && recent.data?.[preview] && (
+        <FilePreview
+          files={recent.data}
+          index={preview}
+          onChangeIndex={setPreview}
+          onClose={() => setPreview(null)}
+          onChanged={() => recent.refetch()}
+        />
+      )}
     </div>
   );
 }
