@@ -10,9 +10,12 @@ import { toast } from "sonner";
 import type { FileItem } from "@/lib/types";
 import { filesApi, sharesApi } from "@/lib/endpoints";
 import { fileIcon } from "./icon";
+import { SpreadsheetPreview, DocxPreview, PptxPreview } from "./office-preview";
 import { formatBytes, timeAgo } from "@/lib/utils";
 
-type Kind = "image" | "pdf" | "video" | "audio" | "text" | "csv" | "json" | "markdown" | "none";
+type Kind =
+  | "image" | "pdf" | "video" | "audio" | "text" | "csv" | "json" | "markdown"
+  | "spreadsheet" | "docx" | "pptx" | "none";
 
 const EXT: Record<string, Kind> = {
   png: "image", jpg: "image", jpeg: "image", gif: "image", svg: "image", webp: "image", bmp: "image", ico: "image", avif: "image",
@@ -20,6 +23,8 @@ const EXT: Record<string, Kind> = {
   mp4: "video", webm: "video", mov: "video", mkv: "video", ogv: "video",
   mp3: "audio", wav: "audio", ogg: "audio", flac: "audio", m4a: "audio", aac: "audio",
   csv: "csv", json: "json", md: "markdown", markdown: "markdown",
+  xlsx: "spreadsheet", xls: "spreadsheet", xlsm: "spreadsheet", ods: "spreadsheet",
+  docx: "docx", pptx: "pptx",
   txt: "text", log: "text", ini: "text", conf: "text", yaml: "text", yml: "text", env: "text",
   js: "text", ts: "text", tsx: "text", jsx: "text", go: "text", py: "text", java: "text",
   c: "text", cpp: "text", h: "text", css: "text", html: "text", xml: "text", sh: "text",
@@ -179,6 +184,10 @@ function PreviewContent({ file, kind }: { file: FileItem; kind: Kind }) {
 
   if (kind === "text" || kind === "json" || kind === "markdown" || kind === "csv")
     return <TextPreview file={file} kind={kind} />;
+
+  if (kind === "spreadsheet") return <SpreadsheetPreview fileId={file.id} />;
+  if (kind === "docx") return <DocxPreview fileId={file.id} />;
+  if (kind === "pptx") return <PptxPreview fileId={file.id} />;
 
   return (
     <div className="flex flex-col items-center gap-3 text-white/70">

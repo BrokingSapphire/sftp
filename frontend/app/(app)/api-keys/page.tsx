@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, Skeleton } from "@/components/ui/misc";
+import { ApiDocs } from "@/components/api-docs";
 import { timeAgo } from "@/lib/utils";
 
 const SCOPES = ["files.read", "files.upload", "files.write", "files.delete", "files.share"];
@@ -94,6 +95,8 @@ export default function ApiKeysPage() {
           </Card>
         ))}
       </div>
+
+      <ApiDocs />
     </div>
   );
 }

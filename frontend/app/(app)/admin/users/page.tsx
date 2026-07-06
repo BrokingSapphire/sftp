@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, CheckCircle2, Plus, Trash2, UserPlus } from "lucide-react";
+import { Ban, CheckCircle2, KeyRound, Plus, Trash2, UserPlus } from "lucide-react";
 import { usersApi, rolesApi } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/files/file-list";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,13 +23,29 @@ export default function AdminUsersPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["users"] });
 
   async function create() {
+    // Client-side validation mirrors the backend so users get a clear reason.
+    if (!form.full_name.trim()) return toast.error("Full name is required");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) return toast.error("Enter a valid email address");
+    if (form.username.trim().length < 3) return toast.error("Username must be at least 3 characters");
+    if (form.password.length < 12) return toast.error("Password must be at least 12 characters");
+
     try {
       await usersApi.create(form);
       toast.success("User created");
       setOpen(false);
       setForm({ email: "", username: "", full_name: "", password: "", role: "employee" });
       refresh();
-    } catch { toast.error("Could not create user"); }
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Could not create user");
+    }
+  }
+
+  async function resetPassword(id: string, username: string) {
+    const pw = prompt(`New password for ${username} (min 12 chars)`);
+    if (!pw) return;
+    if (pw.length < 12) { toast.error("Password must be at least 12 characters"); return; }
+    try { await usersApi.resetPassword(id, pw); toast.success("Password reset — user's sessions revoked"); }
+    catch { toast.error("Could not reset password"); }
   }
 
   return (
@@ -77,6 +94,11 @@ export default function AdminUsersPage() {
               >
                 {roles.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}
               </select>
+              <button title="Reset password"
+                onClick={() => resetPassword(u.id, u.username)}
+                className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-foreground">
+                <KeyRound size={16} />
+              </button>
               <button title={u.is_active ? "Disable" : "Enable"}
                 onClick={() => usersApi.setActive(u.id, !u.is_active).then(() => { toast.success("Updated"); refresh(); })}
                 className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-surface-2">

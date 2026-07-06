@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PingIndicator } from "@/components/app-shell/ping";
 
 export function Topbar() {
   const { user, logout } = useAuth();
@@ -37,6 +38,7 @@ export function Topbar() {
         />
       </form>
       <div className="ml-auto flex items-center gap-2">
+        <PingIndicator />
         <ThemeToggle />
         <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">

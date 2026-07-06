@@ -57,6 +57,9 @@ export const filesApi = {
   // Fetch a text/code file's content (auth via interceptor).
   fetchText: (id: string) =>
     http.get<string>(`/files/${id}/download`, { responseType: "text", transformResponse: (d) => d }).then((r) => r.data),
+  // Fetch raw bytes (for client-side Office rendering: xlsx, docx).
+  fetchBinary: (id: string) =>
+    http.get<ArrayBuffer>(`/files/${id}/download`, { responseType: "arraybuffer" }).then((r) => r.data),
   simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append("file", file);
