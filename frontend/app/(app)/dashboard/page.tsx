@@ -23,24 +23,41 @@ export default function DashboardPage() {
   const quota = user?.storage_quota ?? 0;
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome back, {user?.full_name?.split(" ")[0] || user?.username}
-        </h1>
-        <p className="text-sm text-muted">Here is what is happening in your workspace.</p>
-      </div>
+      {/* Gradient hero */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[#053e42] px-6 py-7 text-white shadow-lg sm:px-8 sm:py-9"
+      >
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-[#5CC5C9]/20 blur-3xl" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: "linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)", backgroundSize: "40px 40px" }}
+        />
+        <div className="relative">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-white/70">{greeting}</p>
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
+            {user?.full_name?.split(" ")[0] || user?.username}
+          </h1>
+          <p className="mt-1 text-sm text-white/75">Here is what is happening in your workspace.</p>
+        </div>
+      </motion.div>
 
       <StaggerList className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={HardDrive} label="Storage used" value={formatBytes(used)}
-          sub={quota > 0 ? `of ${formatBytes(quota)}` : "unlimited"} />
+          sub={quota > 0 ? `of ${formatBytes(quota)}` : "unlimited"} tint="teal" />
         <Stat icon={File} label="Recent files" value={String(recent.data?.length ?? 0)}
-          sub="last 20" loading={recent.isLoading} />
+          sub="last 20" loading={recent.isLoading} tint="blue" />
         <Stat icon={Star} label="Starred" value={String(starred.data?.length ?? 0)}
-          sub="quick access" loading={starred.isLoading} />
+          sub="quick access" loading={starred.isLoading} tint="amber" />
         <Stat icon={FolderOpen} label="Role" value={user?.role?.replace("_", " ") ?? ""}
-          sub="access level" capitalize />
+          sub="access level" capitalize tint="violet" />
       </StaggerList>
 
       {quota > 0 && (
@@ -100,16 +117,25 @@ export default function DashboardPage() {
   );
 }
 
+const TINTS: Record<string, { icon: string; glow: string }> = {
+  teal: { icon: "bg-gradient-to-br from-[#0d9488] to-[#064D51] text-white", glow: "from-teal-500/10" },
+  blue: { icon: "bg-gradient-to-br from-sky-500 to-blue-600 text-white", glow: "from-sky-500/10" },
+  amber: { icon: "bg-gradient-to-br from-amber-400 to-orange-500 text-white", glow: "from-amber-500/10" },
+  violet: { icon: "bg-gradient-to-br from-violet-500 to-purple-600 text-white", glow: "from-violet-500/10" },
+};
+
 function Stat({
-  icon: Icon, label, value, sub, loading, capitalize,
+  icon: Icon, label, value, sub, loading, capitalize, tint = "teal",
 }: {
-  icon: React.ElementType; label: string; value: string; sub?: string; loading?: boolean; capitalize?: boolean;
+  icon: React.ElementType; label: string; value: string; sub?: string; loading?: boolean; capitalize?: boolean; tint?: keyof typeof TINTS;
 }) {
+  const c = TINTS[tint] ?? TINTS.teal;
   return (
     <StaggerItem>
       <motion.div whileHover={{ y: -3 }} transition={{ type: "spring", stiffness: 380, damping: 30 }}>
-        <Card className="transition-shadow hover:shadow-md">
-          <CardContent className="flex items-start justify-between p-5">
+        <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
+          <div aria-hidden className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${c.glow} to-transparent blur-2xl`} />
+          <CardContent className="relative flex items-start justify-between p-5">
             <div>
               <p className="eyebrow">{label}</p>
               {loading ? (
@@ -119,7 +145,7 @@ function Stat({
               )}
               {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ${c.icon}`}>
               <Icon size={20} />
             </div>
           </CardContent>
