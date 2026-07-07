@@ -39,7 +39,19 @@ export default function LoginPage() {
       await login(values.identifier, values.password, values.remember ?? false);
       toast.success("Welcome back");
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Login failed");
+      // 409 → a session is already active elsewhere. Offer to take it over.
+      if (e instanceof ApiError && e.status === 409) {
+        if (confirm("A session is already active for this account on another device.\n\nLog it out and continue here?")) {
+          try {
+            await login(values.identifier, values.password, values.remember ?? false, true);
+            toast.success("Signed in — other session ended");
+          } catch (e2) {
+            toast.error(e2 instanceof ApiError ? e2.message : "Login failed");
+          }
+        }
+      } else {
+        toast.error(e instanceof ApiError ? e.message : "Login failed");
+      }
     } finally {
       setSubmitting(false);
     }

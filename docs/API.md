@@ -54,3 +54,12 @@ curl -X POST "/api/v1/files/uploads/$ID/complete" -H "Authorization: Bearer $T"
 ```
 
 Interrupted? Call `GET /files/uploads/{id}` to see `received_chunks` and resume.
+
+## Single active session
+
+Each account may have only one active session at a time.
+
+- `POST /api/v1/auth/login` returns **409 Conflict** (`a session is already
+  active for this account`) if another session is live.
+- Re-send the same request with `"force": true` to terminate the existing
+  session and sign in here. The web UI prompts the user before doing so.

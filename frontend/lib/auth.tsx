@@ -9,7 +9,7 @@ import type { UserInfo } from "./types";
 interface AuthState {
   user: UserInfo | null;
   loading: boolean;
-  login: (identifier: string, password: string, remember: boolean) => Promise<void>;
+  login: (identifier: string, password: string, remember: boolean, force?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   has: (perm: string) => boolean;
   refreshUser: () => Promise<void>;
@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user,
     loading,
-    async login(identifier, password, remember) {
-      const pair = await authApi.login(identifier, password, remember);
+    async login(identifier, password, remember, force = false) {
+      const pair = await authApi.login(identifier, password, remember, force);
       setUser(pair.user ?? (await authApi.me()));
       router.push("/dashboard");
     },

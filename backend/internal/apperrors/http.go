@@ -22,7 +22,8 @@ func HTTPStatus(err error) int {
 		return http.StatusNotFound
 
 	case errors.Is(err, ErrUserAlreadyExists), errors.Is(err, ErrConflict),
-		errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrNotEmpty):
+		errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrNotEmpty),
+		errors.Is(err, ErrSessionActive):
 		return http.StatusConflict
 
 	case errors.Is(err, ErrInvalidCredentials), errors.Is(err, ErrInvalidToken),

@@ -7,6 +7,7 @@ import "errors"
 var (
 	// Auth & credentials
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrSessionActive      = errors.New("a session is already active for this account")
 	ErrAccountLocked      = errors.New("account locked")
 	ErrAccountDisabled    = errors.New("account disabled")
 	ErrInvalidToken       = errors.New("invalid or expired token")

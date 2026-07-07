@@ -38,3 +38,7 @@ ORDER BY last_seen_at DESC;
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions
 WHERE expires_at < now() OR (revoked_at IS NOT NULL AND revoked_at < now() - interval '7 days');
+
+-- name: CountActiveSessions :one
+SELECT count(*) FROM sessions
+WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now();

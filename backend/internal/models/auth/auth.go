@@ -6,6 +6,8 @@ type LoginRequest struct {
 	Identifier string `json:"identifier" validate:"required"` // email or username
 	Password   string `json:"password"   validate:"required"`
 	RememberMe bool   `json:"remember_me"`
+	// Force logs out any existing session for this account and signs in here.
+	Force bool `json:"force"`
 }
 
 // TokenPair is issued on successful login/refresh.

@@ -22,6 +22,7 @@ type Querier interface {
 	// Groups matching actions by actor within a window, flagging actors at/over the
 	// threshold. Pass a set of actions (e.g. ARRAY['file.download']).
 	CountActionsByActor(ctx context.Context, arg CountActionsByActorParams) ([]CountActionsByActorRow, error)
+	CountActiveSessions(ctx context.Context, userID uuid.UUID) (int64, error)
 	CountActiveUsers(ctx context.Context) (int64, error)
 	CountAuditLogs(ctx context.Context) (int64, error)
 	CountCommonFiles(ctx context.Context) (int64, error)

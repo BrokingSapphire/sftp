@@ -13,6 +13,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countActiveSessions = `-- name: CountActiveSessions :one
+SELECT count(*) FROM sessions
+WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()
+`
+
+func (q *Queries) CountActiveSessions(ctx context.Context, userID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveSessions, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (
     user_id, refresh_token_hash, user_agent, ip_address,

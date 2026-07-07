@@ -5,9 +5,9 @@ import type {
 
 // ── Auth ───────────────────────────────────────────────────
 export const authApi = {
-  async login(identifier: string, password: string, remember: boolean) {
+  async login(identifier: string, password: string, remember: boolean, force = false) {
     const pair = await unwrap<TokenPair>(
-      http.post<Envelope<TokenPair>>("/auth/login", { identifier, password, remember_me: remember }),
+      http.post<Envelope<TokenPair>>("/auth/login", { identifier, password, remember_me: remember, force }),
     );
     tokens.set(pair.access_token, pair.refresh_token);
     return pair;

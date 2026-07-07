@@ -92,6 +92,18 @@ func (s *Service) Login(ctx context.Context, req models.LoginRequest, meta Reque
 		return nil, apperrors.ErrInvalidCredentials
 	}
 
+	// Single active session per account. If one already exists, require the
+	// caller to explicitly confirm taking over (force) — the frontend prompts
+	// the user first. On force, the existing session is revoked.
+	if n, err := s.q.CountActiveSessions(ctx, user.ID); err == nil && n > 0 {
+		if !req.Force {
+			return nil, apperrors.ErrSessionActive
+		}
+		if err := s.q.RevokeAllUserSessions(ctx, user.ID); err != nil {
+			s.log.Error("revoke prior sessions failed", "err", err)
+		}
+	}
+
 	if err := s.q.UpdateLastLogin(ctx, user.ID); err != nil {
 		s.log.Error("update last login failed", "err", err)
 	}

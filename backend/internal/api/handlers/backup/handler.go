@@ -36,6 +36,9 @@ func (h *Handler) Run(c fuego.ContextWithBody[TargetRequest]) (*response.Envelop
 	if err := requireSuperAdmin(c.Context()); err != nil {
 		return nil, handlers.Fail(err)
 	}
+	if !h.svc.Enabled() {
+		return nil, fuego.HTTPError{Title: "Backups require an encryption key — set STORAGE_ENCRYPTION_KEY", Status: 400}
+	}
 	body, err := c.Body()
 	if err != nil || body.TargetPath == "" {
 		return nil, fuego.BadRequestError{Title: "target_path is required"}

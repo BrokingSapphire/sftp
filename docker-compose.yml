@@ -10,6 +10,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-sftp}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sftp}
       POSTGRES_DB: ${POSTGRES_DB:-sftp}
+    # Keep the runtime socket/lock dir on tmpfs so an ungraceful host crash can't
+    # leave a stale lock file that blocks startup.
+    tmpfs:
+      - /var/run/postgresql
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
