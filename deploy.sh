@@ -29,13 +29,62 @@ die()  { printf '%s✗ %s%s\n' "$RED" "$*" "$RST" >&2; exit 1; }
 ASSUME_YES=0
 [ "${1:-}" = "--yes" ] || [ "${1:-}" = "-y" ] && ASSUME_YES=1
 
-# ── prerequisites ────────────────────────────────────────────────────────────
-command -v docker >/dev/null 2>&1 || die "Docker is not installed. See https://docs.docker.com/engine/install/"
-if docker compose version >/dev/null 2>&1; then DC="docker compose"
-elif command -v docker-compose >/dev/null 2>&1; then DC="docker-compose"
-else die "Docker Compose is not installed."; fi
-command -v python3 >/dev/null 2>&1 || die "python3 is required (for config generation)."
-docker info >/dev/null 2>&1 || die "The Docker daemon is not running. Start Docker and re-run."
+# ── prerequisites (auto-install anything missing) ─────────────────────────────
+OS="$(uname -s)"
+SUDO=""; [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+
+pkg_install() { # install packages with whatever package manager exists
+  if   command -v apt-get >/dev/null 2>&1; then $SUDO apt-get update -qq && $SUDO apt-get install -y "$@"
+  elif command -v dnf     >/dev/null 2>&1; then $SUDO dnf install -y "$@"
+  elif command -v yum     >/dev/null 2>&1; then $SUDO yum install -y "$@"
+  elif command -v brew    >/dev/null 2>&1; then brew install "$@"
+  else return 1; fi
+}
+ensure() { # ensure <binary> [package]
+  command -v "$1" >/dev/null 2>&1 && return 0
+  hdr "Installing $1"
+  pkg_install "${2:-$1}" >/dev/null 2>&1 || die "Could not auto-install '$1'. Install it manually and re-run."
+  command -v "$1" >/dev/null 2>&1 || die "'$1' still not found after install."
+}
+
+ensure curl curl
+ensure git git
+ensure python3 python3
+ensure openssl openssl
+
+# Docker engine
+if ! command -v docker >/dev/null 2>&1; then
+  case "$OS" in
+    Linux)
+      hdr "Installing Docker Engine"
+      curl -fsSL https://get.docker.com | $SUDO sh || die "Docker install failed. See https://docs.docker.com/engine/install/"
+      $SUDO usermod -aG docker "${SUDO_USER:-$USER}" 2>/dev/null || true
+      $SUDO systemctl enable --now docker 2>/dev/null || true ;;
+    Darwin) die "Install Docker Desktop (https://www.docker.com/products/docker-desktop/), start it, then re-run." ;;
+    *) die "Install Docker + Compose for your OS, then re-run." ;;
+  esac
+fi
+
+# Start the daemon if it isn't running
+if ! docker info >/dev/null 2>&1 && ! $SUDO docker info >/dev/null 2>&1; then
+  hdr "Starting the Docker daemon"
+  $SUDO systemctl start docker 2>/dev/null || $SUDO service docker start 2>/dev/null || true
+  for _ in 1 2 3 4 5; do docker info >/dev/null 2>&1 || $SUDO docker info >/dev/null 2>&1 && break; sleep 2; done
+fi
+
+# Pick a working docker invocation (handle the "group not applied yet" case)
+if   docker info >/dev/null 2>&1; then DOCKER="docker"
+elif $SUDO docker info >/dev/null 2>&1; then DOCKER="$SUDO docker"; warn "Using sudo for docker (log out/in after being added to the 'docker' group to avoid this)."
+else die "The Docker daemon is not reachable. Start Docker and re-run."; fi
+
+# Docker Compose (install the plugin if absent)
+if   $DOCKER compose version >/dev/null 2>&1; then DC="$DOCKER compose"
+elif command -v docker-compose >/dev/null 2>&1; then DC="${SUDO:+$SUDO }docker-compose"
+else
+  hdr "Installing the Docker Compose plugin"
+  pkg_install docker-compose-plugin >/dev/null 2>&1 || true
+  $DOCKER compose version >/dev/null 2>&1 && DC="$DOCKER compose" || die "Docker Compose is not available."
+fi
 
 gen() { # generate a random hex secret
   if command -v openssl >/dev/null 2>&1; then openssl rand -hex "${1:-32}"
