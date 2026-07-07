@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { Topbar } from "@/components/app-shell/topbar";
+ import { WelcomeModal } from "@/components/app-shell/welcome-modal";
 import { Spinner } from "@/components/ui/misc";
 import { Telemetry } from "@/components/telemetry";
 import { ForcePasswordChange } from "@/components/force-password-change";
@@ -37,6 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <UploadProvider>
       <div className="flex h-screen overflow-hidden">
         <Telemetry />
+        <WelcomeModal />
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
