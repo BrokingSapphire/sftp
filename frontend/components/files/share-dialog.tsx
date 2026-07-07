@@ -29,7 +29,9 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    filesApi.listGrants(fileId).then(setGrants).catch(() => {});
+    // The API omits an empty array, so coalesce to [] — otherwise grants.map
+    // below would crash (files with no recipients are the common case).
+    filesApi.listGrants(fileId).then((g) => setGrants(g ?? [])).catch(() => setGrants([]));
   }, [fileId]);
 
   const personExternal = personEmail ? isExternal(personEmail) : false;
@@ -125,7 +127,7 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">Me</span>
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">You</p><p className="text-xs text-muted">Owner</p></div>
             </div>
-            {grants.map((g) => (
+            {(grants ?? []).map((g) => (
               <div key={g.user_id} className="flex items-center gap-2 rounded-lg px-1 py-1.5 hover:bg-surface-2">
                 <Avatar userId={g.user_id} name={g.name} hasAvatar={g.has_avatar} size={32} />
                 <div className="min-w-0 flex-1">
@@ -140,7 +142,7 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
                 <button title="Remove" onClick={() => removePerson(g)} className="flex h-8 w-8 items-center justify-center rounded-md text-danger hover:bg-surface-2"><Trash2 size={14} /></button>
               </div>
             ))}
-            {grants.length === 0 && <p className="px-1 text-xs text-muted">Only you have access.</p>}
+            {(grants ?? []).length === 0 && <p className="px-1 text-xs text-muted">Only you have access.</p>}
           </div>
         </div>
 
