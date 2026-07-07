@@ -68,23 +68,37 @@ export function UploadProvider({ children }: { children: ReactNode }) {
           c.received = new Set(init.received_chunks);
         }
 
-        for (let i = 0; i < c.totalChunks; i++) {
-          if (c.canceled) return;
-          if (c.paused) { patch(id, { status: "paused" }); return; }
-          if (c.received.has(i)) continue;
+        // Upload chunks with bounded concurrency for speed (and so one slow chunk
+        // can't stall the whole transfer). A single controller aborts them all on
+        // pause/cancel.
+        c.controller = new AbortController();
+        const pending: number[] = [];
+        for (let i = 0; i < c.totalChunks; i++) if (!c.received.has(i)) pending.push(i);
 
-          const start = i * c.chunkSize;
-          const blob = c.file.slice(start, Math.min(start + c.chunkSize, c.file.size));
-          c.controller = new AbortController();
-          try {
-            await filesApi.putChunk(c.uploadId!, i, blob, c.controller.signal);
-          } catch (err) {
-            if (c.paused || c.canceled) { if (c.paused) patch(id, { status: "paused" }); return; }
-            throw err;
+        let cursor = 0;
+        let failure: unknown = null;
+        const worker = async () => {
+          while (cursor < pending.length) {
+            if (c.canceled || c.paused || failure) return;
+            const i = pending[cursor++];
+            const start = i * c.chunkSize;
+            const blob = c.file.slice(start, Math.min(start + c.chunkSize, c.file.size));
+            try {
+              await filesApi.putChunk(c.uploadId!, i, blob, c.controller!.signal);
+            } catch (err) {
+              if (c.paused || c.canceled) return;
+              failure = err;
+              return;
+            }
+            c.received.add(i);
+            patch(id, { progress: Math.round((c.received.size / c.totalChunks) * 100) });
           }
-          c.received.add(i);
-          patch(id, { progress: Math.round((c.received.size / c.totalChunks) * 100) });
-        }
+        };
+        const CONCURRENCY = 4;
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, pending.length || 1) }, worker));
+        if (c.canceled) return;
+        if (c.paused) { patch(id, { status: "paused" }); return; }
+        if (failure) throw failure;
 
         await filesApi.completeUpload(c.uploadId!);
         patch(id, { status: "done", progress: 100 });

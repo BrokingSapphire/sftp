@@ -175,14 +175,26 @@ func main() {
 	teamService := teamsvc.New(queries, appLogger)
 
 	// Single-session enforcement: the auth middleware rejects a JWT whose session
-	// has been revoked (e.g. after a login elsewhere took over).
+	// has been revoked. The result is cached briefly so this never adds a DB query
+	// to every request (which would pressure the connection pool under load, e.g.
+	// during a chunked upload).
 	sessionActive := func(ctx context.Context, sid string) bool {
+		ck := "sess:active:" + sid
+		if v, ok := appCache.Get(ctx, ck); ok {
+			return len(v) == 1 && v[0] == '1'
+		}
 		id, err := uuid.Parse(sid)
 		if err != nil {
 			return false
 		}
 		ok, err := queries.IsSessionActive(ctx, id)
-		return err == nil && ok
+		active := err == nil && ok
+		b := byte('0')
+		if active {
+			b = '1'
+		}
+		appCache.Set(ctx, ck, []byte{b}, 20*time.Second)
+		return active
 	}
 
 	// Per-IP rate limiting: lenient globally, strict on login (brute-force guard).
