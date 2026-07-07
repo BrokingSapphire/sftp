@@ -41,7 +41,7 @@ export default function ApiKeysPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader title="API keys" subtitle="Programmatic access to the file APIs (Bearer / X-API-Key)" />
+      <PageHeader title="API keys & developer docs" subtitle="Let scripts and apps use your files securely — create a key, then copy a ready-made snippet below" />
 
       {newKey && (
         <Card className="border-primary">
