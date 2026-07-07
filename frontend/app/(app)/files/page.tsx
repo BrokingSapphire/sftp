@@ -25,6 +25,7 @@ import { BRAND } from "@/lib/brand";
 const OFFICE_EXT = new Set(["docx", "doc", "odt", "xlsx", "xls", "ods", "pptx", "ppt", "odp"]);
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { useUploads } from "@/lib/upload-manager";
+import { useI18n } from "@/lib/i18n";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
 import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
@@ -43,6 +44,7 @@ export default function FilesPage() {
   const [preview, setPreview] = useState<number | null>(null);
   const ctx = useContextMenu();
   const uploads = useUploads();
+  const { t: tr } = useI18n();
   const { has } = useAuth();
   const router = useRouter();
 
@@ -270,7 +272,7 @@ export default function FilesPage() {
                 className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-surface-2", i === crumbs.length - 1 ? "font-semibold" : "text-muted")}
               >
                 {i === 0 && <Home size={14} />}
-                {c.name}
+                {i === 0 ? tr("common.home") : c.name}
               </button>
             </span>
           ))}
@@ -280,9 +282,9 @@ export default function FilesPage() {
             <ViewBtn active={view === "list"} onClick={() => setViewPersist("list")}><ListIcon size={16} /></ViewBtn>
             <ViewBtn active={view === "grid"} onClick={() => setViewPersist("grid")}><LayoutGrid size={16} /></ViewBtn>
           </div>
-          <Button variant="outline" size="sm" onClick={createFolder}><FolderPlus size={16} /> New folder</Button>
-          <Button variant="outline" size="sm" onClick={pickFolder}><FolderUp size={16} /> Upload folder</Button>
-          <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
+          <Button variant="outline" size="sm" onClick={createFolder}><FolderPlus size={16} /> {tr("action.newFolder")}</Button>
+          <Button variant="outline" size="sm" onClick={pickFolder}><FolderUp size={16} /> {tr("action.uploadFolder")}</Button>
+          <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> {tr("action.upload")}</Button>
           <input ref={inputRef} type="file" multiple hidden onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
             if (fs.length) uploadFiles(fs);
