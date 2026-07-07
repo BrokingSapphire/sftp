@@ -12,6 +12,8 @@ import (
 	"github.com/go-fuego/fuego"
 	"github.com/rs/cors"
 
+	"sapphirebroking.com/sftp_service/internal/metrics"
+
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	"sapphirebroking.com/sftp_service/pkg/logger"
@@ -86,6 +88,7 @@ func NewHttpServer(port int, deps Deps) *HttpServer {
 			m.AccessLog(deps.Logger),
 			m.RealIP,
 			m.SecurityHeaders,
+			metrics.Middleware,
 			m.AuditLog(deps.Recorder),
 			corsMW,
 		),

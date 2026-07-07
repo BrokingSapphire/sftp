@@ -2,6 +2,7 @@ package api
 
 import (
 	"maps"
+	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-fuego/fuego"
@@ -23,6 +24,8 @@ import (
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
 	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
+	"sapphirebroking.com/sftp_service/internal/metrics"
+	"sapphirebroking.com/sftp_service/pkg/ratelimit"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 )
 
@@ -33,6 +36,8 @@ type Deps struct {
 	Logger        logger.Logger
 	DebugErrors   bool
 	Auth          *m.Authenticator
+	GlobalRL      *ratelimit.Limiter
+	LoginRL       *ratelimit.Limiter
 	Perms         *m.Permissions
 	Recorder      *auditsvc.Recorder
 	HealthHandler *handlers.HealthHandler
@@ -71,8 +76,13 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	// Unversioned infra probes.
 	fuego.Get(s, "/healthz", deps.HealthHandler.Live, option.Summary("Liveness probe"), option.Hide())
 	fuego.Get(s, "/readyz", deps.HealthHandler.Ready, option.Summary("Readiness probe"), option.Hide())
+	fuego.GetStd(s, "/metrics", func(w http.ResponseWriter, r *http.Request) { metrics.Handler().ServeHTTP(w, r) }, option.Hide())
 
 	g := fuego.Group(s, BaseURL)
+	// Global per-IP rate limit across the API.
+	if deps.GlobalRL != nil {
+		fuego.Use(g, m.RateLimit(deps.GlobalRL))
+	}
 	fuego.Get(g, "/health-check", deps.HealthHandler.Live, option.Summary("Health check"), option.Tags("Health"))
 	fuego.Get(g, "/info", deps.HealthHandler.Info, option.Summary("Build/runtime info"), option.Tags("Health"))
 
@@ -274,7 +284,7 @@ func registerUserRoutes(g *fuego.Server, deps Deps) {
 func registerAuthRoutes(g *fuego.Server, deps Deps) {
 	ga := fuego.Group(g, "/auth", option.Tags("Auth"))
 
-	fuego.Post(ga, "/login", deps.AuthHandler.Login, option.Summary("Log in with email/username and password"))
+	fuego.Post(ga, "/login", deps.AuthHandler.Login, option.Middleware(m.RateLimit(deps.LoginRL)), option.Summary("Log in with email/username and password"))
 	fuego.Post(ga, "/refresh", deps.AuthHandler.Refresh, option.Summary("Refresh access token"))
 
 	// Microsoft Entra ID (Azure AD) single sign-on.

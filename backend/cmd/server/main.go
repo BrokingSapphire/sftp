@@ -46,6 +46,7 @@ import (
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 	"sapphirebroking.com/sftp_service/pkg/mailer"
+	"sapphirebroking.com/sftp_service/pkg/ratelimit"
 )
 
 func main() {
@@ -160,6 +161,12 @@ func main() {
 	}
 	backupService := backupsvc.New(queries, storageEngine, backupCipher, appLogger)
 
+	// Per-IP rate limiting: lenient globally, strict on login (brute-force guard).
+	globalRL := ratelimit.New(50, 100)
+	loginRL := ratelimit.New(0.5, 8)
+	defer globalRL.Close()
+	defer loginRL.Close()
+
 	// Seed the first super-admin on an empty database.
 	if err := userService.EnsureSuperAdmin(ctx, cfg.Bootstrap); err != nil {
 		appLogger.Error("bootstrap super-admin failed", "error", err)
@@ -178,6 +185,8 @@ func main() {
 		Logger:        appLogger,
 		DebugErrors:   cfg.IsDevelopment(),
 		Auth:          m.NewAuthenticator(jwtManager, apiKeyService),
+		GlobalRL:      globalRL,
+		LoginRL:       loginRL,
 		Perms:         m.NewPermissions(queries, appCache),
 		Recorder:      auditRecorder,
 		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
