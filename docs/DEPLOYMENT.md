@@ -380,6 +380,16 @@ Grafana is then at **http://localhost:3001**, Prometheus at
 
 ## 7. Enable HTTPS (production)
 
+**Automated (recommended):** obtain a Let's Encrypt cert and set up auto-renewal in one command:
+
+```bash
+sudo ./scripts/setup-ssl.sh files.yourcompany.com you@yourcompany.com
+```
+
+Then uncomment the 443 block in nginx.conf + docker-compose.yml, set PUBLIC_URL=https://..., and `docker compose up -d`.
+
+**Manual steps:**
+
 Never expose plain HTTP to users in production. Terminate TLS at Nginx:
 
 1. Obtain certificates (your internal CA, or Let's Encrypt) and place them in
