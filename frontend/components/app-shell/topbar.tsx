@@ -12,9 +12,12 @@ import { Avatar } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PingIndicator } from "@/components/app-shell/ping";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
+import { LanguagePicker } from "@/components/app-shell/language-picker";
+import { useI18n } from "@/lib/i18n";
 
 export function Topbar() {
   const { user, refreshUser } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [q, setQ] = useState("");
   const avatarInput = useRef<HTMLInputElement>(null);
@@ -54,7 +57,7 @@ export function Topbar() {
           ref={searchRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search files…"
+          placeholder={t("action.search")}
           className="pl-9 pr-14"
         />
         <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted sm:block">⌘K</kbd>
@@ -62,6 +65,7 @@ export function Topbar() {
       <div className="ml-auto flex items-center gap-2">
         <PingIndicator />
         <NotificationBell />
+        <LanguagePicker />
         <ThemeToggle />
         <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
           <button

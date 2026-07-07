@@ -8,43 +8,45 @@ import {
 } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { cn, formatBytes } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { motion } from "motion/react";
 
 interface NavItem {
   href: string;
-  label: string;
+  label: TKey;
   icon: React.ElementType;
   perm?: string;
   superAdmin?: boolean;
 }
 
 const primary: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/files", label: "My Files", icon: Folder },
-  ...(BRAND.ai?.enabled ? [{ href: "/ask", label: "Ask AI", icon: Sparkles }] : []),
-  { href: "/teams", label: "Teams", icon: UsersRound },
-  { href: "/common", label: "Common", icon: Globe },
-  { href: "/shared", label: "Shared with me", icon: Users },
-  { href: "/inherited", label: "Inherited", icon: Inbox },
-  { href: "/starred", label: "Starred", icon: Star },
-  { href: "/shares", label: "Shared", icon: Share2 },
-  { href: "/trash", label: "Trash", icon: Trash2 },
+  { href: "/dashboard", label: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/files", label: "nav.files", icon: Folder },
+  ...(BRAND.ai?.enabled ? [{ href: "/ask", label: "nav.askAI" as TKey, icon: Sparkles }] : []),
+  { href: "/teams", label: "nav.teams", icon: UsersRound },
+  { href: "/common", label: "nav.common", icon: Globe },
+  { href: "/shared", label: "nav.shared_with_me", icon: Users },
+  { href: "/inherited", label: "nav.inherited", icon: Inbox },
+  { href: "/starred", label: "nav.starred", icon: Star },
+  { href: "/shares", label: "nav.shared", icon: Share2 },
+  { href: "/trash", label: "nav.trash", icon: Trash2 },
 ];
 
 const admin: NavItem[] = [
-  { href: "/admin/users", label: "Users", icon: Users, perm: "users.read" },
-  { href: "/admin/storage", label: "Storage", icon: PieChart, perm: "storage.manage" },
-  { href: "/admin/audit", label: "Audit Log", icon: ScrollText, perm: "audit.read" },
-  { href: "/admin/security", label: "Security", icon: ShieldAlert, perm: "audit.read" },
-  { href: "/admin/backup", label: "Backup", icon: DatabaseBackup, superAdmin: true },
-  { href: "/api-keys", label: "API Keys", icon: KeyRound, perm: "apikeys.manage" },
+  { href: "/admin/users", label: "nav.users", icon: Users, perm: "users.read" },
+  { href: "/admin/storage", label: "nav.storage", icon: PieChart, perm: "storage.manage" },
+  { href: "/admin/audit", label: "nav.audit", icon: ScrollText, perm: "audit.read" },
+  { href: "/admin/security", label: "nav.security", icon: ShieldAlert, perm: "audit.read" },
+  { href: "/admin/backup", label: "nav.backup", icon: DatabaseBackup, superAdmin: true },
+  { href: "/api-keys", label: "nav.apiKeys", icon: KeyRound, perm: "apikeys.manage" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { has, user } = useAuth();
+  const { t } = useI18n();
 
   const link = (item: NavItem) => {
     const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -69,7 +71,7 @@ export function Sidebar() {
           size={18}
           className={cn("relative z-10 transition-transform group-hover:scale-110", active && "text-primary")}
         />
-        <span className="relative z-10">{item.label}</span>
+        <span className="relative z-10">{t(item.label)}</span>
       </Link>
     );
   };
@@ -89,7 +91,7 @@ export function Sidebar() {
         {primary.map(link)}
         {visibleAdmin.length > 0 && (
           <>
-            <div className="eyebrow px-3 pb-1 pt-5">Administration</div>
+            <div className="eyebrow px-3 pb-1 pt-5">{t("nav.administration")}</div>
             {visibleAdmin.map(link)}
           </>
         )}
