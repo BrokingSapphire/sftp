@@ -61,6 +61,18 @@ const run = async () => {
       console.warn("skip", name, e.message);
     }
   }
+
+  // Multilingual showcase: switch to Hindi and capture the Files screen.
+  try {
+    await page.evaluate(() => localStorage.setItem("sphr_locale", "hi"));
+    await page.goto(`${BASE}/files`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: resolve(DOCS, "multilingual.png") });
+    console.log("captured multilingual (hi)");
+  } catch (e) {
+    console.warn("skip multilingual", e.message);
+  }
+
   await browser.close();
 };
 

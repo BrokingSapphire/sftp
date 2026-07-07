@@ -121,6 +121,7 @@ not optional.
 - Legal hold and WORM retention locks.
 - PII detection and DLP (PAN, Aadhaar, cards) that blocks risky shares.
 - Single active session per account, forced first-login password change, per-user quotas.
+- Automatic sign-out after 15 minutes of inactivity (with a 2-minute warning), audited.
 
 **Access and integration**
 
@@ -129,6 +130,10 @@ not optional.
 - API keys for automation, with copy-paste snippets in cURL, JavaScript, Python, and Go.
 - Microsoft Entra ID (Azure AD) SSO, restricted to your org domains.
 - Desktop sync agent (`synccli`) to mirror a folder.
+- **Multilingual UI** — English plus 12 Indian languages (Hindi, Bengali, Tamil,
+  Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, Assamese, Urdu),
+  with native numerals and a per-user language picker.
+- Responsive across desktop, tablet, and mobile.
 
 **Platform and AI (on-prem)**
 
@@ -157,6 +162,10 @@ not optional.
 | Search inside files | API keys and developer docs |
 | :---: | :---: |
 | [![Search](docs/images/search.png)](docs/images/search.png) | [![API](docs/images/api.png)](docs/images/api.png) |
+
+| Multilingual UI (Hindi shown) | Dashboard |
+| :---: | :---: |
+| [![Multilingual](docs/images/multilingual.png)](docs/images/multilingual.png) | [![Dashboard](docs/images/dashboard.png)](docs/images/dashboard.png) |
 
 ---
 
@@ -402,6 +411,7 @@ Found a vulnerability? Please report it privately — see
 - Audit anomaly detection, encrypted incremental backups.
 - On-prem AI (semantic search and Ask your files).
 - Team Spaces, single active session, download audit logging.
+- Multilingual UI (13 languages), idle auto-logout, responsive layout.
 - Desktop sync agent, white-label config, one-command deploy.
 
 **Near-term**
