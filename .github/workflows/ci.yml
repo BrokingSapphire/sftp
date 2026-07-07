@@ -82,5 +82,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create throwaway .env for interpolation
+        # docker compose interpolates the whole file (including required-variable
+        # syntax) before building, so provide dummy values. These are never used
+        # to run anything — the job only builds images.
+        run: |
+          cat > .env <<'EOF'
+          JWT_SECRET=ci-dummy-jwt-secret-value-at-least-32-characters
+          POSTGRES_PASSWORD=ci-dummy-password
+          BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+          BOOTSTRAP_ADMIN_PASSWORD=ci-dummy-admin-password
+          PUBLIC_URL=http://localhost
+          EOF
       - name: Build images (no push)
         run: docker compose build
