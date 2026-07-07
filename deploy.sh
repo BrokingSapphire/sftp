@@ -271,9 +271,24 @@ umask 077
 ok ".env (secrets, permissions 600)"
 
 # ── deploy ───────────────────────────────────────────────────────────────────
+# Enable the compose profiles for the optional features the user turned on, so
+# their containers actually start (AI = Ollama, editor = OnlyOffice).
+PROFILES=""
+[ "$AI_ENABLED" = "true" ] && PROFILES="$PROFILES --profile ai"
+[ "$ED_ENABLED" = "true" ] && PROFILES="$PROFILES --profile office"
+
 hdr "Building and starting the stack"
 say "${DIM}(first build can take a few minutes)${RST}"
-$DC up -d --build
+# shellcheck disable=SC2086
+$DC $PROFILES up -d --build
+
+# Pull the AI models so "Ask AI" / semantic search work immediately (no first-use
+# error). These are a few GB — allow time on the first run.
+if [ "$AI_ENABLED" = "true" ]; then
+  hdr "Pulling AI models (first run only, a few GB)"
+  $DC exec -T ollama ollama pull nomic-embed-text >/dev/null 2>&1 && ok "embedding model ready" || warn "could not pull embedding model — pull later: $DC exec ollama ollama pull nomic-embed-text"
+  $DC exec -T ollama ollama pull llama3.2:1b >/dev/null 2>&1 && ok "chat model ready" || warn "could not pull chat model — pull later: $DC exec ollama ollama pull llama3.2:1b"
+fi
 
 hdr "Waiting for the service to become healthy"
 # Poll the LOCAL nginx, not PUBLIC_URL — the public hostname may not resolve from
@@ -317,7 +332,7 @@ else
   say "  Password  ${DIM}(as you entered)${RST}"
 fi
 [ -n "$ENC_KEY" ] && say "  ${YLW}Encryption is ON. Back up STORAGE_ENCRYPTION_KEY in .env — losing it makes files unreadable.${RST}"
-[ "$AI_ENABLED" = "true" ] && say "  ${DIM}AI is enabled — ensure an Ollama server is reachable at $AI_OLLAMA with the models pulled.${RST}"
+[ "$AI_ENABLED" = "true" ] && say "  ${DIM}AI + Ollama running; models pulled.${RST}"
 say ""
 say "  Manage:   ${DIM}$DC ps · $DC logs -f · $DC down${RST}"
 say "  Re-run this script any time to change branding or settings."
