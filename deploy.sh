@@ -235,6 +235,29 @@ for i in $(seq 1 60); do
   [ "$i" = 60 ] && warn "Health check timed out — inspect logs with: $DC logs -f backend"
 done
 
+# ── HTTPS (Let's Encrypt) ─────────────────────────────────────────────────────
+# If the public URL is an https:// real domain, offer to obtain a certificate and
+# set up auto-renewal now (default yes). Skipped for localhost / behind Cloudflare
+# proxy (where Cloudflare terminates TLS and the origin stays on http).
+case "$PUBLIC_URL" in
+  https://localhost*|https://127.*|https://0.0.0.0*) ;;
+  https://*)
+    SSL_DOMAIN="${PUBLIC_URL#https://}"; SSL_DOMAIN="${SSL_DOMAIN%%/*}"
+    hdr "HTTPS for $SSL_DOMAIN"
+    say "${DIM}Requires: DNS A record -> this server, ports 80+443 reachable, and NOT proxied${RST}"
+    say "${DIM}by Cloudflare (if you use Cloudflare's orange-cloud proxy, choose 'No' and set${RST}"
+    say "${DIM}SSL mode to Full there instead).${RST}"
+    if yesno "Set up a Let's Encrypt certificate + auto-renewal now?" "y"; then
+      if sudo ./scripts/setup-ssl.sh "$SSL_DOMAIN" "$ADMIN_EMAIL"; then
+        ok "TLS configured for https://$SSL_DOMAIN (auto-renewing)"
+      else
+        warn "SSL setup didn't complete — the app is still up on http."
+        warn "Re-run later: sudo ./scripts/setup-ssl.sh $SSL_DOMAIN $ADMIN_EMAIL"
+      fi
+    fi
+    ;;
+esac
+
 # ── summary ──────────────────────────────────────────────────────────────────
 hdr "Done"
 say "  URL       ${B}$PUBLIC_URL${RST}"
