@@ -13,6 +13,7 @@ export const authApi = {
     return pair;
   },
   me: () => unwrap<UserInfo>(http.get<Envelope<UserInfo>>("/auth/me")),
+  setLanguage: (language: string) => http.put("/auth/me/language", { language }).catch(() => {}),
   async logout() {
     const rt = tokens.refresh();
     try {

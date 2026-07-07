@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useI18n, type LocaleCode } from "@/lib/i18n";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { Topbar } from "@/components/app-shell/topbar";
@@ -26,6 +27,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileNav(false); }, [pathname]);
+
+  // Apply the user's saved language on login so it follows them across devices.
+  const { setLocale, locale } = useI18n();
+  useEffect(() => {
+    const lang = user?.language;
+    if (lang && lang !== locale) setLocale(lang as LocaleCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.language]);
 
   if (loading || !user) {
     return (

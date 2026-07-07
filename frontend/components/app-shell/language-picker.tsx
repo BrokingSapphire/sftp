@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Languages, Check } from "lucide-react";
 import { LOCALES, useI18n } from "@/lib/i18n";
+import { authApi } from "@/lib/endpoints";
 
 /** A compact language selector for the top bar. */
 export function LanguagePicker() {
@@ -37,7 +38,7 @@ export function LanguagePicker() {
           {LOCALES.map((l) => (
             <button
               key={l.code}
-              onClick={() => { setLocale(l.code); setOpen(false); }}
+              onClick={() => { setLocale(l.code); authApi.setLanguage(l.code); setOpen(false); }}
               className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2"
             >
               <span className="flex flex-col">

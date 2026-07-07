@@ -56,7 +56,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), $11
 )
-RETURNING id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at
+RETURNING id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language
 `
 
 type CreateUserParams struct {
@@ -114,6 +114,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }
@@ -130,7 +131,7 @@ func (q *Queries) GetUserAvatar(ctx context.Context, id uuid.UUID) (*string, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users WHERE email = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -162,12 +163,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }
 
 const getUserByEmailOrUsername = `-- name: GetUserByEmailOrUsername :one
-SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users
 WHERE (email = $1 OR username = $1) AND deleted_at IS NULL
 `
 
@@ -200,12 +202,13 @@ func (q *Queries) GetUserByEmailOrUsername(ctx context.Context, email string) (U
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -237,12 +240,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users WHERE username = $1 AND deleted_at IS NULL
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users WHERE username = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -274,6 +278,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }
@@ -293,7 +298,7 @@ func (q *Queries) IncrementFailedAttempts(ctx context.Context, id uuid.UUID) (in
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at FROM users
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -339,6 +344,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Language,
 		); err != nil {
 			return nil, err
 		}
@@ -411,6 +417,20 @@ func (q *Queries) SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) er
 	return err
 }
 
+const setUserLanguage = `-- name: SetUserLanguage :exec
+UPDATE users SET language = $1, updated_at = now() WHERE id = $2
+`
+
+type SetUserLanguageParams struct {
+	Language string    `json:"language"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SetUserLanguage(ctx context.Context, arg SetUserLanguageParams) error {
+	_, err := q.db.Exec(ctx, setUserLanguage, arg.Language, arg.ID)
+	return err
+}
+
 const setUserPassword = `-- name: SetUserPassword :exec
 UPDATE users
 SET password_hash = $2, password_changed_at = now(), must_change_pw = FALSE, updated_at = now()
@@ -462,7 +482,7 @@ const updateUserProfile = `-- name: UpdateUserProfile :one
 UPDATE users
 SET full_name = $2, phone = $3, department_id = $4, avatar_path = $5, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at
+RETURNING id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language
 `
 
 type UpdateUserProfileParams struct {
@@ -508,6 +528,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Language,
 	)
 	return i, err
 }

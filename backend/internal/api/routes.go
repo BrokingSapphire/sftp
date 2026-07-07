@@ -315,5 +315,6 @@ func registerAuthRoutes(g *fuego.Server, deps Deps) {
 	fuego.Use(gsec, deps.Auth.Require)
 	fuego.Post(gsec, "/logout", deps.AuthHandler.Logout, option.Summary("Log out (revoke refresh token)"))
 	fuego.Get(gsec, "/me", deps.AuthHandler.Me, option.Summary("Get current user profile"))
+	fuego.Put(gsec, "/me/language", deps.AuthHandler.SetLanguage, option.Summary("Set preferred UI language"))
 	fuego.Post(gsec, "/change-password", deps.AuthHandler.ChangePassword, option.Summary("Change password"))
 }

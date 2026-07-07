@@ -107,6 +107,23 @@ func (h *Handler) Me(c fuego.ContextNoBody) (*response.Envelope[models.UserInfo]
 	return response.OK(*info), nil
 }
 
+// SetLanguage persists the user's preferred UI language so it follows them
+// across devices.
+func (h *Handler) SetLanguage(c fuego.ContextWithBody[models.LanguageRequest]) (*response.Envelope[response.Any], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(apperrors.ErrInvalidRequest)
+	}
+	if err := h.svc.SetLanguage(c.Context(), uid, body.Language); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Language updated"), nil
+}
+
 // ChangePassword updates the authenticated user's password.
 func (h *Handler) ChangePassword(c fuego.ContextWithBody[models.ChangePasswordRequest]) (*response.Envelope[response.Any], error) {
 	uid, err := currentUserID(c.Context())

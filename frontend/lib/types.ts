@@ -9,6 +9,7 @@ export interface UserInfo {
   storage_quota: number;
   must_change_pw: boolean;
   has_avatar?: boolean;
+  language?: string;
 }
 
 export interface TokenPair {

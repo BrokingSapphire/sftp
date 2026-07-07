@@ -287,6 +287,7 @@ func (s *Service) userInfo(ctx context.Context, user sftpdb.User) *models.UserIn
 		StorageQuota: user.StorageQuota,
 		MustChangePw: user.MustChangePw,
 		HasAvatar:    user.AvatarPath != nil && *user.AvatarPath != "",
+		Language:     user.Language,
 	}
 }
 
@@ -317,4 +318,12 @@ func (s *Service) recordLogin(ctx context.Context, userID *uuid.UUID, email stri
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		s.log.Error("record login history failed", "err", err)
 	}
+}
+
+// SetLanguage stores the user's preferred UI language code.
+func (s *Service) SetLanguage(ctx context.Context, userID uuid.UUID, lang string) error {
+	if len(lang) > 8 {
+		lang = lang[:8]
+	}
+	return s.q.SetUserLanguage(ctx, sftpdb.SetUserLanguageParams{ID: userID, Language: lang})
 }

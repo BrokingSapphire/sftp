@@ -47,4 +47,10 @@ type UserInfo struct {
 	StorageQuota int64   `json:"storage_quota"`
 	MustChangePw bool    `json:"must_change_pw"`
 	HasAvatar   bool     `json:"has_avatar"`
+	Language    string   `json:"language,omitempty"`
+}
+
+// LanguageRequest sets the user's preferred UI language (BCP-47-ish short code).
+type LanguageRequest struct {
+	Language string `json:"language" validate:"required,max=8"`
 }

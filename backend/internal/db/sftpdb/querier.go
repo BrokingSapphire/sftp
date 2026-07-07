@@ -173,6 +173,7 @@ type Querier interface {
 	SetUploadStatus(ctx context.Context, arg SetUploadStatusParams) error
 	SetUserActive(ctx context.Context, arg SetUserActiveParams) error
 	SetUserAvatar(ctx context.Context, arg SetUserAvatarParams) error
+	SetUserLanguage(ctx context.Context, arg SetUserLanguageParams) error
 	SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error
 	SoftDeleteFile(ctx context.Context, id uuid.UUID) error
 	SoftDeleteFilesInFolders(ctx context.Context, arg SoftDeleteFilesInFoldersParams) error
