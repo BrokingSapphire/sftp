@@ -174,6 +174,11 @@ func (h *Handler) Delete(c fuego.ContextWithBody[models.DeleteRequest]) (*respon
 	if err != nil {
 		return nil, fuego.BadRequestError{Title: "invalid transfer_to"}
 	}
+	// Never let an admin delete their own account (locks themselves out and
+	// frees their email while the row lingers soft-deleted).
+	if actor, aerr := currentUserID(c.Context()); aerr == nil && actor == id {
+		return nil, fuego.BadRequestError{Title: "You cannot delete your own account"}
+	}
 	if err := h.svc.DeleteWithTransfer(c.Context(), id, transferTo); err != nil {
 		return nil, handlers.Fail(err)
 	}

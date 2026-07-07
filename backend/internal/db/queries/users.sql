@@ -94,3 +94,18 @@ SELECT count(*) FROM users WHERE deleted_at IS NULL AND is_active = TRUE;
 
 -- name: SetUserLanguage :exec
 UPDATE users SET language = @language, updated_at = now() WHERE id = @id;
+
+-- name: GetDeletedUserByEmailOrUsername :one
+SELECT * FROM users
+WHERE (email = @email OR username = @username) AND deleted_at IS NOT NULL
+ORDER BY deleted_at DESC
+LIMIT 1;
+
+-- name: ReactivateUser :one
+UPDATE users SET
+    deleted_at = NULL, is_active = TRUE, is_locked = FALSE, failed_attempts = 0,
+    email = @email, username = @username, password_hash = @password_hash,
+    full_name = @full_name, role_id = @role_id, storage_quota = @storage_quota,
+    employee_id = @employee_id, phone = @phone, must_change_pw = TRUE, updated_at = now()
+WHERE id = @id
+RETURNING *;

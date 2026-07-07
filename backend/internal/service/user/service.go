@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -121,6 +122,21 @@ func (s *Service) Create(ctx context.Context, req models.CreateRequest, createdB
 		CreatedBy: &created,
 	})
 	if err != nil {
+		// If the email/username belongs to a previously soft-deleted user,
+		// reactivate that account instead of failing with "already exists".
+		if errors.Is(mapCreateErr(err), apperrors.ErrAlreadyExists) {
+			if del, derr := s.q.GetDeletedUserByEmailOrUsername(ctx, sftpdb.GetDeletedUserByEmailOrUsernameParams{
+				Email: req.Email, Username: req.Username,
+			}); derr == nil {
+				if u, rerr := s.q.ReactivateUser(ctx, sftpdb.ReactivateUserParams{
+					ID: del.ID, Email: req.Email, Username: req.Username, PasswordHash: hash,
+					FullName: req.FullName, RoleID: role.ID, StorageQuota: req.StorageQuota,
+					EmployeeID: req.EmployeeID, Phone: req.Phone,
+				}); rerr == nil {
+					return s.toResponse(ctx, u), nil
+				}
+			}
+		}
 		return nil, mapCreateErr(err)
 	}
 	return s.toResponse(ctx, user), nil

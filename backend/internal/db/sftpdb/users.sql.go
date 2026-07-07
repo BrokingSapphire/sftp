@@ -119,6 +119,52 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getDeletedUserByEmailOrUsername = `-- name: GetDeletedUserByEmailOrUsername :one
+SELECT id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language FROM users
+WHERE (email = $1 OR username = $2) AND deleted_at IS NOT NULL
+ORDER BY deleted_at DESC
+LIMIT 1
+`
+
+type GetDeletedUserByEmailOrUsernameParams struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) GetDeletedUserByEmailOrUsername(ctx context.Context, arg GetDeletedUserByEmailOrUsernameParams) (User, error) {
+	row := q.db.QueryRow(ctx, getDeletedUserByEmailOrUsername, arg.Email, arg.Username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.FullName,
+		&i.EmployeeID,
+		&i.DepartmentID,
+		&i.RoleID,
+		&i.AvatarPath,
+		&i.Phone,
+		&i.StorageQuota,
+		&i.StorageUsed,
+		&i.IsActive,
+		&i.IsLocked,
+		&i.FailedAttempts,
+		&i.LockedUntil,
+		&i.MfaEnabled,
+		&i.MfaSecret,
+		&i.MustChangePw,
+		&i.PasswordChangedAt,
+		&i.LastLoginAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Language,
+	)
+	return i, err
+}
+
 const getUserAvatar = `-- name: GetUserAvatar :one
 SELECT avatar_path FROM users WHERE id = $1
 `
@@ -370,6 +416,72 @@ type LockUserParams struct {
 func (q *Queries) LockUser(ctx context.Context, arg LockUserParams) error {
 	_, err := q.db.Exec(ctx, lockUser, arg.ID, arg.LockedUntil)
 	return err
+}
+
+const reactivateUser = `-- name: ReactivateUser :one
+UPDATE users SET
+    deleted_at = NULL, is_active = TRUE, is_locked = FALSE, failed_attempts = 0,
+    email = $1, username = $2, password_hash = $3,
+    full_name = $4, role_id = $5, storage_quota = $6,
+    employee_id = $7, phone = $8, must_change_pw = TRUE, updated_at = now()
+WHERE id = $9
+RETURNING id, email, username, password_hash, full_name, employee_id, department_id, role_id, avatar_path, phone, storage_quota, storage_used, is_active, is_locked, failed_attempts, locked_until, mfa_enabled, mfa_secret, must_change_pw, password_changed_at, last_login_at, created_by, created_at, updated_at, deleted_at, language
+`
+
+type ReactivateUserParams struct {
+	Email        string    `json:"email"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	FullName     string    `json:"full_name"`
+	RoleID       uuid.UUID `json:"role_id"`
+	StorageQuota int64     `json:"storage_quota"`
+	EmployeeID   *string   `json:"employee_id"`
+	Phone        *string   `json:"phone"`
+	ID           uuid.UUID `json:"id"`
+}
+
+func (q *Queries) ReactivateUser(ctx context.Context, arg ReactivateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, reactivateUser,
+		arg.Email,
+		arg.Username,
+		arg.PasswordHash,
+		arg.FullName,
+		arg.RoleID,
+		arg.StorageQuota,
+		arg.EmployeeID,
+		arg.Phone,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.FullName,
+		&i.EmployeeID,
+		&i.DepartmentID,
+		&i.RoleID,
+		&i.AvatarPath,
+		&i.Phone,
+		&i.StorageQuota,
+		&i.StorageUsed,
+		&i.IsActive,
+		&i.IsLocked,
+		&i.FailedAttempts,
+		&i.LockedUntil,
+		&i.MfaEnabled,
+		&i.MfaSecret,
+		&i.MustChangePw,
+		&i.PasswordChangedAt,
+		&i.LastLoginAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Language,
+	)
+	return i, err
 }
 
 const resetUserPassword = `-- name: ResetUserPassword :exec

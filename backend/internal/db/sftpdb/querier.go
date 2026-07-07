@@ -57,6 +57,7 @@ type Querier interface {
 	DeleteRole(ctx context.Context, id uuid.UUID) error
 	DeleteTeam(ctx context.Context, id uuid.UUID) error
 	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
+	GetDeletedUserByEmailOrUsername(ctx context.Context, arg GetDeletedUserByEmailOrUsernameParams) (User, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error)
 	GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwnerFolderNameParams) (File, error)
@@ -141,6 +142,7 @@ type Querier interface {
 	PurgeAuditLogsBefore(ctx context.Context, createdAt pgtype.Timestamptz) error
 	PurgeExpiredTrash(ctx context.Context, deletedAt pgtype.Timestamptz) ([]string, error)
 	PurgeUserTrash(ctx context.Context, ownerID uuid.UUID) ([]PurgeUserTrashRow, error)
+	ReactivateUser(ctx context.Context, arg ReactivateUserParams) (User, error)
 	ReassignUserFiles(ctx context.Context, arg ReassignUserFilesParams) error
 	ReassignUserFolders(ctx context.Context, arg ReassignUserFoldersParams) error
 	// Alert lifecycle -------------------------------------------------------------
