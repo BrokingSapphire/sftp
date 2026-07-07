@@ -42,3 +42,8 @@ WHERE expires_at < now() OR (revoked_at IS NOT NULL AND revoked_at < now() - int
 -- name: CountActiveSessions :one
 SELECT count(*) FROM sessions
 WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now();
+
+-- name: IsSessionActive :one
+SELECT EXISTS(
+  SELECT 1 FROM sessions WHERE id = $1 AND revoked_at IS NULL AND expires_at > now()
+);

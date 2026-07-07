@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
@@ -15,17 +16,26 @@ import (
 type Authenticator struct {
 	jwt    *jwt.Manager
 	apiKey *apikeysvc.Service
+	// sessionActive reports whether a JWT's session is still valid (not revoked /
+	// expired). Enforces single-active-session: a token whose session was kicked
+	// stops working immediately. Nil disables the check.
+	sessionActive func(ctx context.Context, sessionID string) bool
 }
 
 // NewAuthenticator builds the unified auth middleware provider.
-func NewAuthenticator(jwtMgr *jwt.Manager, apiKey *apikeysvc.Service) *Authenticator {
-	return &Authenticator{jwt: jwtMgr, apiKey: apiKey}
+func NewAuthenticator(jwtMgr *jwt.Manager, apiKey *apikeysvc.Service, sessionActive func(context.Context, string) bool) *Authenticator {
+	return &Authenticator{jwt: jwtMgr, apiKey: apiKey, sessionActive: sessionActive}
 }
 
 // Require rejects unauthenticated requests.
 func (a *Authenticator) Require(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if claims := a.resolve(r); claims != nil {
+			// Single-session enforcement: reject a JWT whose session was revoked.
+			if claims.SessionID != "" && a.sessionActive != nil && !a.sessionActive(r.Context(), claims.SessionID) {
+				handlers.WriteProblem(w, r, http.StatusUnauthorized, "session ended (signed in elsewhere)")
+				return
+			}
 			setActor(r.Context(), claims) // surface actor to the audit middleware
 			next.ServeHTTP(w, r.WithContext(jwt.NewContextWithClaims(r.Context(), claims)))
 			return

@@ -127,6 +127,19 @@ func (q *Queries) GetSessionByID(ctx context.Context, id uuid.UUID) (Session, er
 	return i, err
 }
 
+const isSessionActive = `-- name: IsSessionActive :one
+SELECT EXISTS(
+  SELECT 1 FROM sessions WHERE id = $1 AND revoked_at IS NULL AND expires_at > now()
+)
+`
+
+func (q *Queries) IsSessionActive(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, isSessionActive, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listUserSessions = `-- name: ListUserSessions :many
 SELECT id, user_id, refresh_token_hash, user_agent, ip_address, device_label, remember_me, expires_at, revoked_at, last_seen_at, created_at FROM sessions
 WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()

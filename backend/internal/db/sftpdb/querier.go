@@ -95,6 +95,7 @@ type Querier interface {
 	InsertFileVersion(ctx context.Context, arg InsertFileVersionParams) error
 	InsertLoginHistory(ctx context.Context, arg InsertLoginHistoryParams) error
 	InsertSecurityAlert(ctx context.Context, arg InsertSecurityAlertParams) (SecurityAlert, error)
+	IsSessionActive(ctx context.Context, id uuid.UUID) (bool, error)
 	LargestFilesByOwner(ctx context.Context, arg LargestFilesByOwnerParams) ([]File, error)
 	ListActivityByUser(ctx context.Context, arg ListActivityByUserParams) ([]UserActivity, error)
 	ListAllFilesForBackup(ctx context.Context) ([]ListAllFilesForBackupRow, error)

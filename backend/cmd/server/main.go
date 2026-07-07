@@ -3,6 +3,8 @@ package main
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 	stdlog "log"
 	"os"
 	"os/signal"
@@ -11,40 +13,40 @@ import (
 
 	"sapphirebroking.com/sftp_service/internal/api"
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
-	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
-	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
-	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
-	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
-	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
+	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
 	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
-	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
 	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
+	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
+	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
+	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
+	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
 	"sapphirebroking.com/sftp_service/internal/db"
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	aisvc "sapphirebroking.com/sftp_service/internal/service/ai"
-	backupsvc "sapphirebroking.com/sftp_service/internal/service/backup"
-	teamsvc "sapphirebroking.com/sftp_service/internal/service/team"
 	apikeysvc "sapphirebroking.com/sftp_service/internal/service/apikey"
 	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
+	backupsvc "sapphirebroking.com/sftp_service/internal/service/backup"
 	filesvc "sapphirebroking.com/sftp_service/internal/service/file"
 	sharesvc "sapphirebroking.com/sftp_service/internal/service/share"
 	ssosvc "sapphirebroking.com/sftp_service/internal/service/sso"
+	teamsvc "sapphirebroking.com/sftp_service/internal/service/team"
 	usersvc "sapphirebroking.com/sftp_service/internal/service/user"
 	"sapphirebroking.com/sftp_service/internal/sftpserver"
 	"sapphirebroking.com/sftp_service/internal/storage"
 	"sapphirebroking.com/sftp_service/internal/worker"
 	"sapphirebroking.com/sftp_service/migrations"
 	"sapphirebroking.com/sftp_service/pkg/ai"
-	"sapphirebroking.com/sftp_service/pkg/filecrypt"
 	"sapphirebroking.com/sftp_service/pkg/cache"
+	"sapphirebroking.com/sftp_service/pkg/filecrypt"
 	"sapphirebroking.com/sftp_service/pkg/jwt"
 	"sapphirebroking.com/sftp_service/pkg/logger"
 	"sapphirebroking.com/sftp_service/pkg/mailer"
@@ -172,6 +174,17 @@ func main() {
 	backupService := backupsvc.New(queries, storageEngine, backupCipher, appLogger)
 	teamService := teamsvc.New(queries, appLogger)
 
+	// Single-session enforcement: the auth middleware rejects a JWT whose session
+	// has been revoked (e.g. after a login elsewhere took over).
+	sessionActive := func(ctx context.Context, sid string) bool {
+		id, err := uuid.Parse(sid)
+		if err != nil {
+			return false
+		}
+		ok, err := queries.IsSessionActive(ctx, id)
+		return err == nil && ok
+	}
+
 	// Per-IP rate limiting: lenient globally, strict on login (brute-force guard).
 	globalRL := ratelimit.New(50, 100)
 	loginRL := ratelimit.New(0.5, 8)
@@ -192,22 +205,22 @@ func main() {
 	}
 
 	httpServer := api.NewHttpServer(cfg.App.Port, api.Deps{
-		CORSConfig:    cfg.CORS,
-		Logger:        appLogger,
-		DebugErrors:   cfg.IsDevelopment(),
-		Auth:          m.NewAuthenticator(jwtManager, apiKeyService),
-		GlobalRL:      globalRL,
-		LoginRL:       loginRL,
-		Perms:         m.NewPermissions(queries, appCache),
-		Recorder:      auditRecorder,
-		HealthHandler: handlers.NewHealthHandler(pool, cfg.App.Version),
-		AuthHandler:   authhandler.NewHandler(authService, appLogger),
-		SSOHandler:    ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
-		UserHandler:   userhandler.NewHandler(userService, appLogger),
-		FileHandler:   filehandler.NewHandler(fileService, appLogger),
-		APIKeyHandler: apikeyhandler.NewHandler(apiKeyService, appLogger),
-		AuditHandler:  audithandler.NewHandler(auditRecorder, appLogger),
-		ShareHandler:  sharehandler.NewHandler(shareService, appLogger),
+		CORSConfig:      cfg.CORS,
+		Logger:          appLogger,
+		DebugErrors:     cfg.IsDevelopment(),
+		Auth:            m.NewAuthenticator(jwtManager, apiKeyService, sessionActive),
+		GlobalRL:        globalRL,
+		LoginRL:         loginRL,
+		Perms:           m.NewPermissions(queries, appCache),
+		Recorder:        auditRecorder,
+		HealthHandler:   handlers.NewHealthHandler(pool, cfg.App.Version),
+		AuthHandler:     authhandler.NewHandler(authService, appLogger),
+		SSOHandler:      ssohandler.NewHandler(msSSO, authService, cfg.IsProduction(), appLogger),
+		UserHandler:     userhandler.NewHandler(userService, appLogger),
+		FileHandler:     filehandler.NewHandler(fileService, appLogger),
+		APIKeyHandler:   apikeyhandler.NewHandler(apiKeyService, appLogger),
+		AuditHandler:    audithandler.NewHandler(auditRecorder, appLogger),
+		ShareHandler:    sharehandler.NewHandler(shareService, appLogger),
 		NotifHandler:    notifhandler.NewHandler(queries, appLogger),
 		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
 		AIHandler:       aihandler.NewHandler(aiService, appLogger),

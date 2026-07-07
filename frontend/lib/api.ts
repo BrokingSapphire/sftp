@@ -94,6 +94,12 @@ http.interceptors.response.use(
         original.headers = { ...original.headers, Authorization: `Bearer ${newToken}` };
         return http(original);
       }
+      // Refresh failed (session revoked / expired — e.g. signed in elsewhere).
+      // Send the user back to login instead of leaving them on a broken page.
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        tokens.clear();
+        window.location.href = "/login";
+      }
     }
     const problem = error.response?.data as Problem | undefined;
     throw new ApiError(problem?.title ?? error.message ?? "Request failed", error.response?.status ?? 0);
