@@ -359,6 +359,9 @@ docker compose --profile office up -d
 # Prometheus + Grafana monitoring
 docker compose --profile monitoring up -d
 
+# pgAdmin (web DB admin) at http://localhost:5050
+docker compose --profile tools up -d pgadmin
+
 # Combine as needed
 docker compose --profile ai --profile office up -d
 ```
