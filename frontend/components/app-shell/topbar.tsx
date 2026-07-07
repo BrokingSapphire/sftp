@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { LogOut, Search, Camera } from "lucide-react";
+import { LogOut, Search, Camera, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { avatarApi } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { LanguagePicker } from "@/components/app-shell/language-picker";
 import { useI18n } from "@/lib/i18n";
 
-export function Topbar() {
+export function Topbar({ onMenu }: { onMenu?: () => void }) {
   const { user, refreshUser } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
@@ -50,7 +50,14 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-surface/80 px-6 backdrop-blur">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border bg-surface/80 px-3 backdrop-blur sm:gap-4 sm:px-6">
+      <button
+        onClick={onMenu}
+        aria-label="Open menu"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-foreground md:hidden"
+      >
+        <Menu size={20} />
+      </button>
       <form onSubmit={onSearch} className="relative max-w-md flex-1">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <Input

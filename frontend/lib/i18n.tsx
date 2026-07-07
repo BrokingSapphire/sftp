@@ -76,13 +76,35 @@ const en = {
   "common.welcomeBack": "Welcome back",
   "common.signIn": "Sign in",
   "common.home": "Home",
+  // Idle / inactivity
+  "idle.title": "Still there?",
+  "idle.body": "You've been inactive for a while. For your security you'll be signed out in",
+  "idle.logoutNow": "Log out now",
+  "idle.stay": "Stay signed in",
+  "idle.loggedOut": "You were signed out due to inactivity.",
+  "idle.loggedOutHint": "For your security, sessions end automatically after 15 minutes of no activity. Please sign in again.",
 } as const;
+
+// Native-numeral base code points (digit 0). Used to render numbers in the
+// active script (e.g. Devanagari, Bengali, Tamil).
+const DIGIT_BASE: Partial<Record<LocaleCode, number>> = {
+  hi: 0x0966, mr: 0x0966, bn: 0x09e6, as: 0x09e6, gu: 0x0ae6, pa: 0x0a66,
+  ta: 0x0be6, te: 0x0c66, kn: 0x0ce6, ml: 0x0d66, or: 0x0b66, ur: 0x0660,
+};
+
+/** Convert ASCII digits in a string to the locale's native numerals. */
+export function localizeDigits(s: string, locale: LocaleCode): string {
+  const base = DIGIT_BASE[locale];
+  if (!base) return s;
+  return s.replace(/[0-9]/g, (d) => String.fromCodePoint(base + (d.charCodeAt(0) - 48)));
+}
 
 // Only the most-used strings are translated per language; everything else falls
 // back to English automatically. Keys omitted here inherit the English value.
 type Dict = Partial<Record<TKey, string>>;
 
 const hi: Dict = {
+  "idle.title": "अभी भी यहाँ हैं?", "idle.body": "आप कुछ समय से निष्क्रिय हैं। आपकी सुरक्षा के लिए आपको साइन आउट किया जाएगा", "idle.logoutNow": "अभी लॉग आउट करें", "idle.stay": "साइन इन रहें", "idle.loggedOut": "निष्क्रियता के कारण आपको साइन आउट कर दिया गया।", "idle.loggedOutHint": "आपकी सुरक्षा के लिए, 15 मिनट तक कोई गतिविधि न होने पर सत्र स्वतः समाप्त हो जाते हैं। कृपया फिर से साइन इन करें।",
   "nav.dashboard": "डैशबोर्ड", "nav.files": "मेरी फ़ाइलें", "nav.askAI": "एआई से पूछें", "nav.teams": "टीमें",
   "nav.common": "साझा", "nav.shared_with_me": "मेरे साथ साझा", "nav.inherited": "प्राप्त", "nav.starred": "तारांकित",
   "nav.shared": "साझा किए गए", "nav.trash": "कूड़ेदान", "nav.administration": "प्रशासन", "nav.users": "उपयोगकर्ता",
@@ -96,6 +118,7 @@ const hi: Dict = {
 };
 
 const bn: Dict = {
+  "idle.title": "এখনও আছেন?", "idle.body": "আপনি কিছুক্ষণ ধরে নিষ্ক্রিয়। আপনার নিরাপত্তার জন্য আপনাকে সাইন আউট করা হবে", "idle.logoutNow": "এখনই লগ আউট", "idle.stay": "সাইন ইন থাকুন", "idle.loggedOut": "নিষ্ক্রিয়তার কারণে আপনাকে সাইন আউট করা হয়েছে।", "idle.loggedOutHint": "আপনার নিরাপত্তার জন্য, 15 মিনিট নিষ্ক্রিয় থাকলে সেশন স্বয়ংক্রিয়ভাবে শেষ হয়। অনুগ্রহ করে আবার সাইন ইন করুন।",
   "nav.dashboard": "ড্যাশবোর্ড", "nav.files": "আমার ফাইল", "nav.askAI": "এআই-কে জিজ্ঞাসা করুন", "nav.teams": "দল",
   "nav.common": "সাধারণ", "nav.shared_with_me": "আমার সাথে শেয়ার করা", "nav.inherited": "প্রাপ্ত", "nav.starred": "তারাঙ্কিত",
   "nav.shared": "শেয়ার করা", "nav.trash": "ট্র্যাশ", "nav.administration": "প্রশাসন", "nav.users": "ব্যবহারকারী",
@@ -108,6 +131,7 @@ const bn: Dict = {
 };
 
 const ta: Dict = {
+  "idle.title": "இன்னும் இருக்கிறீர்களா?", "idle.body": "சிறிது நேரமாக செயலற்று உள்ளீர்கள். உங்கள் பாதுகாப்பிற்காக வெளியேற்றப்படுவீர்கள்", "idle.logoutNow": "இப்போது வெளியேறு", "idle.stay": "உள்நுழைந்திருங்கள்", "idle.loggedOut": "செயலற்ற நிலையால் நீங்கள் வெளியேற்றப்பட்டீர்கள்.", "idle.loggedOutHint": "உங்கள் பாதுகாப்பிற்காக, 15 நிமிடம் செயல்பாடு இல்லாவிட்டால் அமர்வுகள் தானாக முடிவடையும். மீண்டும் உள்நுழையவும்.",
   "nav.dashboard": "டாஷ்போர்டு", "nav.files": "எனது கோப்புகள்", "nav.askAI": "AI-யிடம் கேளுங்கள்", "nav.teams": "குழுக்கள்",
   "nav.common": "பொது", "nav.shared_with_me": "என்னுடன் பகிரப்பட்டது", "nav.inherited": "பெறப்பட்டது", "nav.starred": "நட்சத்திரமிட்டது",
   "nav.shared": "பகிரப்பட்டது", "nav.trash": "குப்பை", "nav.administration": "நிர்வாகம்", "nav.users": "பயனர்கள்",
@@ -120,6 +144,7 @@ const ta: Dict = {
 };
 
 const te: Dict = {
+  "idle.title": "ఇంకా ఉన్నారా?", "idle.body": "మీరు కొంతసేపు నిష్క్రియంగా ఉన్నారు. మీ భద్రత కోసం మీరు సైన్ అవుట్ చేయబడతారు", "idle.logoutNow": "ఇప్పుడే లాగ్ అవుట్", "idle.stay": "సైన్ ఇన్‌లో ఉండండి", "idle.loggedOut": "నిష్క్రియత కారణంగా మీరు సైన్ అవుట్ చేయబడ్డారు.", "idle.loggedOutHint": "మీ భద్రత కోసం, 15 నిమిషాలు ఏ కార్యకలాపం లేకపోతే సెషన్‌లు స్వయంచాలకంగా ముగుస్తాయి. దయచేసి మళ్లీ సైన్ ఇన్ చేయండి.",
   "nav.dashboard": "డాష్‌బోర్డ్", "nav.files": "నా ఫైళ్లు", "nav.askAI": "AIని అడగండి", "nav.teams": "బృందాలు",
   "nav.common": "సాధారణ", "nav.shared_with_me": "నాతో భాగస్వామ్యం", "nav.inherited": "వారసత్వం", "nav.starred": "నక్షత్రం గుర్తు",
   "nav.shared": "భాగస్వామ్యం", "nav.trash": "చెత్త", "nav.administration": "నిర్వహణ", "nav.users": "వినియోగదారులు",
@@ -132,6 +157,7 @@ const te: Dict = {
 };
 
 const mr: Dict = {
+  "idle.title": "अजून इथे आहात?", "idle.body": "तुम्ही काही वेळ निष्क्रिय आहात. तुमच्या सुरक्षिततेसाठी तुम्हाला साइन आउट केले जाईल", "idle.logoutNow": "आता लॉग आउट", "idle.stay": "साइन इन राहा", "idle.loggedOut": "निष्क्रियतेमुळे तुम्हाला साइन आउट केले गेले.", "idle.loggedOutHint": "तुमच्या सुरक्षिततेसाठी, 15 मिनिटे कोणतीही क्रिया न झाल्यास सत्रे आपोआप संपतात. कृपया पुन्हा साइन इन करा.",
   "nav.dashboard": "डॅशबोर्ड", "nav.files": "माझ्या फायली", "nav.askAI": "एआयला विचारा", "nav.teams": "संघ",
   "nav.common": "सामायिक", "nav.shared_with_me": "माझ्यासोबत सामायिक", "nav.inherited": "प्राप्त", "nav.starred": "तारांकित",
   "nav.shared": "सामायिक केलेले", "nav.trash": "कचरा", "nav.administration": "प्रशासन", "nav.users": "वापरकर्ते",
@@ -144,6 +170,7 @@ const mr: Dict = {
 };
 
 const gu: Dict = {
+  "idle.title": "હજુ અહીં છો?", "idle.body": "તમે થોડા સમયથી નિષ્ક્રિય છો. તમારી સુરક્ષા માટે તમને સાઇન આઉટ કરવામાં આવશે", "idle.logoutNow": "હમણાં લૉગ આઉટ", "idle.stay": "સાઇન ઇન રહો", "idle.loggedOut": "નિષ્ક્રિયતાને કારણે તમને સાઇન આઉટ કરવામાં આવ્યા.", "idle.loggedOutHint": "તમારી સુરક્ષા માટે, 15 મિનિટ સુધી કોઈ પ્રવૃત્તિ ન થાય તો સત્રો આપમેળે સમાપ્ત થાય છે. કૃપા કરીને ફરીથી સાઇન ઇન કરો.",
   "nav.dashboard": "ડેશબોર્ડ", "nav.files": "મારી ફાઇલો", "nav.askAI": "AI ને પૂછો", "nav.teams": "ટીમો",
   "nav.common": "સામાન્ય", "nav.shared_with_me": "મારી સાથે શેર કરેલ", "nav.inherited": "પ્રાપ્ત", "nav.starred": "તારાંકિત",
   "nav.shared": "શેર કરેલ", "nav.trash": "કચરાપેટી", "nav.administration": "વહીવટ", "nav.users": "વપરાશકર્તાઓ",
@@ -156,6 +183,7 @@ const gu: Dict = {
 };
 
 const kn: Dict = {
+  "idle.title": "ಇನ್ನೂ ಇದ್ದೀರಾ?", "idle.body": "ನೀವು ಸ್ವಲ್ಪ ಸಮಯದಿಂದ ನಿಷ್ಕ್ರಿಯರಾಗಿದ್ದೀರಿ. ನಿಮ್ಮ ಸುರಕ್ಷತೆಗಾಗಿ ನಿಮ್ಮನ್ನು ಸೈನ್ ಔಟ್ ಮಾಡಲಾಗುತ್ತದೆ", "idle.logoutNow": "ಈಗ ಲಾಗ್ ಔಟ್", "idle.stay": "ಸೈನ್ ಇನ್ ಆಗಿರಿ", "idle.loggedOut": "ನಿಷ್ಕ್ರಿಯತೆಯಿಂದಾಗಿ ನಿಮ್ಮನ್ನು ಸೈನ್ ಔಟ್ ಮಾಡಲಾಗಿದೆ.", "idle.loggedOutHint": "ನಿಮ್ಮ ಸುರಕ್ಷತೆಗಾಗಿ, 15 ನಿಮಿಷ ಯಾವುದೇ ಚಟುವಟಿಕೆ ಇಲ್ಲದಿದ್ದರೆ ಸೆಷನ್‌ಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕೊನೆಗೊಳ್ಳುತ್ತವೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಸೈನ್ ಇನ್ ಮಾಡಿ.",
   "nav.dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", "nav.files": "ನನ್ನ ಫೈಲ್‌ಗಳು", "nav.askAI": "AI ಅನ್ನು ಕೇಳಿ", "nav.teams": "ತಂಡಗಳು",
   "nav.common": "ಸಾಮಾನ್ಯ", "nav.shared_with_me": "ನನ್ನೊಂದಿಗೆ ಹಂಚಿಕೊಂಡಿದೆ", "nav.inherited": "ಪಡೆದಿದೆ", "nav.starred": "ನಕ್ಷತ್ರ ಗುರುತು",
   "nav.shared": "ಹಂಚಿಕೊಂಡಿದೆ", "nav.trash": "ಕಸ", "nav.administration": "ಆಡಳಿತ", "nav.users": "ಬಳಕೆದಾರರು",
@@ -168,6 +196,7 @@ const kn: Dict = {
 };
 
 const ml: Dict = {
+  "idle.title": "ഇപ്പോഴും ഉണ്ടോ?", "idle.body": "കുറച്ച് സമയമായി നിങ്ങൾ നിഷ്ക്രിയമാണ്. നിങ്ങളുടെ സുരക്ഷയ്ക്കായി നിങ്ങളെ സൈൻ ഔട്ട് ചെയ്യും", "idle.logoutNow": "ഇപ്പോൾ ലോഗ് ഔട്ട്", "idle.stay": "സൈൻ ഇൻ ആയി തുടരുക", "idle.loggedOut": "നിഷ്ക്രിയത്വം കാരണം നിങ്ങളെ സൈൻ ഔട്ട് ചെയ്തു.", "idle.loggedOutHint": "നിങ്ങളുടെ സുരക്ഷയ്ക്കായി, 15 മിനിറ്റ് പ്രവർത്തനം ഇല്ലെങ്കിൽ സെഷനുകൾ സ്വയമേവ അവസാനിക്കും. വീണ്ടും സൈൻ ഇൻ ചെയ്യുക.",
   "nav.dashboard": "ഡാഷ്‌ബോർഡ്", "nav.files": "എന്റെ ഫയലുകൾ", "nav.askAI": "AI-യോട് ചോദിക്കുക", "nav.teams": "ടീമുകൾ",
   "nav.common": "പൊതുവായത്", "nav.shared_with_me": "എന്നോട് പങ്കിട്ടത്", "nav.inherited": "ലഭിച്ചത്", "nav.starred": "നക്ഷത്രമിട്ടത്",
   "nav.shared": "പങ്കിട്ടത്", "nav.trash": "ട്രാഷ്", "nav.administration": "ഭരണം", "nav.users": "ഉപയോക്താക്കൾ",
@@ -180,6 +209,7 @@ const ml: Dict = {
 };
 
 const pa: Dict = {
+  "idle.title": "ਅਜੇ ਵੀ ਇੱਥੇ ਹੋ?", "idle.body": "ਤੁਸੀਂ ਕੁਝ ਸਮੇਂ ਤੋਂ ਨਿਸ਼ਕਿਰਿਆ ਹੋ। ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ ਤੁਹਾਨੂੰ ਸਾਈਨ ਆਊਟ ਕੀਤਾ ਜਾਵੇਗਾ", "idle.logoutNow": "ਹੁਣ ਲਾਗ ਆਊਟ", "idle.stay": "ਸਾਈਨ ਇਨ ਰਹੋ", "idle.loggedOut": "ਨਿਸ਼ਕਿਰਿਆ ਹੋਣ ਕਾਰਨ ਤੁਹਾਨੂੰ ਸਾਈਨ ਆਊਟ ਕੀਤਾ ਗਿਆ।", "idle.loggedOutHint": "ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ, 15 ਮਿੰਟ ਕੋਈ ਗਤੀਵਿਧੀ ਨਾ ਹੋਣ ਤੇ ਸੈਸ਼ਨ ਆਪੇ ਖਤਮ ਹੋ ਜਾਂਦੇ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਸਾਈਨ ਇਨ ਕਰੋ।",
   "nav.dashboard": "ਡੈਸ਼ਬੋਰਡ", "nav.files": "ਮੇਰੀਆਂ ਫਾਈਲਾਂ", "nav.askAI": "AI ਨੂੰ ਪੁੱਛੋ", "nav.teams": "ਟੀਮਾਂ",
   "nav.common": "ਸਾਂਝਾ", "nav.shared_with_me": "ਮੇਰੇ ਨਾਲ ਸਾਂਝਾ", "nav.inherited": "ਪ੍ਰਾਪਤ", "nav.starred": "ਤਾਰਾ ਲੱਗਾ",
   "nav.shared": "ਸਾਂਝਾ ਕੀਤਾ", "nav.trash": "ਰੱਦੀ", "nav.administration": "ਪ੍ਰਸ਼ਾਸਨ", "nav.users": "ਵਰਤੋਂਕਾਰ",
@@ -192,6 +222,7 @@ const pa: Dict = {
 };
 
 const or: Dict = {
+  "idle.title": "ଏବେ ବି ଅଛନ୍ତି?", "idle.body": "ଆପଣ କିଛି ସମୟ ଧରି ନିଷ୍କ୍ରିୟ ଅଛନ୍ତି। ଆପଣଙ୍କ ସୁରକ୍ଷା ପାଇଁ ଆପଣଙ୍କୁ ସାଇନ୍ ଆଉଟ୍ କରାଯିବ", "idle.logoutNow": "ବର୍ତ୍ତମାନ ଲଗ୍ ଆଉଟ୍", "idle.stay": "ସାଇନ୍ ଇନ୍ ରୁହନ୍ତୁ", "idle.loggedOut": "ନିଷ୍କ୍ରିୟତା କାରଣରୁ ଆପଣଙ୍କୁ ସାଇନ୍ ଆଉଟ୍ କରାଗଲା।", "idle.loggedOutHint": "ଆପଣଙ୍କ ସୁରକ୍ଷା ପାଇଁ, 15 ମିନିଟ୍ କୌଣସି କାର୍ଯ୍ୟକଳାପ ନହେଲେ ସେସନ୍ ସ୍ୱୟଂଚାଳିତ ଭାବେ ଶେଷ ହୁଏ। ଦୟାକରି ପୁଣି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।",
   "nav.dashboard": "ଡ୍ୟାସବୋର୍ଡ", "nav.files": "ମୋର ଫାଇଲଗୁଡ଼ିକ", "nav.askAI": "AIକୁ ପଚାରନ୍ତୁ", "nav.teams": "ଦଳ",
   "nav.common": "ସାଧାରଣ", "nav.shared_with_me": "ମୋ ସହ ଅଂଶୀଦାର", "nav.inherited": "ପ୍ରାପ୍ତ", "nav.starred": "ତାରକାଙ୍କିତ",
   "nav.shared": "ଅଂଶୀଦାର", "nav.trash": "ଆବର୍ଜନା", "nav.administration": "ପ୍ରଶାସନ", "nav.users": "ବ୍ୟବହାରକାରୀ",
@@ -204,6 +235,7 @@ const or: Dict = {
 };
 
 const as: Dict = {
+  "idle.title": "এতিয়াও আছেনে?", "idle.body": "আপুনি কিছু সময়ৰ পৰা নিষ্ক্ৰিয়। আপোনাৰ সুৰক্ষাৰ বাবে আপোনাক ছাইন আউট কৰা হ’ব", "idle.logoutNow": "এতিয়াই লগ আউট", "idle.stay": "ছাইন ইন থাকক", "idle.loggedOut": "নিষ্ক্ৰিয়তাৰ বাবে আপোনাক ছাইন আউট কৰা হ’ল।", "idle.loggedOutHint": "আপোনাৰ সুৰক্ষাৰ বাবে, 15 মিনিট কোনো কাৰ্যকলাপ নহ’লে ছেছন স্বয়ংক্ৰিয়ভাৱে শেষ হয়। অনুগ্ৰহ কৰি পুনৰ ছাইন ইন কৰক।",
   "nav.dashboard": "ডেশ্বব’ৰ্ড", "nav.files": "মোৰ ফাইল", "nav.askAI": "AIক সোধক", "nav.teams": "দল",
   "nav.common": "সাধাৰণ", "nav.shared_with_me": "মোৰ সৈতে ভাগ কৰা", "nav.inherited": "প্ৰাপ্ত", "nav.starred": "তৰাচিহ্নিত",
   "nav.shared": "ভাগ কৰা", "nav.trash": "আৱৰ্জনা", "nav.administration": "প্ৰশাসন", "nav.users": "ব্যৱহাৰকাৰী",
@@ -216,6 +248,7 @@ const as: Dict = {
 };
 
 const ur: Dict = {
+  "idle.title": "ابھی بھی موجود ہیں؟", "idle.body": "آپ کچھ دیر سے غیر فعال ہیں۔ آپ کی سیکیورٹی کے لیے آپ کو سائن آؤٹ کر دیا جائے گا", "idle.logoutNow": "ابھی لاگ آؤٹ", "idle.stay": "سائن ان رہیں", "idle.loggedOut": "غیر فعالیت کی وجہ سے آپ کو سائن آؤٹ کر دیا گیا۔", "idle.loggedOutHint": "آپ کی سیکیورٹی کے لیے، 15 منٹ کوئی سرگرمی نہ ہونے پر سیشنز خودکار طور پر ختم ہو جاتے ہیں۔ براہ کرم دوبارہ سائن ان کریں۔",
   "nav.dashboard": "ڈیش بورڈ", "nav.files": "میری فائلیں", "nav.askAI": "اے آئی سے پوچھیں", "nav.teams": "ٹیمیں",
   "nav.common": "مشترکہ", "nav.shared_with_me": "میرے ساتھ اشتراک", "nav.inherited": "موصول", "nav.starred": "ستارہ لگا",
   "nav.shared": "اشتراک شدہ", "nav.trash": "ردی", "nav.administration": "انتظامیہ", "nav.users": "صارفین",
@@ -233,6 +266,7 @@ interface I18nValue {
   locale: LocaleCode;
   setLocale: (l: LocaleCode) => void;
   t: (key: TKey) => string;
+  num: (s: string | number) => string;
   dir: "ltr" | "rtl";
 }
 
@@ -266,10 +300,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale]);
 
   const t = useCallback((key: TKey) => DICTS[locale]?.[key] ?? en[key] ?? key, [locale]);
+  const num = useCallback((s: string | number) => localizeDigits(String(s), locale), [locale]);
 
   const value = useMemo<I18nValue>(
-    () => ({ locale, setLocale, t, dir: RTL_LOCALES.includes(locale) ? "rtl" : "ltr" }),
-    [locale, setLocale, t],
+    () => ({ locale, setLocale, t, num, dir: RTL_LOCALES.includes(locale) ? "rtl" : "ltr" }),
+    [locale, setLocale, t, num],
   );
 
   return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
@@ -277,6 +312,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
 export function useI18n(): I18nValue {
   const ctx = useContext(I18nCtx);
-  if (!ctx) return { locale: "en", setLocale: () => {}, t: (k) => en[k] ?? k, dir: "ltr" };
+  if (!ctx) return { locale: "en", setLocale: () => {}, t: (k) => en[k] ?? k, num: (s) => String(s), dir: "ltr" };
   return ctx;
 }

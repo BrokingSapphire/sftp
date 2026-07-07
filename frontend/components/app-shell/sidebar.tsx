@@ -43,7 +43,20 @@ const admin: NavItem[] = [
   { href: "/api-keys", label: "nav.apiKeys", icon: KeyRound, perm: "apikeys.manage" },
 ];
 
+/** Desktop sidebar (hidden on small screens; the mobile drawer reuses SidebarNav). */
 export function Sidebar() {
+  return (
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
+      <div className="flex h-16 items-center px-5">
+        <Logo size={30} />
+      </div>
+      <SidebarNav />
+    </aside>
+  );
+}
+
+/** The nav + storage meter, shared by the desktop sidebar and the mobile drawer. */
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { has, user } = useAuth();
   const { t } = useI18n();
@@ -55,6 +68,7 @@ export function Sidebar() {
       <Link
         key={item.href}
         href={item.href}
+        onClick={onNavigate}
         className={cn(
           "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           active ? "text-primary" : "text-muted hover:text-foreground",
@@ -82,11 +96,7 @@ export function Sidebar() {
   const pct = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
-      <div className="flex h-16 items-center px-5">
-        <Logo size={30} />
-      </div>
-
+    <>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
         {primary.map(link)}
         {visibleAdmin.length > 0 && (
@@ -101,7 +111,7 @@ export function Sidebar() {
       <div className="border-t border-border p-4">
         <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted">
           <HardDrive size={14} />
-          Storage
+          {t("nav.storage")}
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <motion.div
@@ -116,6 +126,6 @@ export function Sidebar() {
           {quota > 0 ? ` of ${formatBytes(quota)}` : " used · unlimited"}
         </p>
       </div>
-    </aside>
+    </>
   );
 }

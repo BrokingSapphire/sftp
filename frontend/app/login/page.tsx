@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, Server, Lock } from "lucide-react";
+import { Loader2, ShieldCheck, Server, Lock, Clock } from "lucide-react";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { BRAND } from "@/lib/brand";
 import { ApiError } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 const schema = z.object({
   identifier: z.string().min(1, "Email or username is required"),
@@ -26,7 +27,18 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
+  const [idleOut, setIdleOut] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("sphr_logout_reason") === "idle") {
+        setIdleOut(true);
+        sessionStorage.removeItem("sphr_logout_reason");
+      }
+    } catch { /* ignore */ }
+  }, []);
   const {
     register,
     handleSubmit,
@@ -172,6 +184,15 @@ export default function LoginPage() {
           <p className="eyebrow">Welcome back</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">Sign in to your workspace</h2>
           <p className="mt-1 text-sm text-muted">Enter your credentials to continue.</p>
+
+          {idleOut && (
+            <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
+              <Clock size={16} className="mt-0.5 shrink-0 text-warning" />
+              <span className="text-muted">
+                <strong className="text-foreground">{t("idle.loggedOut")}</strong> {t("idle.loggedOutHint")}
+              </span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
             <div className="space-y-1.5">
