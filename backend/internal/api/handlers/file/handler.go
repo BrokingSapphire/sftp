@@ -223,7 +223,7 @@ func (h *Handler) TrashFile(c fuego.ContextNoBody) (*response.Envelope[response.
 	if err != nil {
 		return nil, err
 	}
-	if err := h.svc.TrashFile(c.Context(), uid, id); err != nil {
+	if err := h.svc.TrashFile(c.Context(), uid, id, isAdmin(c.Context())); err != nil {
 		return nil, handlers.Fail(err)
 	}
 	return response.OKWithMessage[response.Any](nil, "File moved to trash"), nil

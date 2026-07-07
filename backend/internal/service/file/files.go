@@ -62,8 +62,14 @@ func (s *Service) StarFile(ctx context.Context, owner, id uuid.UUID, starred boo
 }
 
 // TrashFile moves a file to the recycle bin (soft delete).
-func (s *Service) TrashFile(ctx context.Context, owner, id uuid.UUID) error {
-	f, err := s.ownedFile(ctx, owner, id)
+func (s *Service) TrashFile(ctx context.Context, owner, id uuid.UUID, admin bool) error {
+	var f sftpdb.File
+	var err error
+	if admin {
+		f, err = s.q.GetFileByID(ctx, id) // super-admins may remove any file
+	} else {
+		f, err = s.ownedFile(ctx, owner, id)
+	}
 	if err != nil {
 		return err
 	}

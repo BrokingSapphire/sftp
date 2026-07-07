@@ -26,7 +26,7 @@ var (
 	reAadhr = regexp.MustCompile(`\b\d{4}\s\d{4}\s\d{4}\b`)
 	reEmail = regexp.MustCompile(`\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b`)
 	rePhone = regexp.MustCompile(`(?:\+?91[\-\s]?)?[6-9]\d{4}[\-\s]?\d{5}`)
-	reCard  = regexp.MustCompile(`\b(?:\d[ \-]?){13,19}\b`)
+	reCard  = regexp.MustCompile(`\b(?:\d{4}[ \-]){3}\d{1,4}\b|\b\d{15,16}\b`)
 )
 
 // Result is the outcome of scanning a document.

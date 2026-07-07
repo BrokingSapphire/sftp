@@ -24,6 +24,7 @@ export default function CommonPage() {
   const [crumbs, setCrumbs] = useState<Crumb[]>([{ name: "Common" }]);
   const current = crumbs[crumbs.length - 1];
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<number | null>(null);
 
   const q = useQuery({ queryKey: ["common", current.id ?? "root"], queryFn: () => commonApi.browse(current.id) });
@@ -50,6 +51,37 @@ export default function CommonPage() {
     }
     refresh();
   }
+
+  // Upload a whole folder tree into Common, recreating the sub-folder structure.
+  async function uploadFolder(entries: { file: File; relPath: string }[]) {
+    if (!entries.length) return;
+    const dirCache = new Map<string, string | undefined>([["", current.id]]);
+    async function ensureDir(dir: string): Promise<string | undefined> {
+      if (dirCache.has(dir)) return dirCache.get(dir);
+      const parts = dir.split("/");
+      const name = parts.pop()!;
+      const parentId = await ensureDir(parts.join("/"));
+      let id: string | undefined;
+      try { id = (await commonApi.createFolder(name, parentId)).id; }
+      catch { const b = await commonApi.browse(parentId); id = b.folders.find((x) => x.name === name)?.id; }
+      dirCache.set(dir, id);
+      return id;
+    }
+    const root = entries[0].relPath.split("/")[0] || "folder";
+    const t = toast.loading(`Uploading folder "${root}"… 0/${entries.length}`, { position: "bottom-right" });
+    let done = 0;
+    try {
+      for (const { file, relPath } of entries) {
+        const dir = relPath.split("/").slice(0, -1).join("/");
+        const fid = await ensureDir(dir);
+        await commonApi.upload(file, fid);
+        done++;
+        toast.loading(`Uploading folder "${root}"… ${done}/${entries.length}`, { id: t, position: "bottom-right" });
+      }
+      toast.success(`Uploaded "${root}" (${done} files)`, { id: t, position: "bottom-right" });
+    } catch { toast.error(`Folder upload failed`, { id: t, position: "bottom-right" }); }
+    refresh();
+  }
   async function remove(f: CommonFile) {
     if (!confirm(`Delete "${f.name}" from Common? This cannot be undone.`)) return;
     try { await commonApi.remove(f.id); toast.success("Deleted from Common"); refresh(); }
@@ -64,10 +96,16 @@ export default function CommonPage() {
         <PageHeader title="Common" subtitle="Organisation-wide files — visible to everyone. Uploaders (or admins) can delete." />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>
+          <Button variant="outline" size="sm" onClick={() => folderRef.current?.click()}><FolderUp size={16} /> Upload folder</Button>
           <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
           <input ref={inputRef} type="file" multiple hidden onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
             if (fs.length) upload(fs);
+            e.target.value = "";
+          }} />
+          <input ref={folderRef} type="file" hidden {...({ webkitdirectory: "", directory: "" } as Record<string, string>)} onChange={(e) => {
+            const fs = Array.from(e.target.files ?? []);
+            if (fs.length) uploadFolder(fs.map((f) => ({ file: f, relPath: (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name })));
             e.target.value = "";
           }} />
         </div>

@@ -50,7 +50,8 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface">
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <div className="min-w-[32rem]">
       <div className="grid grid-cols-[1fr_auto_8rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
         <span>{t("col.name")}</span><span>{t("col.size")}</span><span className="text-right">{t("col.modified")}</span>
       </div>
@@ -94,6 +95,7 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
         </StaggerItem>
       ))}
       </StaggerList>
+      </div>
       {preview !== null && files?.[preview] && mode !== "trash" && (
         <FilePreview files={files} index={preview} onChangeIndex={setPreview} onClose={() => setPreview(null)} onChanged={refresh} />
       )}

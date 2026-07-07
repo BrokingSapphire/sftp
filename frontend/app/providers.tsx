@@ -12,7 +12,10 @@ export function Providers({ children }: { children: ReactNode }) {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
+          // Keep the UI fresh: refetch on mount and when the tab regains focus,
+          // and treat data as immediately stale so navigation shows current data
+          // without a manual refresh.
+          queries: { staleTime: 0, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: true, refetchOnMount: true },
         },
       }),
   );
