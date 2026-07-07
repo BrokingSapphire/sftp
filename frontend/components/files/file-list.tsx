@@ -10,6 +10,7 @@ import { fileIcon } from "./icon";
 import { FilePreview } from "./file-preview";
 import { Skeleton } from "@/components/ui/misc";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useI18n } from "@/lib/i18n";
 import { formatBytes, timeAgo } from "@/lib/utils";
 import { StaggerList, StaggerItem } from "@/components/motion";
 
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle, queryKey, mode = "default" }: Props) {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [preview, setPreview] = useState<number | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: [queryKey] });
@@ -40,7 +42,7 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
   return (
     <div className="rounded-xl border border-border bg-surface">
       <div className="grid grid-cols-[1fr_auto_8rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
-        <span>Name</span><span>Size</span><span className="text-right">Modified</span>
+        <span>{t("col.name")}</span><span>{t("col.size")}</span><span className="text-right">{t("col.modified")}</span>
       </div>
       {loading && [...Array(5)].map((_, i) => <div key={i} className="px-4 py-2.5"><Skeleton className="h-6 w-full" /></div>)}
       <StaggerList>
@@ -99,10 +101,11 @@ function IconBtn({ children, title, onClick }: { children: React.ReactNode; titl
 }
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const { tx } = useI18n();
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
+      <h1 className="text-2xl font-semibold tracking-tight">{tx(title)}</h1>
+      {subtitle && <p className="text-sm text-muted">{tx(subtitle)}</p>}
     </div>
   );
 }

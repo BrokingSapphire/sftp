@@ -76,6 +76,31 @@ const en = {
   "common.welcomeBack": "Welcome back",
   "common.signIn": "Sign in",
   "common.home": "Home",
+  "page.recentSub": "Your most recently added files",
+  "page.sharesSub": "Public and password-protected links you have created",
+  "page.inheritedSub": "Files handed over to you, grouped by who they came from",
+  "page.starredSub": "Files you have starred for quick access",
+  "page.teamsSub": "Shared drives owned by a group, with roles and delegated admin",
+  "page.commonSub": "Organisation-wide files — visible to everyone. Uploaders (or admins) can delete.",
+  "page.sharedSub": "Files other people have shared with you",
+  "page.trashSub": "Deleted files are purged automatically after the retention window",
+  "page.searchSub": "Matches file names and text inside documents",
+  "page.usersSub": "Manage accounts, roles and access",
+  "page.backupSub": "Encrypted, incremental backups of every user's drive to a removable disk",
+  "page.apiSub": "Let scripts and apps use your files securely — create a key, then copy a ready-made snippet below",
+  "page.auditSub": "Immutable, compliance-grade record of every action — click a row for full detail",
+  "page.askSub": "On-premise AI over your documents",
+  "page.securitySub": "Anomalies detected on the audit stream — exfiltration, brute force, bulk actions",
+  "page.storageSub": "Organisation-wide storage consumption and media breakdown",
+  "page.recentTitle": "Recent",
+  "page.sharesTitle": "Shared links",
+  "page.inheritedTitle": "Inherited files",
+  "page.teamsTitle": "Team Spaces",
+  "page.searchTitle": "Search",
+  "page.backupTitle": "Backup & Restore",
+  "page.apiTitle": "API keys & developer docs",
+  "page.auditTitle": "Audit log",
+  "page.askTitle": "Ask your files",
   // Idle / inactivity
   "idle.title": "Still there?",
   "idle.body": "You've been inactive for a while. For your security you'll be signed out in",
@@ -104,6 +129,31 @@ export function localizeDigits(s: string, locale: LocaleCode): string {
 type Dict = Partial<Record<TKey, string>>;
 
 const hi: Dict = {
+  "page.recentSub": "आपकी सबसे हाल में जोड़ी गई फ़ाइलें",
+  "page.sharesSub": "आपके द्वारा बनाए गए सार्वजनिक और पासवर्ड-सुरक्षित लिंक",
+  "page.inheritedSub": "आपको सौंपी गई फ़ाइलें, भेजने वाले के अनुसार समूहित",
+  "page.starredSub": "त्वरित पहुँच के लिए तारांकित की गई फ़ाइलें",
+  "page.teamsSub": "समूह के स्वामित्व वाली साझा ड्राइव, भूमिकाओं और सौंपे गए व्यवस्थापन के साथ",
+  "page.commonSub": "संगठन-व्यापी फ़ाइलें — सभी को दिखती हैं। अपलोड करने वाले (या व्यवस्थापक) हटा सकते हैं।",
+  "page.sharedSub": "अन्य लोगों द्वारा आपके साथ साझा की गई फ़ाइलें",
+  "page.trashSub": "हटाई गई फ़ाइलें प्रतिधारण अवधि के बाद स्वतः हटा दी जाती हैं",
+  "page.searchSub": "फ़ाइल नामों और दस्तावेज़ों के अंदर के टेक्स्ट से मेल खाता है",
+  "page.usersSub": "खाते, भूमिकाएँ और पहुँच प्रबंधित करें",
+  "page.backupSub": "हर उपयोगकर्ता की ड्राइव का हटाने योग्य डिस्क पर एन्क्रिप्टेड, वृद्धिशील बैकअप",
+  "page.apiSub": "स्क्रिप्ट और ऐप्स को आपकी फ़ाइलें सुरक्षित रूप से उपयोग करने दें — एक कुंजी बनाएँ, फिर नीचे तैयार स्निपेट कॉपी करें",
+  "page.auditSub": "हर कार्रवाई का अपरिवर्तनीय, अनुपालन-स्तरीय रिकॉर्ड — पूर्ण विवरण के लिए पंक्ति पर क्लिक करें",
+  "page.askSub": "आपके दस्तावेज़ों पर ऑन-प्रिमाइस एआई",
+  "page.securitySub": "ऑडिट स्ट्रीम पर पाई गई विसंगतियाँ — डेटा चोरी, ब्रूट फोर्स, बड़े पैमाने पर कार्रवाई",
+  "page.storageSub": "संगठन-व्यापी भंडारण उपयोग और मीडिया विवरण",
+  "page.recentTitle": "हाल के",
+  "page.sharesTitle": "साझा किए गए लिंक",
+  "page.inheritedTitle": "प्राप्त फ़ाइलें",
+  "page.teamsTitle": "टीम स्पेस",
+  "page.searchTitle": "खोज",
+  "page.backupTitle": "बैकअप और पुनर्स्थापना",
+  "page.apiTitle": "एपीआई कुंजियाँ और डेवलपर दस्तावेज़",
+  "page.auditTitle": "ऑडिट लॉग",
+  "page.askTitle": "आपकी फ़ाइलों से पूछें",
   "idle.title": "अभी भी यहाँ हैं?", "idle.body": "आप कुछ समय से निष्क्रिय हैं। आपकी सुरक्षा के लिए आपको साइन आउट किया जाएगा", "idle.logoutNow": "अभी लॉग आउट करें", "idle.stay": "साइन इन रहें", "idle.loggedOut": "निष्क्रियता के कारण आपको साइन आउट कर दिया गया।", "idle.loggedOutHint": "आपकी सुरक्षा के लिए, 15 मिनट तक कोई गतिविधि न होने पर सत्र स्वतः समाप्त हो जाते हैं। कृपया फिर से साइन इन करें।",
   "nav.dashboard": "डैशबोर्ड", "nav.files": "मेरी फ़ाइलें", "nav.askAI": "एआई से पूछें", "nav.teams": "टीमें",
   "nav.common": "साझा", "nav.shared_with_me": "मेरे साथ साझा", "nav.inherited": "प्राप्त", "nav.starred": "तारांकित",
@@ -118,6 +168,15 @@ const hi: Dict = {
 };
 
 const bn: Dict = {
+  "page.recentTitle": "সাম্প্রতিক",
+  "page.sharesTitle": "শেয়ার করা লিঙ্ক",
+  "page.inheritedTitle": "প্রাপ্ত ফাইল",
+  "page.teamsTitle": "টিম স্পেস",
+  "page.searchTitle": "অনুসন্ধান",
+  "page.backupTitle": "ব্যাকআপ ও পুনরুদ্ধার",
+  "page.apiTitle": "এপিআই কী ও ডেভেলপার ডকস",
+  "page.auditTitle": "অডিট লগ",
+  "page.askTitle": "আপনার ফাইলকে জিজ্ঞাসা করুন",
   "idle.title": "এখনও আছেন?", "idle.body": "আপনি কিছুক্ষণ ধরে নিষ্ক্রিয়। আপনার নিরাপত্তার জন্য আপনাকে সাইন আউট করা হবে", "idle.logoutNow": "এখনই লগ আউট", "idle.stay": "সাইন ইন থাকুন", "idle.loggedOut": "নিষ্ক্রিয়তার কারণে আপনাকে সাইন আউট করা হয়েছে।", "idle.loggedOutHint": "আপনার নিরাপত্তার জন্য, 15 মিনিট নিষ্ক্রিয় থাকলে সেশন স্বয়ংক্রিয়ভাবে শেষ হয়। অনুগ্রহ করে আবার সাইন ইন করুন।",
   "nav.dashboard": "ড্যাশবোর্ড", "nav.files": "আমার ফাইল", "nav.askAI": "এআই-কে জিজ্ঞাসা করুন", "nav.teams": "দল",
   "nav.common": "সাধারণ", "nav.shared_with_me": "আমার সাথে শেয়ার করা", "nav.inherited": "প্রাপ্ত", "nav.starred": "তারাঙ্কিত",
@@ -131,6 +190,15 @@ const bn: Dict = {
 };
 
 const ta: Dict = {
+  "page.recentTitle": "சமீபத்தியவை",
+  "page.sharesTitle": "பகிரப்பட்ட இணைப்புகள்",
+  "page.inheritedTitle": "பெறப்பட்ட கோப்புகள்",
+  "page.teamsTitle": "குழு இடங்கள்",
+  "page.searchTitle": "தேடல்",
+  "page.backupTitle": "காப்புப்பிரதி & மீட்டமை",
+  "page.apiTitle": "API விசைகள் & டெவலப்பர் ஆவணங்கள்",
+  "page.auditTitle": "தணிக்கை பதிவு",
+  "page.askTitle": "உங்கள் கோப்புகளிடம் கேளுங்கள்",
   "idle.title": "இன்னும் இருக்கிறீர்களா?", "idle.body": "சிறிது நேரமாக செயலற்று உள்ளீர்கள். உங்கள் பாதுகாப்பிற்காக வெளியேற்றப்படுவீர்கள்", "idle.logoutNow": "இப்போது வெளியேறு", "idle.stay": "உள்நுழைந்திருங்கள்", "idle.loggedOut": "செயலற்ற நிலையால் நீங்கள் வெளியேற்றப்பட்டீர்கள்.", "idle.loggedOutHint": "உங்கள் பாதுகாப்பிற்காக, 15 நிமிடம் செயல்பாடு இல்லாவிட்டால் அமர்வுகள் தானாக முடிவடையும். மீண்டும் உள்நுழையவும்.",
   "nav.dashboard": "டாஷ்போர்டு", "nav.files": "எனது கோப்புகள்", "nav.askAI": "AI-யிடம் கேளுங்கள்", "nav.teams": "குழுக்கள்",
   "nav.common": "பொது", "nav.shared_with_me": "என்னுடன் பகிரப்பட்டது", "nav.inherited": "பெறப்பட்டது", "nav.starred": "நட்சத்திரமிட்டது",
@@ -144,6 +212,15 @@ const ta: Dict = {
 };
 
 const te: Dict = {
+  "page.recentTitle": "ఇటీవలివి",
+  "page.sharesTitle": "భాగస్వామ్య లింక్\u200cలు",
+  "page.inheritedTitle": "వారసత్వ ఫైళ్లు",
+  "page.teamsTitle": "బృంద స్థలాలు",
+  "page.searchTitle": "శోధన",
+  "page.backupTitle": "బ్యాకప్ & పునరుద్ధరణ",
+  "page.apiTitle": "API కీలు & డెవలపర్ డాక్స్",
+  "page.auditTitle": "ఆడిట్ లాగ్",
+  "page.askTitle": "మీ ఫైళ్లను అడగండి",
   "idle.title": "ఇంకా ఉన్నారా?", "idle.body": "మీరు కొంతసేపు నిష్క్రియంగా ఉన్నారు. మీ భద్రత కోసం మీరు సైన్ అవుట్ చేయబడతారు", "idle.logoutNow": "ఇప్పుడే లాగ్ అవుట్", "idle.stay": "సైన్ ఇన్‌లో ఉండండి", "idle.loggedOut": "నిష్క్రియత కారణంగా మీరు సైన్ అవుట్ చేయబడ్డారు.", "idle.loggedOutHint": "మీ భద్రత కోసం, 15 నిమిషాలు ఏ కార్యకలాపం లేకపోతే సెషన్‌లు స్వయంచాలకంగా ముగుస్తాయి. దయచేసి మళ్లీ సైన్ ఇన్ చేయండి.",
   "nav.dashboard": "డాష్‌బోర్డ్", "nav.files": "నా ఫైళ్లు", "nav.askAI": "AIని అడగండి", "nav.teams": "బృందాలు",
   "nav.common": "సాధారణ", "nav.shared_with_me": "నాతో భాగస్వామ్యం", "nav.inherited": "వారసత్వం", "nav.starred": "నక్షత్రం గుర్తు",
@@ -157,6 +234,15 @@ const te: Dict = {
 };
 
 const mr: Dict = {
+  "page.recentTitle": "अलीकडील",
+  "page.sharesTitle": "सामायिक केलेल्या लिंक",
+  "page.inheritedTitle": "प्राप्त फायली",
+  "page.teamsTitle": "टीम स्पेस",
+  "page.searchTitle": "शोध",
+  "page.backupTitle": "बॅकअप आणि पुनर्संचयन",
+  "page.apiTitle": "API कळा आणि डेव्हलपर दस्तऐवज",
+  "page.auditTitle": "ऑडिट लॉग",
+  "page.askTitle": "तुमच्या फायलींना विचारा",
   "idle.title": "अजून इथे आहात?", "idle.body": "तुम्ही काही वेळ निष्क्रिय आहात. तुमच्या सुरक्षिततेसाठी तुम्हाला साइन आउट केले जाईल", "idle.logoutNow": "आता लॉग आउट", "idle.stay": "साइन इन राहा", "idle.loggedOut": "निष्क्रियतेमुळे तुम्हाला साइन आउट केले गेले.", "idle.loggedOutHint": "तुमच्या सुरक्षिततेसाठी, 15 मिनिटे कोणतीही क्रिया न झाल्यास सत्रे आपोआप संपतात. कृपया पुन्हा साइन इन करा.",
   "nav.dashboard": "डॅशबोर्ड", "nav.files": "माझ्या फायली", "nav.askAI": "एआयला विचारा", "nav.teams": "संघ",
   "nav.common": "सामायिक", "nav.shared_with_me": "माझ्यासोबत सामायिक", "nav.inherited": "प्राप्त", "nav.starred": "तारांकित",
@@ -170,6 +256,15 @@ const mr: Dict = {
 };
 
 const gu: Dict = {
+  "page.recentTitle": "તાજેતરના",
+  "page.sharesTitle": "શેર કરેલી લિંક્સ",
+  "page.inheritedTitle": "પ્રાપ્ત ફાઇલો",
+  "page.teamsTitle": "ટીમ સ્પેસ",
+  "page.searchTitle": "શોધ",
+  "page.backupTitle": "બેકઅપ અને પુનઃસ્થાપન",
+  "page.apiTitle": "API કીઓ અને ડેવલપર દસ્તાવેજ",
+  "page.auditTitle": "ઑડિટ લૉગ",
+  "page.askTitle": "તમારી ફાઇલોને પૂછો",
   "idle.title": "હજુ અહીં છો?", "idle.body": "તમે થોડા સમયથી નિષ્ક્રિય છો. તમારી સુરક્ષા માટે તમને સાઇન આઉટ કરવામાં આવશે", "idle.logoutNow": "હમણાં લૉગ આઉટ", "idle.stay": "સાઇન ઇન રહો", "idle.loggedOut": "નિષ્ક્રિયતાને કારણે તમને સાઇન આઉટ કરવામાં આવ્યા.", "idle.loggedOutHint": "તમારી સુરક્ષા માટે, 15 મિનિટ સુધી કોઈ પ્રવૃત્તિ ન થાય તો સત્રો આપમેળે સમાપ્ત થાય છે. કૃપા કરીને ફરીથી સાઇન ઇન કરો.",
   "nav.dashboard": "ડેશબોર્ડ", "nav.files": "મારી ફાઇલો", "nav.askAI": "AI ને પૂછો", "nav.teams": "ટીમો",
   "nav.common": "સામાન્ય", "nav.shared_with_me": "મારી સાથે શેર કરેલ", "nav.inherited": "પ્રાપ્ત", "nav.starred": "તારાંકિત",
@@ -183,6 +278,15 @@ const gu: Dict = {
 };
 
 const kn: Dict = {
+  "page.recentTitle": "ಇತ್ತೀಚಿನವು",
+  "page.sharesTitle": "ಹಂಚಿದ ಲಿಂಕ್\u200cಗಳು",
+  "page.inheritedTitle": "ಪಡೆದ ಫೈಲ್\u200cಗಳು",
+  "page.teamsTitle": "ತಂಡ ಸ್ಥಳಗಳು",
+  "page.searchTitle": "ಹುಡುಕಾಟ",
+  "page.backupTitle": "ಬ್ಯಾಕಪ್ ಮತ್ತು ಮರುಸ್ಥಾಪನೆ",
+  "page.apiTitle": "API ಕೀಗಳು ಮತ್ತು ಡೆವಲಪರ್ ಡಾಕ್ಸ್",
+  "page.auditTitle": "ಆಡಿಟ್ ಲಾಗ್",
+  "page.askTitle": "ನಿಮ್ಮ ಫೈಲ್\u200cಗಳನ್ನು ಕೇಳಿ",
   "idle.title": "ಇನ್ನೂ ಇದ್ದೀರಾ?", "idle.body": "ನೀವು ಸ್ವಲ್ಪ ಸಮಯದಿಂದ ನಿಷ್ಕ್ರಿಯರಾಗಿದ್ದೀರಿ. ನಿಮ್ಮ ಸುರಕ್ಷತೆಗಾಗಿ ನಿಮ್ಮನ್ನು ಸೈನ್ ಔಟ್ ಮಾಡಲಾಗುತ್ತದೆ", "idle.logoutNow": "ಈಗ ಲಾಗ್ ಔಟ್", "idle.stay": "ಸೈನ್ ಇನ್ ಆಗಿರಿ", "idle.loggedOut": "ನಿಷ್ಕ್ರಿಯತೆಯಿಂದಾಗಿ ನಿಮ್ಮನ್ನು ಸೈನ್ ಔಟ್ ಮಾಡಲಾಗಿದೆ.", "idle.loggedOutHint": "ನಿಮ್ಮ ಸುರಕ್ಷತೆಗಾಗಿ, 15 ನಿಮಿಷ ಯಾವುದೇ ಚಟುವಟಿಕೆ ಇಲ್ಲದಿದ್ದರೆ ಸೆಷನ್‌ಗಳು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕೊನೆಗೊಳ್ಳುತ್ತವೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಸೈನ್ ಇನ್ ಮಾಡಿ.",
   "nav.dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", "nav.files": "ನನ್ನ ಫೈಲ್‌ಗಳು", "nav.askAI": "AI ಅನ್ನು ಕೇಳಿ", "nav.teams": "ತಂಡಗಳು",
   "nav.common": "ಸಾಮಾನ್ಯ", "nav.shared_with_me": "ನನ್ನೊಂದಿಗೆ ಹಂಚಿಕೊಂಡಿದೆ", "nav.inherited": "ಪಡೆದಿದೆ", "nav.starred": "ನಕ್ಷತ್ರ ಗುರುತು",
@@ -196,6 +300,15 @@ const kn: Dict = {
 };
 
 const ml: Dict = {
+  "page.recentTitle": "സമീപകാലം",
+  "page.sharesTitle": "പങ്കിട്ട ലിങ്കുകൾ",
+  "page.inheritedTitle": "ലഭിച്ച ഫയലുകൾ",
+  "page.teamsTitle": "ടീം സ്\u200cപേസുകൾ",
+  "page.searchTitle": "തിരയൽ",
+  "page.backupTitle": "ബാക്കപ്പ് & പുനഃസ്ഥാപനം",
+  "page.apiTitle": "API കീകളും ഡെവലപ്പർ ഡോക്സും",
+  "page.auditTitle": "ഓഡിറ്റ് ലോഗ്",
+  "page.askTitle": "നിങ്ങളുടെ ഫയലുകളോട് ചോദിക്കുക",
   "idle.title": "ഇപ്പോഴും ഉണ്ടോ?", "idle.body": "കുറച്ച് സമയമായി നിങ്ങൾ നിഷ്ക്രിയമാണ്. നിങ്ങളുടെ സുരക്ഷയ്ക്കായി നിങ്ങളെ സൈൻ ഔട്ട് ചെയ്യും", "idle.logoutNow": "ഇപ്പോൾ ലോഗ് ഔട്ട്", "idle.stay": "സൈൻ ഇൻ ആയി തുടരുക", "idle.loggedOut": "നിഷ്ക്രിയത്വം കാരണം നിങ്ങളെ സൈൻ ഔട്ട് ചെയ്തു.", "idle.loggedOutHint": "നിങ്ങളുടെ സുരക്ഷയ്ക്കായി, 15 മിനിറ്റ് പ്രവർത്തനം ഇല്ലെങ്കിൽ സെഷനുകൾ സ്വയമേവ അവസാനിക്കും. വീണ്ടും സൈൻ ഇൻ ചെയ്യുക.",
   "nav.dashboard": "ഡാഷ്‌ബോർഡ്", "nav.files": "എന്റെ ഫയലുകൾ", "nav.askAI": "AI-യോട് ചോദിക്കുക", "nav.teams": "ടീമുകൾ",
   "nav.common": "പൊതുവായത്", "nav.shared_with_me": "എന്നോട് പങ്കിട്ടത്", "nav.inherited": "ലഭിച്ചത്", "nav.starred": "നക്ഷത്രമിട്ടത്",
@@ -209,6 +322,15 @@ const ml: Dict = {
 };
 
 const pa: Dict = {
+  "page.recentTitle": "ਹਾਲੀਆ",
+  "page.sharesTitle": "ਸਾਂਝੇ ਕੀਤੇ ਲਿੰਕ",
+  "page.inheritedTitle": "ਪ੍ਰਾਪਤ ਫਾਈਲਾਂ",
+  "page.teamsTitle": "ਟੀਮ ਸਪੇਸ",
+  "page.searchTitle": "ਖੋਜ",
+  "page.backupTitle": "ਬੈਕਅੱਪ ਤੇ ਰੀਸਟੋਰ",
+  "page.apiTitle": "API ਕੁੰਜੀਆਂ ਤੇ ਡਿਵੈਲਪਰ ਡੌਕਸ",
+  "page.auditTitle": "ਆਡਿਟ ਲਾਗ",
+  "page.askTitle": "ਆਪਣੀਆਂ ਫਾਈਲਾਂ ਨੂੰ ਪੁੱਛੋ",
   "idle.title": "ਅਜੇ ਵੀ ਇੱਥੇ ਹੋ?", "idle.body": "ਤੁਸੀਂ ਕੁਝ ਸਮੇਂ ਤੋਂ ਨਿਸ਼ਕਿਰਿਆ ਹੋ। ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ ਤੁਹਾਨੂੰ ਸਾਈਨ ਆਊਟ ਕੀਤਾ ਜਾਵੇਗਾ", "idle.logoutNow": "ਹੁਣ ਲਾਗ ਆਊਟ", "idle.stay": "ਸਾਈਨ ਇਨ ਰਹੋ", "idle.loggedOut": "ਨਿਸ਼ਕਿਰਿਆ ਹੋਣ ਕਾਰਨ ਤੁਹਾਨੂੰ ਸਾਈਨ ਆਊਟ ਕੀਤਾ ਗਿਆ।", "idle.loggedOutHint": "ਤੁਹਾਡੀ ਸੁਰੱਖਿਆ ਲਈ, 15 ਮਿੰਟ ਕੋਈ ਗਤੀਵਿਧੀ ਨਾ ਹੋਣ ਤੇ ਸੈਸ਼ਨ ਆਪੇ ਖਤਮ ਹੋ ਜਾਂਦੇ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਸਾਈਨ ਇਨ ਕਰੋ।",
   "nav.dashboard": "ਡੈਸ਼ਬੋਰਡ", "nav.files": "ਮੇਰੀਆਂ ਫਾਈਲਾਂ", "nav.askAI": "AI ਨੂੰ ਪੁੱਛੋ", "nav.teams": "ਟੀਮਾਂ",
   "nav.common": "ਸਾਂਝਾ", "nav.shared_with_me": "ਮੇਰੇ ਨਾਲ ਸਾਂਝਾ", "nav.inherited": "ਪ੍ਰਾਪਤ", "nav.starred": "ਤਾਰਾ ਲੱਗਾ",
@@ -222,6 +344,15 @@ const pa: Dict = {
 };
 
 const or: Dict = {
+  "page.recentTitle": "ସାମ୍ପ୍ରତିକ",
+  "page.sharesTitle": "ଅଂଶୀଦାର ଲିଙ୍କ୍",
+  "page.inheritedTitle": "ପ୍ରାପ୍ତ ଫାଇଲ୍",
+  "page.teamsTitle": "ଟିମ୍ ସ୍ପେସ୍",
+  "page.searchTitle": "ସନ୍ଧାନ",
+  "page.backupTitle": "ବ୍ୟାକଅପ୍ ଏବଂ ପୁନଃସ୍ଥାପନ",
+  "page.apiTitle": "API କୀ ଏବଂ ଡେଭେଲପର୍ ଡକ୍ସ",
+  "page.auditTitle": "ଅଡିଟ୍ ଲଗ୍",
+  "page.askTitle": "ଆପଣଙ୍କ ଫାଇଲ୍\u200cକୁ ପଚାରନ୍ତୁ",
   "idle.title": "ଏବେ ବି ଅଛନ୍ତି?", "idle.body": "ଆପଣ କିଛି ସମୟ ଧରି ନିଷ୍କ୍ରିୟ ଅଛନ୍ତି। ଆପଣଙ୍କ ସୁରକ୍ଷା ପାଇଁ ଆପଣଙ୍କୁ ସାଇନ୍ ଆଉଟ୍ କରାଯିବ", "idle.logoutNow": "ବର୍ତ୍ତମାନ ଲଗ୍ ଆଉଟ୍", "idle.stay": "ସାଇନ୍ ଇନ୍ ରୁହନ୍ତୁ", "idle.loggedOut": "ନିଷ୍କ୍ରିୟତା କାରଣରୁ ଆପଣଙ୍କୁ ସାଇନ୍ ଆଉଟ୍ କରାଗଲା।", "idle.loggedOutHint": "ଆପଣଙ୍କ ସୁରକ୍ଷା ପାଇଁ, 15 ମିନିଟ୍ କୌଣସି କାର୍ଯ୍ୟକଳାପ ନହେଲେ ସେସନ୍ ସ୍ୱୟଂଚାଳିତ ଭାବେ ଶେଷ ହୁଏ। ଦୟାକରି ପୁଣି ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।",
   "nav.dashboard": "ଡ୍ୟାସବୋର୍ଡ", "nav.files": "ମୋର ଫାଇଲଗୁଡ଼ିକ", "nav.askAI": "AIକୁ ପଚାରନ୍ତୁ", "nav.teams": "ଦଳ",
   "nav.common": "ସାଧାରଣ", "nav.shared_with_me": "ମୋ ସହ ଅଂଶୀଦାର", "nav.inherited": "ପ୍ରାପ୍ତ", "nav.starred": "ତାରକାଙ୍କିତ",
@@ -235,6 +366,15 @@ const or: Dict = {
 };
 
 const as: Dict = {
+  "page.recentTitle": "শেহতীয়া",
+  "page.sharesTitle": "ভাগ কৰা লিংক",
+  "page.inheritedTitle": "প্ৰাপ্ত ফাইল",
+  "page.teamsTitle": "দল স্পেচ",
+  "page.searchTitle": "সন্ধান",
+  "page.backupTitle": "বেকআপ আৰু পুনৰুদ্ধাৰ",
+  "page.apiTitle": "API কী আৰু ডেভেলপাৰ ডকচ",
+  "page.auditTitle": "অডিট লগ",
+  "page.askTitle": "আপোনাৰ ফাইলক সোধক",
   "idle.title": "এতিয়াও আছেনে?", "idle.body": "আপুনি কিছু সময়ৰ পৰা নিষ্ক্ৰিয়। আপোনাৰ সুৰক্ষাৰ বাবে আপোনাক ছাইন আউট কৰা হ’ব", "idle.logoutNow": "এতিয়াই লগ আউট", "idle.stay": "ছাইন ইন থাকক", "idle.loggedOut": "নিষ্ক্ৰিয়তাৰ বাবে আপোনাক ছাইন আউট কৰা হ’ল।", "idle.loggedOutHint": "আপোনাৰ সুৰক্ষাৰ বাবে, 15 মিনিট কোনো কাৰ্যকলাপ নহ’লে ছেছন স্বয়ংক্ৰিয়ভাৱে শেষ হয়। অনুগ্ৰহ কৰি পুনৰ ছাইন ইন কৰক।",
   "nav.dashboard": "ডেশ্বব’ৰ্ড", "nav.files": "মোৰ ফাইল", "nav.askAI": "AIক সোধক", "nav.teams": "দল",
   "nav.common": "সাধাৰণ", "nav.shared_with_me": "মোৰ সৈতে ভাগ কৰা", "nav.inherited": "প্ৰাপ্ত", "nav.starred": "তৰাচিহ্নিত",
@@ -248,6 +388,15 @@ const as: Dict = {
 };
 
 const ur: Dict = {
+  "page.recentTitle": "حالیہ",
+  "page.sharesTitle": "اشتراک شدہ لنکس",
+  "page.inheritedTitle": "موصولہ فائلیں",
+  "page.teamsTitle": "ٹیم اسپیسز",
+  "page.searchTitle": "تلاش",
+  "page.backupTitle": "بیک اپ اور بحالی",
+  "page.apiTitle": "اے پی آئی کیز اور ڈویلپر دستاویزات",
+  "page.auditTitle": "آڈٹ لاگ",
+  "page.askTitle": "اپنی فائلوں سے پوچھیں",
   "idle.title": "ابھی بھی موجود ہیں؟", "idle.body": "آپ کچھ دیر سے غیر فعال ہیں۔ آپ کی سیکیورٹی کے لیے آپ کو سائن آؤٹ کر دیا جائے گا", "idle.logoutNow": "ابھی لاگ آؤٹ", "idle.stay": "سائن ان رہیں", "idle.loggedOut": "غیر فعالیت کی وجہ سے آپ کو سائن آؤٹ کر دیا گیا۔", "idle.loggedOutHint": "آپ کی سیکیورٹی کے لیے، 15 منٹ کوئی سرگرمی نہ ہونے پر سیشنز خودکار طور پر ختم ہو جاتے ہیں۔ براہ کرم دوبارہ سائن ان کریں۔",
   "nav.dashboard": "ڈیش بورڈ", "nav.files": "میری فائلیں", "nav.askAI": "اے آئی سے پوچھیں", "nav.teams": "ٹیمیں",
   "nav.common": "مشترکہ", "nav.shared_with_me": "میرے ساتھ اشتراک", "nav.inherited": "موصول", "nav.starred": "ستارہ لگا",
@@ -262,10 +411,16 @@ const ur: Dict = {
 
 const DICTS: Record<LocaleCode, Dict> = { en, hi, bn, ta, te, mr, gu, kn, ml, pa, or, as, ur };
 
+// Reverse index: English string -> key. Lets components translate a literal
+// English string (e.g. a PageHeader title) without threading keys everywhere.
+const EN_INDEX: Record<string, TKey> = {};
+for (const k in en) EN_INDEX[en[k as TKey]] = k as TKey;
+
 interface I18nValue {
   locale: LocaleCode;
   setLocale: (l: LocaleCode) => void;
   t: (key: TKey) => string;
+  tx: (text: string) => string;
   num: (s: string | number) => string;
   dir: "ltr" | "rtl";
 }
@@ -300,11 +455,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale]);
 
   const t = useCallback((key: TKey) => DICTS[locale]?.[key] ?? en[key] ?? key, [locale]);
+  const tx = useCallback((text: string) => {
+    const key = EN_INDEX[text];
+    return key ? DICTS[locale]?.[key] ?? text : text;
+  }, [locale]);
   const num = useCallback((s: string | number) => localizeDigits(String(s), locale), [locale]);
 
   const value = useMemo<I18nValue>(
-    () => ({ locale, setLocale, t, num, dir: RTL_LOCALES.includes(locale) ? "rtl" : "ltr" }),
-    [locale, setLocale, t, num],
+    () => ({ locale, setLocale, t, tx, num, dir: RTL_LOCALES.includes(locale) ? "rtl" : "ltr" }),
+    [locale, setLocale, t, tx, num],
   );
 
   return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
@@ -312,6 +471,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
 export function useI18n(): I18nValue {
   const ctx = useContext(I18nCtx);
-  if (!ctx) return { locale: "en", setLocale: () => {}, t: (k) => en[k] ?? k, num: (s) => String(s), dir: "ltr" };
+  if (!ctx) return { locale: "en", setLocale: () => {}, t: (k) => en[k] ?? k, tx: (s) => s, num: (s) => String(s), dir: "ltr" };
   return ctx;
 }
