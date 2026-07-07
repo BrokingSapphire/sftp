@@ -33,7 +33,7 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
     catch { toast.error("Action failed"); }
   }
 
-  if (!loading && files?.length === 0) {
+  if (!loading && !files?.length) {
     return <EmptyState icon={emptyIcon ?? FileQuestion} title={emptyLabel} subtitle={emptySubtitle} />;
   }
 

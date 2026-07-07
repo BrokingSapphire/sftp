@@ -155,10 +155,18 @@ func main() {
 	defer aiService.Stop()
 
 	// Super-admin encrypted backup/restore (reuses the storage encryption key).
+	// Backups get their own key (BACKUP_ENCRYPTION_KEY) so they can be encrypted
+	// even when at-rest storage encryption is off. Falls back to the storage key.
+	backupKey := os.Getenv("BACKUP_ENCRYPTION_KEY")
+	if backupKey == "" {
+		backupKey = cfg.Storage.EncryptionKey
+	}
 	var backupCipher *filecrypt.Cipher
-	if cfg.Storage.EncryptionKey != "" {
-		if c, err := filecrypt.New(cfg.Storage.EncryptionKey); err == nil {
+	if backupKey != "" {
+		if c, err := filecrypt.New(backupKey); err == nil {
 			backupCipher = c
+		} else {
+			appLogger.Warn("backup cipher init failed; backups disabled", "err", err)
 		}
 	}
 	backupService := backupsvc.New(queries, storageEngine, backupCipher, appLogger)

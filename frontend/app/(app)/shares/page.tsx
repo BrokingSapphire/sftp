@@ -27,7 +27,7 @@ export default function SharesPage() {
     <div className="mx-auto max-w-4xl space-y-4">
       <PageHeader title="Shared links" subtitle="Public and password-protected links you have created" />
       {q.isLoading && <Skeleton className="h-40 w-full" />}
-      {!q.isLoading && q.data?.length === 0 && (
+      {!q.isLoading && !q.data?.length && (
         <Card><CardContent className="flex flex-col items-center gap-2 py-16 text-muted">
           <Link2 size={36} /><p className="text-sm">No share links yet. Share a file from the explorer.</p>
         </CardContent></Card>

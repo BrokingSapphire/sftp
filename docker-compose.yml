@@ -48,6 +48,8 @@ services:
       STORAGE_TEMP_PATH: /app/storage/tmp
       # Uncomment to encrypt file content at rest (openssl rand -hex 32):
       # STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:-}
+      # Encrypts super-admin backup archives (independent of at-rest encryption):
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
     volumes:
       - sftp-files:/app/storage/files
       - sftp-tmp:/app/storage/tmp

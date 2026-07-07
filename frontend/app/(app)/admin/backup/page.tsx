@@ -90,9 +90,9 @@ export default function BackupPage() {
               <span>Next run: <strong className="capitalize text-primary">{status.next_mode}</strong></span>
               {status.last_backup_at && <span>Last: <strong>{timeAgo(status.last_backup_at)}</strong></span>}
             </div>
-            {status.archives.length > 0 && (
+            {(status.archives?.length ?? 0) > 0 && (
               <div className="mt-2 max-h-40 overflow-y-auto border-t border-border/50 pt-2 font-mono text-xs text-muted">
-                {status.archives.slice().reverse().map((a) => (
+                {(status.archives ?? []).slice().reverse().map((a) => (
                   <div key={a.name} className="flex justify-between gap-4 py-0.5">
                     <span className="truncate">{a.name}</span>
                     <span className="shrink-0">{a.mode} · {a.count} files · {formatBytes(a.bytes)}</span>
