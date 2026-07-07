@@ -23,6 +23,12 @@ func AuditLog(rec *audit.Recorder) func(http.Handler) http.Handler {
 
 			switch r.Method {
 			case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+			case http.MethodGet:
+				// Reads are normally not audited, but downloads (data leaving the
+				// system — including the Common area) must always be logged.
+				if !isDownloadPath(r.URL.Path) {
+					return
+				}
 			default:
 				return
 			}
@@ -109,7 +115,11 @@ func deriveAction(method, path string) (action, category, objectID string) {
 		action = "file.upload." + orDefault(sub, "session")
 	case "shares", "share":
 		category = "share"
-		action = "share." + map[string]string{http.MethodPost: "create", http.MethodDelete: "revoke"}[method]
+		if sub == "download" {
+			action = "share.download"
+		} else {
+			action = "share." + map[string]string{http.MethodPost: "create", http.MethodDelete: "revoke"}[method]
+		}
 	case "users":
 		category = "user"
 		action = "user." + orDefault(sub, map[string]string{http.MethodPost: "create", http.MethodPatch: "update", http.MethodDelete: "delete"}[method])
@@ -152,4 +162,10 @@ func orDefault(s, def string) string {
 
 func singular(s string) string {
 	return strings.TrimSuffix(s, "s")
+}
+
+// isDownloadPath reports whether a GET path represents content leaving the
+// system (a download), which must be audited even though reads generally aren't.
+func isDownloadPath(path string) bool {
+	return strings.HasSuffix(path, "/download")
 }
