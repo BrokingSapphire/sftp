@@ -21,7 +21,7 @@ else
   B=""; DIM=""; GRN=""; YLW=""; RED=""; CYN=""; RST=""
 fi
 say()  { printf '%s\n' "$*"; }
-head() { printf '\n%s%s%s\n' "$B$CYN" "$*" "$RST"; }
+hdr() { printf '\n%s%s%s\n' "$B$CYN" "$*" "$RST"; }
 ok()   { printf '%s✓%s %s\n' "$GRN" "$RST" "$*"; }
 warn() { printf '%s!%s %s\n' "$YLW" "$RST" "$*"; }
 die()  { printf '%s✗ %s%s\n' "$RED" "$*" "$RST" >&2; exit 1; }
@@ -84,7 +84,7 @@ say "${B}Sapphire SFTP — deployment${RST}"
 say "${DIM}Answer the questions (Enter accepts the [default]).${RST}"
 
 # ── company basics ───────────────────────────────────────────────────────────
-head "Company"
+hdr "Company"
 CO_NAME=$(ask     "Company name"            "$(brand_get company.name || echo 'Sapphire Broking')")
 CO_SHORT=$(ask    "Short name"              "$(brand_get company.shortName || echo 'Sapphire')")
 CO_PRODUCT=$(ask  "Product name"            "$(brand_get company.product || echo "$CO_SHORT SFTP")")
@@ -93,7 +93,7 @@ CO_TAGLINE=$(ask  "Tagline"                 "$(brand_get company.tagline || echo
 CO_URL=$(ask      "Company website URL"     "$(brand_get company.url || echo 'https://example.com')")
 CO_COLOR=$(ask    "Brand colour (hex)"      "$(brand_get colors.primary || echo '#064D51')")
 
-head "Organisation & access"
+hdr "Organisation & access"
 ORG_DOMAINS=$(ask "Org email domain(s), comma-separated" "$(brand_get org.domains || echo 'example.com')")
 SUPPORT=$(ask     "Support email"           "$(brand_get org.supportEmail || echo "support@${ORG_DOMAINS%%,*}")")
 MAIL_FROM=$(ask   "Outgoing mail 'From'"    "$(brand_get mail.from || echo "$CO_PRODUCT <no-reply@${ORG_DOMAINS%%,*}>")")
@@ -106,7 +106,7 @@ case "$PUBLIC_URL" in
   *) PUBLIC_URL="https://$PUBLIC_URL"; warn "No scheme in Public URL — using $PUBLIC_URL" ;;
 esac
 
-head "First administrator"
+hdr "First administrator"
 ADMIN_EMAIL=$(ask "Admin email"    "$(env_get BOOTSTRAP_ADMIN_EMAIL || echo "admin@${ORG_DOMAINS%%,*}")")
 ADMIN_USER=$(ask  "Admin username" "$(env_get BOOTSTRAP_ADMIN_USERNAME || echo 'admin')")
 ADMIN_PASS=$(ask_secret "Admin password" "$(env_get BOOTSTRAP_ADMIN_PASSWORD || echo '')")
@@ -114,7 +114,7 @@ if [ -z "$ADMIN_PASS" ]; then ADMIN_PASS="$(gen 12)"; ADMIN_GEN=1; else ADMIN_GE
 
 # ── optional features ────────────────────────────────────────────────────────
 ENC_KEY="$(env_get STORAGE_ENCRYPTION_KEY || true)"
-head "Security & features (optional)"
+hdr "Security & features (optional)"
 if [ -z "$ENC_KEY" ] && yesno "Encrypt all files at rest (AES-256)?" "n"; then
   ENC_KEY="$(gen 32)"; ok "Generated a 32-byte encryption key (stored in .env — back it up!)"
 fi
@@ -150,7 +150,7 @@ if yesno "Enable live Office editing (OnlyOffice Document Server)?" "n"; then
 fi
 
 # ── generate brand.config.json ───────────────────────────────────────────────
-head "Writing configuration"
+hdr "Writing configuration"
 export CO_NAME CO_SHORT CO_PRODUCT CO_PSHORT CO_TAGLINE CO_URL CO_COLOR \
        ORG_DOMAINS SUPPORT MAIL_FROM PUBLIC_URL \
        SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS \
@@ -218,11 +218,11 @@ umask 077
 ok ".env (secrets, permissions 600)"
 
 # ── deploy ───────────────────────────────────────────────────────────────────
-head "Building and starting the stack"
+hdr "Building and starting the stack"
 say "${DIM}(first build can take a few minutes)${RST}"
 $DC up -d --build
 
-head "Waiting for the service to become healthy"
+hdr "Waiting for the service to become healthy"
 BASE="${PUBLIC_URL%/}"
 for i in $(seq 1 60); do
   if curl -fsS "$BASE/api/v1/health-check" >/dev/null 2>&1; then ok "Backend is healthy"; break; fi
@@ -231,7 +231,7 @@ for i in $(seq 1 60); do
 done
 
 # ── summary ──────────────────────────────────────────────────────────────────
-head "Done"
+hdr "Done"
 say "  URL       ${B}$PUBLIC_URL${RST}"
 say "  Admin     ${B}$ADMIN_USER${RST}  (${ADMIN_EMAIL})"
 if [ "$ADMIN_GEN" = 1 ]; then
