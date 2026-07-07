@@ -148,24 +148,31 @@ not optional.
 
 ## Screenshots
 
-> Generated from a running, seeded instance. To (re)capture them, seed demo data,
+> Captured from a running, seeded instance. To regenerate them, seed demo data
 > then run `node scripts/capture-screenshots.mjs` (see [Development](#development)).
 
-| Files explorer | Team Spaces |
-| :---: | :---: |
-| [![Files](docs/images/files.png)](docs/images/files.png) | [![Teams](docs/images/teams.png)](docs/images/teams.png) |
-
-| Ask your files (AI) | Audit log |
-| :---: | :---: |
-| [![Ask AI](docs/images/ask.png)](docs/images/ask.png) | [![Audit](docs/images/audit.png)](docs/images/audit.png) |
-
-| Search inside files | API keys and developer docs |
-| :---: | :---: |
-| [![Search](docs/images/search.png)](docs/images/search.png) | [![API](docs/images/api.png)](docs/images/api.png) |
-
-| Multilingual UI (Hindi shown) | Dashboard |
-| :---: | :---: |
-| [![Multilingual](docs/images/multilingual.png)](docs/images/multilingual.png) | [![Dashboard](docs/images/dashboard.png)](docs/images/dashboard.png) |
+<table>
+  <tr>
+    <td width="50%" align="center"><b>Dashboard</b><br/><a href="docs/images/dashboard.png"><img src="docs/images/dashboard.png" alt="Dashboard" /></a></td>
+    <td width="50%" align="center"><b>Files explorer</b><br/><a href="docs/images/files.png"><img src="docs/images/files.png" alt="Files" /></a></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Team Spaces</b><br/><a href="docs/images/teams.png"><img src="docs/images/teams.png" alt="Teams" /></a></td>
+    <td align="center"><b>Ask your files (on-prem AI)</b><br/><a href="docs/images/ask.png"><img src="docs/images/ask.png" alt="Ask AI" /></a></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Full-text search (inside files)</b><br/><a href="docs/images/search.png"><img src="docs/images/search.png" alt="Search" /></a></td>
+    <td align="center"><b>Compliance audit log</b><br/><a href="docs/images/audit.png"><img src="docs/images/audit.png" alt="Audit" /></a></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Common area</b><br/><a href="docs/images/common.png"><img src="docs/images/common.png" alt="Common" /></a></td>
+    <td align="center"><b>Shared with me</b><br/><a href="docs/images/share.png"><img src="docs/images/share.png" alt="Shared" /></a></td>
+  </tr>
+  <tr>
+    <td align="center"><b>API keys and developer docs</b><br/><a href="docs/images/api.png"><img src="docs/images/api.png" alt="API keys" /></a></td>
+    <td align="center"><b>Multilingual UI (Hindi shown)</b><br/><a href="docs/images/multilingual.png"><img src="docs/images/multilingual.png" alt="Multilingual" /></a></td>
+  </tr>
+</table>
 
 ---
 
