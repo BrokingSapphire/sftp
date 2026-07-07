@@ -52,7 +52,7 @@ export default function SecurityPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title="Security" subtitle="Anomalies detected on the audit stream — exfiltration, brute force, bulk actions" />
+        <PageHeader icon={ShieldAlert} title="Security" subtitle="Anomalies detected on the audit stream — exfiltration, brute force, bulk actions" />
         <label className="flex items-center gap-2 text-xs text-muted">
           <input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} />
           Show resolved

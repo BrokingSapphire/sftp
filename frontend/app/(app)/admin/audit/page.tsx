@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Search, Filter, X, FileText, FolderPlus, Share2, UserCog, LogIn,
+  ScrollText, Search, Filter, X, FileText, FolderPlus, Share2, UserCog, LogIn,
   KeyRound, Activity, Shield, Globe, ChevronRight,
 } from "lucide-react";
 import { auditApi } from "@/lib/endpoints";
@@ -99,7 +99,7 @@ export default function AuditPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader title="Audit log" subtitle="Immutable, compliance-grade record of every action — click a row for full detail" />
+      <PageHeader icon={ScrollText} title="Audit log" subtitle="Immutable, compliance-grade record of every action — click a row for full detail" />
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">

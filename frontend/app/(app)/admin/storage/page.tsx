@@ -31,7 +31,7 @@ export default function AdminStoragePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Storage" subtitle="Organisation-wide storage consumption and media breakdown" />
+      <PageHeader icon={HardDrive} title="Storage" subtitle="Organisation-wide storage consumption and media breakdown" />
 
       {q.isLoading ? (
         <Skeleton className="h-64 w-full" />
