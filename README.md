@@ -178,9 +178,24 @@ not optional.
 
 ## Quick Start
 
-**Prerequisites:** Docker with Docker Compose, and `python3` (for the guided deploy).
+### Option A — One-command installer (recommended)
 
-### Option A — Guided one-command deploy (recommended)
+Installs prerequisites (Docker, git, python) if missing, clones the repo, and runs
+the guided deploy — a single line, nothing to clone first.
+
+```bash
+# Linux / macOS / Windows (WSL)
+curl -fsSL https://raw.githubusercontent.com/BrokingSapphire/sftp/main/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell, native)
+irm https://raw.githubusercontent.com/BrokingSapphire/sftp/main/install.ps1 | iex
+```
+
+### Option B — Guided deploy from a clone
+
+**Prerequisites:** Docker with Docker Compose, and `python3` (for the guided deploy).
 
 ```bash
 git clone https://github.com/BrokingSapphire/sftp.git
@@ -193,7 +208,7 @@ admin, optional SMTP, SSO, encryption, AI), generates `brand.config.json` and
 `.env` (secrets auto-generated), then builds and starts everything. When it
 finishes it prints your URL and admin credentials.
 
-### Option B — Docker Compose
+### Option C — Docker Compose (manual)
 
 ```bash
 cp backend/.env.example .env      # set JWT_SECRET, POSTGRES_PASSWORD, etc.

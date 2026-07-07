@@ -206,8 +206,26 @@ cd sftp
 
 ## 3. Deploy the stack
 
-You have two paths. **Option A** is interactive and recommended for most people.
-**Option B** gives you full manual control.
+You have three paths. The **one-command installer** is the fastest;
+**Option A** is the guided deploy from a clone; **Option B** is fully manual.
+
+### One-command installer (fastest)
+
+This bootstraps everything — it installs missing prerequisites, clones the repo,
+and launches the guided deploy. You don't even need to clone first.
+
+```bash
+# Linux / macOS / Windows (WSL)
+curl -fsSL https://raw.githubusercontent.com/BrokingSapphire/sftp/main/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell, native — no WSL required)
+irm https://raw.githubusercontent.com/BrokingSapphire/sftp/main/install.ps1 | iex
+```
+
+Pass `--yes` (bash) to accept all defaults non-interactively. Prefer to review the
+script before piping to a shell? Download it, read it, then run `bash install.sh`.
 
 ### Option A — Guided deploy (recommended)
 
