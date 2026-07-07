@@ -72,6 +72,7 @@ type MailConfig struct {
 type BootstrapConfig struct {
 	AdminEmail    string `mapstructure:"admin_email"    default:"admin@sapphirebroking.com"`
 	AdminUsername string `mapstructure:"admin_username" default:"admin"`
+	AdminFullName string `mapstructure:"admin_full_name"`
 	// AdminPassword is read from the environment (BOOTSTRAP_ADMIN_PASSWORD).
 	// If empty, no admin is auto-created.
 	AdminPassword string `mapstructure:"admin_password"`

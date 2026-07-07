@@ -91,9 +91,13 @@ func (s *Service) EnsureSuperAdmin(ctx context.Context, bc config.BootstrapConfi
 	if err != nil {
 		return err
 	}
+	fullName := bc.AdminFullName
+	if fullName == "" {
+		fullName = bc.AdminUsername // better than a generic "Super Admin"
+	}
 	if _, err := s.q.CreateUser(ctx, sftpdb.CreateUserParams{
 		Email: bc.AdminEmail, Username: bc.AdminUsername, PasswordHash: hash,
-		FullName: "Super Admin", RoleID: role.ID, MustChangePw: true,
+		FullName: fullName, RoleID: role.ID, MustChangePw: true,
 	}); err != nil {
 		return err
 	}

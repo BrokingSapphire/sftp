@@ -158,6 +158,7 @@ esac
 hdr "First administrator"
 ADMIN_EMAIL=$(ask "Admin email"    "$(env_get BOOTSTRAP_ADMIN_EMAIL || echo "admin@${ORG_DOMAINS%%,*}")")
 ADMIN_USER=$(ask  "Admin username" "$(env_get BOOTSTRAP_ADMIN_USERNAME || echo 'admin')")
+ADMIN_FULLNAME=$(ask "Admin full name" "$(env_get BOOTSTRAP_ADMIN_FULL_NAME || echo "$ADMIN_USER")")
 ADMIN_PASS=$(ask_secret "Admin password" "$(env_get BOOTSTRAP_ADMIN_PASSWORD || echo '')")
 if [ -z "$ADMIN_PASS" ]; then ADMIN_PASS="$(gen 12)"; ADMIN_GEN=1; else ADMIN_GEN=0; fi
 
@@ -260,6 +261,7 @@ umask 077
   echo "JWT_SECRET=$JWT_SECRET"
   echo "BOOTSTRAP_ADMIN_EMAIL=$ADMIN_EMAIL"
   echo "BOOTSTRAP_ADMIN_USERNAME=$ADMIN_USER"
+  echo "BOOTSTRAP_ADMIN_FULL_NAME=$ADMIN_FULLNAME"
   echo "BOOTSTRAP_ADMIN_PASSWORD=$ADMIN_PASS"
   echo "ORG_DOMAINS=$ORG_DOMAINS"
   echo "AI_ENABLED=$AI_ENABLED"
