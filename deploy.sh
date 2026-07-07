@@ -98,6 +98,13 @@ ORG_DOMAINS=$(ask "Org email domain(s), comma-separated" "$(brand_get org.domain
 SUPPORT=$(ask     "Support email"           "$(brand_get org.supportEmail || echo "support@${ORG_DOMAINS%%,*}")")
 MAIL_FROM=$(ask   "Outgoing mail 'From'"    "$(brand_get mail.from || echo "$CO_PRODUCT <no-reply@${ORG_DOMAINS%%,*}>")")
 PUBLIC_URL=$(ask  "Public URL users visit"  "$(env_get PUBLIC_URL || echo 'http://localhost')")
+# The backend requires a full URL (scheme + host). If the user typed a bare
+# host/IP (e.g. "sftp.corp.com"), prepend https:// so config validation passes.
+case "$PUBLIC_URL" in
+  http://*|https://*) : ;;
+  "") PUBLIC_URL="http://localhost" ;;
+  *) PUBLIC_URL="https://$PUBLIC_URL"; warn "No scheme in Public URL — using $PUBLIC_URL" ;;
+esac
 
 head "First administrator"
 ADMIN_EMAIL=$(ask "Admin email"    "$(env_get BOOTSTRAP_ADMIN_EMAIL || echo "admin@${ORG_DOMAINS%%,*}")")
