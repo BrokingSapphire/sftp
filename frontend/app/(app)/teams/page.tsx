@@ -19,11 +19,14 @@ import { formatBytes } from "@/lib/utils";
 
 const roleIcon: Record<string, React.ElementType> = { owner: Crown, admin: Shield, member: UserIcon, viewer: Eye };
 
+// Preset team colours (first is the default).
+const TEAM_COLORS = ["#064D51", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#16a34a", "#0891b2", "#ca8a04"];
+
 export default function TeamsPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["teams"], queryFn: () => teamsApi.list() });
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", quota_gb: 0 });
+  const [form, setForm] = useState({ name: "", description: "", quota_gb: 0, color: TEAM_COLORS[0] });
   const [managing, setManaging] = useState<Team | null>(null);
 
   const teams = q.data ?? [];
@@ -32,9 +35,9 @@ export default function TeamsPage() {
   async function create() {
     if (!form.name.trim()) return toast.error("Team name is required");
     try {
-      await teamsApi.create(form.name, form.description, form.quota_gb > 0 ? Math.round(form.quota_gb * 1024 ** 3) : 0);
+      await teamsApi.create(form.name, form.description, form.quota_gb > 0 ? Math.round(form.quota_gb * 1024 ** 3) : 0, form.color);
       toast.success("Team created");
-      setCreating(false); setForm({ name: "", description: "", quota_gb: 0 }); refresh();
+      setCreating(false); setForm({ name: "", description: "", quota_gb: 0, color: TEAM_COLORS[0] }); refresh();
     } catch (e) { toast.error(e instanceof ApiError ? e.message : "Could not create team"); }
   }
   async function remove(t: Team) {
@@ -56,6 +59,14 @@ export default function TeamsPage() {
           <Input placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input type="number" min={0} placeholder="Quota (GB, 0=∞)" value={form.quota_gb || ""} onChange={(e) => setForm({ ...form, quota_gb: Number(e.target.value) })} />
           <Button size="sm" onClick={create}><Plus size={16} /> Create</Button>
+          <div className="col-span-full flex items-center gap-2">
+            <span className="text-xs text-muted">Colour:</span>
+            {TEAM_COLORS.map((c) => (
+              <button key={c} type="button" onClick={() => setForm({ ...form, color: c })} aria-label={`Colour ${c}`}
+                className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${form.color === c ? "ring-2 ring-offset-2 ring-offset-surface" : ""}`}
+                style={{ backgroundColor: c, ...(form.color === c ? { boxShadow: `0 0 0 2px ${c}` } : {}) }} />
+            ))}
+          </div>
         </CardContent></Card>
       )}
 
@@ -80,7 +91,8 @@ export default function TeamsPage() {
                   <Card className="group h-full">
                     <CardContent className="flex h-full flex-col gap-3 p-4">
                       <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><UsersRound size={20} /></span>
+                        <span className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
+                          style={{ backgroundColor: t.color || "#064D51" }}><UsersRound size={20} /></span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold">{t.name}</p>
                           {t.description && <p className="truncate text-xs text-muted">{t.description}</p>}

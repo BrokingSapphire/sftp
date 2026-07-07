@@ -61,7 +61,7 @@ func (s *Service) Create(ctx context.Context, creator uuid.UUID, req models.Crea
 	}
 	t, err := s.q.CreateTeam(ctx, sftpdb.CreateTeamParams{
 		Name: name, Slug: slugify(name), Description: strings.TrimSpace(req.Description),
-		StorageQuota: req.StorageQuota, CreatedBy: &creator,
+		StorageQuota: req.StorageQuota, Color: req.Color, CreatedBy: &creator,
 	})
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (s *Service) ListForUser(ctx context.Context, user uuid.UUID) ([]models.Tea
 	for _, r := range rows {
 		t := toTeam(sftpdb.Team{
 			ID: r.ID, Name: r.Name, Slug: r.Slug, Description: r.Description,
-			StorageQuota: r.StorageQuota, StorageUsed: r.StorageUsed, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+			StorageQuota: r.StorageQuota, StorageUsed: r.StorageUsed, Color: r.Color, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		})
 		t.MemberRole = r.MemberRole
 		t.MemberCount = r.MemberCount
@@ -115,7 +115,7 @@ func (s *Service) Update(ctx context.Context, actor, teamID uuid.UUID, req model
 		return err
 	}
 	return s.q.UpdateTeam(ctx, sftpdb.UpdateTeamParams{
-		ID: teamID, Name: strings.TrimSpace(req.Name), Description: strings.TrimSpace(req.Description), StorageQuota: req.StorageQuota,
+		ID: teamID, Name: strings.TrimSpace(req.Name), Description: strings.TrimSpace(req.Description), StorageQuota: req.StorageQuota, Color: req.Color,
 	})
 }
 
@@ -192,7 +192,7 @@ func (s *Service) RemoveMember(ctx context.Context, actor, teamID, target uuid.U
 func toTeam(t sftpdb.Team) models.TeamResponse {
 	r := models.TeamResponse{
 		ID: t.ID.String(), Name: t.Name, Slug: t.Slug, Description: t.Description,
-		StorageQuota: t.StorageQuota, StorageUsed: t.StorageUsed,
+		StorageQuota: t.StorageQuota, StorageUsed: t.StorageUsed, Color: t.Color,
 	}
 	if t.CreatedAt.Valid {
 		r.CreatedAt = t.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00")

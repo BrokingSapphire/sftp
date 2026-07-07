@@ -1,13 +1,13 @@
 -- name: CreateTeam :one
-INSERT INTO teams (name, slug, description, storage_quota, created_by)
-VALUES (@name, @slug, @description, @storage_quota, @created_by)
+INSERT INTO teams (name, slug, description, storage_quota, color, created_by)
+VALUES (@name, @slug, @description, @storage_quota, @color, @created_by)
 RETURNING *;
 
 -- name: GetTeam :one
 SELECT * FROM teams WHERE id = $1;
 
 -- name: UpdateTeam :exec
-UPDATE teams SET name = @name, description = @description, storage_quota = @storage_quota, updated_at = now()
+UPDATE teams SET name = @name, description = @description, storage_quota = @storage_quota, color = @color, updated_at = now()
 WHERE id = @id;
 
 -- name: DeleteTeam :exec

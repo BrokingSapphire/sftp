@@ -283,14 +283,14 @@ export const aiApi = {
 
 // ── Team Spaces ────────────────────────────────────────────
 export interface Team {
-  id: string; name: string; slug: string; description?: string;
+  id: string; name: string; slug: string; description?: string; color?: string;
   storage_quota: number; storage_used: number; member_role?: string; member_count?: number; created_at?: string;
 }
 export interface TeamMember { user_id: string; name: string; email: string; role: string; has_avatar: boolean }
 export const teamsApi = {
   list: () => unwrap<Team[]>(http.get<Envelope<Team[]>>("/teams/")),
-  create: (name: string, description: string, storage_quota: number) =>
-    unwrap<Team>(http.post<Envelope<Team>>("/teams/", { name, description, storage_quota })),
+  create: (name: string, description: string, storage_quota: number, color = "") =>
+    unwrap<Team>(http.post<Envelope<Team>>("/teams/", { name, description, storage_quota, color })),
   remove: (id: string) => http.delete(`/teams/${id}`),
   members: (id: string) => unwrap<TeamMember[]>(http.get<Envelope<TeamMember[]>>(`/teams/${id}/members`)),
   addMember: (id: string, email: string, role: string) =>

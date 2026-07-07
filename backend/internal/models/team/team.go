@@ -6,6 +6,7 @@ type CreateRequest struct {
 	Name         string `json:"name" validate:"required"`
 	Description  string `json:"description"`
 	StorageQuota int64  `json:"storage_quota"` // 0 = unlimited
+	Color        string `json:"color"`
 }
 
 // AddMemberRequest adds a member by email with a role.
@@ -22,6 +23,7 @@ type TeamResponse struct {
 	Description  string `json:"description,omitempty"`
 	StorageQuota int64  `json:"storage_quota"`
 	StorageUsed  int64  `json:"storage_used"`
+	Color        string `json:"color,omitempty"`
 	MemberRole   string `json:"member_role,omitempty"`
 	MemberCount  int64  `json:"member_count,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`

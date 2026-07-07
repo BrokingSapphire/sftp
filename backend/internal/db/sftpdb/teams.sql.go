@@ -44,9 +44,9 @@ func (q *Queries) AddTeamStorage(ctx context.Context, arg AddTeamStorageParams) 
 }
 
 const createTeam = `-- name: CreateTeam :one
-INSERT INTO teams (name, slug, description, storage_quota, created_by)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, slug, description, storage_quota, storage_used, created_by, created_at, updated_at
+INSERT INTO teams (name, slug, description, storage_quota, color, created_by)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, name, slug, description, storage_quota, storage_used, created_by, created_at, updated_at, color
 `
 
 type CreateTeamParams struct {
@@ -54,6 +54,7 @@ type CreateTeamParams struct {
 	Slug         string     `json:"slug"`
 	Description  string     `json:"description"`
 	StorageQuota int64      `json:"storage_quota"`
+	Color        string     `json:"color"`
 	CreatedBy    *uuid.UUID `json:"created_by"`
 }
 
@@ -63,6 +64,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, e
 		arg.Slug,
 		arg.Description,
 		arg.StorageQuota,
+		arg.Color,
 		arg.CreatedBy,
 	)
 	var i Team
@@ -76,6 +78,7 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, e
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Color,
 	)
 	return i, err
 }
@@ -90,7 +93,7 @@ func (q *Queries) DeleteTeam(ctx context.Context, id uuid.UUID) error {
 }
 
 const getTeam = `-- name: GetTeam :one
-SELECT id, name, slug, description, storage_quota, storage_used, created_by, created_at, updated_at FROM teams WHERE id = $1
+SELECT id, name, slug, description, storage_quota, storage_used, created_by, created_at, updated_at, color FROM teams WHERE id = $1
 `
 
 func (q *Queries) GetTeam(ctx context.Context, id uuid.UUID) (Team, error) {
@@ -106,6 +109,7 @@ func (q *Queries) GetTeam(ctx context.Context, id uuid.UUID) (Team, error) {
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Color,
 	)
 	return i, err
 }
@@ -172,7 +176,7 @@ func (q *Queries) ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]List
 }
 
 const listTeamsForUser = `-- name: ListTeamsForUser :many
-SELECT t.id, t.name, t.slug, t.description, t.storage_quota, t.storage_used, t.created_by, t.created_at, t.updated_at, tm.role AS member_role,
+SELECT t.id, t.name, t.slug, t.description, t.storage_quota, t.storage_used, t.created_by, t.created_at, t.updated_at, t.color, tm.role AS member_role,
        (SELECT count(*) FROM team_members x WHERE x.team_id = t.id) AS member_count
 FROM teams t
 JOIN team_members tm ON tm.team_id = t.id
@@ -190,6 +194,7 @@ type ListTeamsForUserRow struct {
 	CreatedBy    *uuid.UUID         `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Color        string             `json:"color"`
 	MemberRole   string             `json:"member_role"`
 	MemberCount  int64              `json:"member_count"`
 }
@@ -213,6 +218,7 @@ func (q *Queries) ListTeamsForUser(ctx context.Context, userID uuid.UUID) ([]Lis
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Color,
 			&i.MemberRole,
 			&i.MemberCount,
 		); err != nil {
@@ -241,14 +247,15 @@ func (q *Queries) RemoveTeamMember(ctx context.Context, arg RemoveTeamMemberPara
 }
 
 const updateTeam = `-- name: UpdateTeam :exec
-UPDATE teams SET name = $1, description = $2, storage_quota = $3, updated_at = now()
-WHERE id = $4
+UPDATE teams SET name = $1, description = $2, storage_quota = $3, color = $4, updated_at = now()
+WHERE id = $5
 `
 
 type UpdateTeamParams struct {
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	StorageQuota int64     `json:"storage_quota"`
+	Color        string    `json:"color"`
 	ID           uuid.UUID `json:"id"`
 }
 
@@ -257,6 +264,7 @@ func (q *Queries) UpdateTeam(ctx context.Context, arg UpdateTeamParams) error {
 		arg.Name,
 		arg.Description,
 		arg.StorageQuota,
+		arg.Color,
 		arg.ID,
 	)
 	return err

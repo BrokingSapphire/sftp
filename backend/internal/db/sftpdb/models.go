@@ -298,6 +298,7 @@ type Team struct {
 	CreatedBy    *uuid.UUID         `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Color        string             `json:"color"`
 }
 
 type TeamMember struct {
