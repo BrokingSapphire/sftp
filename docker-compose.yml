@@ -106,6 +106,32 @@ services:
     volumes:
       - onlyoffice-data:/var/www/onlyoffice/Data
 
+  # Optional monitoring. Off by default — start with:
+  #   docker compose --profile monitoring up -d
+  # Prometheus scrapes the backend's /metrics; Grafana visualises it.
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   postgres-data:
   sftp-files:
@@ -113,3 +139,5 @@ volumes:
   sftp-logs:
   ollama-data:
   onlyoffice-data:
+  prometheus-data:
+  grafana-data:
