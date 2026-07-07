@@ -27,7 +27,7 @@ func (q *Queries) CountFolderChildren(ctx context.Context, parentID *uuid.UUID) 
 const createFolder = `-- name: CreateFolder :one
 INSERT INTO folders (owner_id, parent_id, name, path, depth)
 VALUES ($1, $5, $2, $3, $4)
-RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color
+RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id
 `
 
 type CreateFolderParams struct {
@@ -61,12 +61,13 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Color,
+		&i.TeamID,
 	)
 	return i, err
 }
 
 const getFileByOwnerFolderName = `-- name: GetFileByOwnerFolderName :one
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types, team_id FROM files
 WHERE owner_id = $1
   AND folder_id IS NOT DISTINCT FROM $3
   AND name = $2 AND deleted_at IS NULL
@@ -106,12 +107,13 @@ func (q *Queries) GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwn
 		&i.RetainUntil,
 		&i.Sensitivity,
 		&i.PiiTypes,
+		&i.TeamID,
 	)
 	return i, err
 }
 
 const getFolderByID = `-- name: GetFolderByID :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders WHERE id = $1 AND deleted_at IS NULL
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error) {
@@ -131,12 +133,13 @@ func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, erro
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Color,
+		&i.TeamID,
 	)
 	return i, err
 }
 
 const getFolderByOwnerPath = `-- name: GetFolderByOwnerPath :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders
 WHERE owner_id = $1 AND path = $2 AND deleted_at IS NULL
 `
 
@@ -162,6 +165,7 @@ func (q *Queries) GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwner
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Color,
+		&i.TeamID,
 	)
 	return i, err
 }
@@ -210,7 +214,7 @@ func (q *Queries) ListFilesInFolder(ctx context.Context, arg ListFilesInFolderPa
 }
 
 const listFoldersByParent = `-- name: ListFoldersByParent :many
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders
 WHERE owner_id = $1
   AND parent_id IS NOT DISTINCT FROM $2
   AND deleted_at IS NULL
@@ -245,6 +249,7 @@ func (q *Queries) ListFoldersByParent(ctx context.Context, arg ListFoldersByPare
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Color,
+			&i.TeamID,
 		); err != nil {
 			return nil, err
 		}

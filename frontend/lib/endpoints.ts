@@ -280,6 +280,23 @@ export const aiApi = {
   search: (q: string) => unwrap<AiHit[]>(http.get<Envelope<AiHit[]>>(`/ai/search?q=${encodeURIComponent(q)}`)),
 };
 
+// ── Team Spaces ────────────────────────────────────────────
+export interface Team {
+  id: string; name: string; slug: string; description?: string;
+  storage_quota: number; storage_used: number; member_role?: string; member_count?: number; created_at?: string;
+}
+export interface TeamMember { user_id: string; name: string; email: string; role: string; has_avatar: boolean }
+export const teamsApi = {
+  list: () => unwrap<Team[]>(http.get<Envelope<Team[]>>("/teams/")),
+  create: (name: string, description: string, storage_quota: number) =>
+    unwrap<Team>(http.post<Envelope<Team>>("/teams/", { name, description, storage_quota })),
+  remove: (id: string) => http.delete(`/teams/${id}`),
+  members: (id: string) => unwrap<TeamMember[]>(http.get<Envelope<TeamMember[]>>(`/teams/${id}/members`)),
+  addMember: (id: string, email: string, role: string) =>
+    unwrap<TeamMember>(http.post<Envelope<TeamMember>>(`/teams/${id}/members`, { email, role })),
+  removeMember: (id: string, uid: string) => http.delete(`/teams/${id}/members/${uid}`),
+};
+
 // ── Backup / restore (super admin) ─────────────────────────
 export interface BackupArchive { name: string; mode: string; at: string; count: number; bytes: number }
 export interface BackupResult { mode: string; archive: string; files_backed: number; bytes: number; total_files: number }

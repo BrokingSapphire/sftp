@@ -111,6 +111,7 @@ not optional.
 - In-app **editor** for text/code (save = new version)
 - **Common** org-wide area (unlimited, off-quota)
 - Right-click **share** — link or specific people (viewer/editor)
+- **Team Spaces** — group-owned shared drives with roles + delegated admin
 
 </td><td valign="top" width="50%">
 

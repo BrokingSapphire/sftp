@@ -13,6 +13,7 @@ import (
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
+	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
 	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
@@ -51,6 +52,7 @@ type Deps struct {
 	AIHandler       *aihandler.Handler
 	EditorHandler   *editorhandler.Handler
 	BackupHandler   *backuphandler.Handler
+	TeamHandler     *teamhandler.Handler
 	ShareHandler  *sharehandler.Handler
 	NotifHandler  *notifhandler.Handler
 }
@@ -96,6 +98,20 @@ func RegisterRoutes(s *fuego.Server, deps Deps) {
 	registerAIRoutes(g, deps)
 	registerEditorRoutes(g, deps)
 	registerAdminRoutes(g, deps)
+	registerTeamRoutes(g, deps)
+}
+
+func registerTeamRoutes(g *fuego.Server, deps Deps) {
+	gt := fuego.Group(g, "/teams", option.Tags("Teams"), secured, respUnauthorized, respForbidden)
+	fuego.Use(gt, deps.Auth.Require)
+	fuego.Get(gt, "/", deps.TeamHandler.List, option.Summary("List my teams"))
+	fuego.Post(gt, "/", deps.TeamHandler.Create, option.Summary("Create a team"))
+	fuego.Get(gt, "/{id}", deps.TeamHandler.Get, option.Summary("Get a team"))
+	fuego.Put(gt, "/{id}", deps.TeamHandler.Update, option.Summary("Update a team (admin+)"))
+	fuego.Delete(gt, "/{id}", deps.TeamHandler.Delete, option.Summary("Delete a team (owner)"))
+	fuego.Get(gt, "/{id}/members", deps.TeamHandler.Members, option.Summary("List team members"))
+	fuego.Post(gt, "/{id}/members", deps.TeamHandler.AddMember, option.Summary("Add a member (admin+)"))
+	fuego.Delete(gt, "/{id}/members/{uid}", deps.TeamHandler.RemoveMember, option.Summary("Remove a member (admin+)"))
 }
 
 func registerAdminRoutes(g *fuego.Server, deps Deps) {

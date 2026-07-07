@@ -19,6 +19,7 @@ import (
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
 	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
+	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
 	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
@@ -29,6 +30,7 @@ import (
 	"sapphirebroking.com/sftp_service/internal/db/sftpdb"
 	aisvc "sapphirebroking.com/sftp_service/internal/service/ai"
 	backupsvc "sapphirebroking.com/sftp_service/internal/service/backup"
+	teamsvc "sapphirebroking.com/sftp_service/internal/service/team"
 	apikeysvc "sapphirebroking.com/sftp_service/internal/service/apikey"
 	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	authsvc "sapphirebroking.com/sftp_service/internal/service/auth"
@@ -160,6 +162,7 @@ func main() {
 		}
 	}
 	backupService := backupsvc.New(queries, storageEngine, backupCipher, appLogger)
+	teamService := teamsvc.New(queries, appLogger)
 
 	// Per-IP rate limiting: lenient globally, strict on login (brute-force guard).
 	globalRL := ratelimit.New(50, 100)
@@ -201,6 +204,7 @@ func main() {
 		SecurityHandler: securityhandler.NewHandler(queries, appLogger),
 		AIHandler:       aihandler.NewHandler(aiService, appLogger),
 		BackupHandler:   backuphandler.NewHandler(backupService, appLogger),
+		TeamHandler:     teamhandler.NewHandler(teamService, appLogger),
 		EditorHandler:   editorhandler.NewHandler(fileService, jwtManager, cfg.Editor, appLogger),
 	})
 

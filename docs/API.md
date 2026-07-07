@@ -63,3 +63,18 @@ Each account may have only one active session at a time.
   active for this account`) if another session is live.
 - Re-send the same request with `"force": true` to terminate the existing
   session and sign in here. The web UI prompts the user before doing so.
+
+## Team Spaces
+
+Group-owned shared drives with membership roles (`owner` > `admin` > `member` > `viewer`).
+
+| Method | Path | Role |
+| --- | --- | --- |
+| GET | `/api/v1/teams/` | member — list my teams |
+| POST | `/api/v1/teams/` | any user (becomes owner) |
+| GET | `/api/v1/teams/{id}` | member |
+| PUT | `/api/v1/teams/{id}` | admin+ |
+| DELETE | `/api/v1/teams/{id}` | owner |
+| GET | `/api/v1/teams/{id}/members` | member |
+| POST | `/api/v1/teams/{id}/members` | admin+ (add by email + role) |
+| DELETE | `/api/v1/teams/{id}/members/{userId}` | admin+ |

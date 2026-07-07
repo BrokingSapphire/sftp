@@ -94,6 +94,7 @@ type File struct {
 	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
 	Sensitivity      string             `json:"sensitivity"`
 	PiiTypes         []string           `json:"pii_types"`
+	TeamID           *uuid.UUID         `json:"team_id"`
 }
 
 type FileEmbedding struct {
@@ -146,6 +147,7 @@ type Folder struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 	Color     string             `json:"color"`
+	TeamID    *uuid.UUID         `json:"team_id"`
 }
 
 type LoginHistory struct {
@@ -284,6 +286,26 @@ type Tag struct {
 	OwnerID uuid.UUID `json:"owner_id"`
 	Name    string    `json:"name"`
 	Color   string    `json:"color"`
+}
+
+type Team struct {
+	ID           uuid.UUID          `json:"id"`
+	Name         string             `json:"name"`
+	Slug         string             `json:"slug"`
+	Description  string             `json:"description"`
+	StorageQuota int64              `json:"storage_quota"`
+	StorageUsed  int64              `json:"storage_used"`
+	CreatedBy    *uuid.UUID         `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TeamMember struct {
+	ID        uuid.UUID          `json:"id"`
+	TeamID    uuid.UUID          `json:"team_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Role      string             `json:"role"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type Upload struct {

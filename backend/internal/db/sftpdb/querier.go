@@ -13,6 +13,8 @@ import (
 
 type Querier interface {
 	AddStorageUsed(ctx context.Context, arg AddStorageUsedParams) error
+	AddTeamMember(ctx context.Context, arg AddTeamMemberParams) error
+	AddTeamStorage(ctx context.Context, arg AddTeamStorageParams) error
 	BumpFileContent(ctx context.Context, arg BumpFileContentParams) (File, error)
 	ClearAllPendingForUser(ctx context.Context, ownerID uuid.UUID) error
 	ClearFilePending(ctx context.Context, arg ClearFilePendingParams) error
@@ -45,6 +47,7 @@ type Querier interface {
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateShare(ctx context.Context, arg CreateShareParams) (Share, error)
+	CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, error)
 	CreateUpload(ctx context.Context, arg CreateUploadParams) (Upload, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateExpiredShares(ctx context.Context) error
@@ -52,6 +55,7 @@ type Querier interface {
 	DeleteExpiredUploads(ctx context.Context) ([]DeleteExpiredUploadsRow, error)
 	DeleteFileEmbeddings(ctx context.Context, fileID uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) error
+	DeleteTeam(ctx context.Context, id uuid.UUID) error
 	GetAPIKeyByHash(ctx context.Context, keyHash string) (ApiKey, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetFileByIDIncludingTrashed(ctx context.Context, id uuid.UUID) (File, error)
@@ -67,6 +71,8 @@ type Querier interface {
 	GetSessionByHash(ctx context.Context, refreshTokenHash string) (Session, error)
 	GetSessionByID(ctx context.Context, id uuid.UUID) (Session, error)
 	GetShareByToken(ctx context.Context, token string) (Share, error)
+	GetTeam(ctx context.Context, id uuid.UUID) (Team, error)
+	GetTeamMembership(ctx context.Context, arg GetTeamMembershipParams) (string, error)
 	GetUpload(ctx context.Context, id uuid.UUID) (Upload, error)
 	GetUploadForUser(ctx context.Context, arg GetUploadForUserParams) (Upload, error)
 	GetUserAvatar(ctx context.Context, id uuid.UUID) (*string, error)
@@ -118,6 +124,8 @@ type Querier interface {
 	ListSharesByOwner(ctx context.Context, ownerID uuid.UUID) ([]Share, error)
 	ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListSuperAdminIDs(ctx context.Context) ([]uuid.UUID, error)
+	ListTeamMembers(ctx context.Context, teamID uuid.UUID) ([]ListTeamMembersRow, error)
+	ListTeamsForUser(ctx context.Context, userID uuid.UUID) ([]ListTeamsForUserRow, error)
 	ListTrash(ctx context.Context, arg ListTrashParams) ([]File, error)
 	ListUserAPIKeys(ctx context.Context, userID uuid.UUID) ([]ApiKey, error)
 	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]Session, error)
@@ -138,6 +146,7 @@ type Querier interface {
 	// Alert lifecycle -------------------------------------------------------------
 	RecentAlertExists(ctx context.Context, arg RecentAlertExistsParams) (bool, error)
 	RecordChunk(ctx context.Context, arg RecordChunkParams) error
+	RemoveTeamMember(ctx context.Context, arg RemoveTeamMemberParams) error
 	RenameFile(ctx context.Context, arg RenameFileParams) error
 	RenameFolder(ctx context.Context, arg RenameFolderParams) error
 	// Admin reset: force the user to change it on next login.
@@ -179,6 +188,7 @@ type Querier interface {
 	UnlockUser(ctx context.Context, id uuid.UUID) error
 	UpdateFolderSize(ctx context.Context, arg UpdateFolderSizeParams) error
 	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
+	UpdateTeam(ctx context.Context, arg UpdateTeamParams) error
 	UpdateUploadProgress(ctx context.Context, arg UpdateUploadProgressParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserQuota(ctx context.Context, arg UpdateUserQuotaParams) error

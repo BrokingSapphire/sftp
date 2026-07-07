@@ -126,7 +126,7 @@ func (q *Queries) ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]List
 }
 
 const listSharedWithMe = `-- name: ListSharedWithMe :many
-SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types, rp.can_write, rp.created_at AS shared_at,
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types, f.team_id, rp.can_write, rp.created_at AS shared_at,
        u.full_name AS owner_name, u.username AS owner_username,
        (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS owner_has_avatar
 FROM resource_permissions rp
@@ -161,6 +161,7 @@ type ListSharedWithMeRow struct {
 	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
 	Sensitivity      string             `json:"sensitivity"`
 	PiiTypes         []string           `json:"pii_types"`
+	TeamID           *uuid.UUID         `json:"team_id"`
 	CanWrite         bool               `json:"can_write"`
 	SharedAt         pgtype.Timestamptz `json:"shared_at"`
 	OwnerName        string             `json:"owner_name"`
@@ -202,6 +203,7 @@ func (q *Queries) ListSharedWithMe(ctx context.Context, granteeUserID *uuid.UUID
 			&i.RetainUntil,
 			&i.Sensitivity,
 			&i.PiiTypes,
+			&i.TeamID,
 			&i.CanWrite,
 			&i.SharedAt,
 			&i.OwnerName,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Folder, Globe, Star, Share2, Trash2, Inbox,
-  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert, Sparkles, DatabaseBackup,
+  Users, ScrollText, KeyRound, HardDrive, PieChart, ShieldAlert, Sparkles, DatabaseBackup, UsersRound,
 } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +24,7 @@ const primary: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/files", label: "My Files", icon: Folder },
   ...(BRAND.ai?.enabled ? [{ href: "/ask", label: "Ask AI", icon: Sparkles }] : []),
+  { href: "/teams", label: "Teams", icon: UsersRound },
   { href: "/common", label: "Common", icon: Globe },
   { href: "/shared", label: "Shared with me", icon: Users },
   { href: "/inherited", label: "Inherited", icon: Inbox },

@@ -105,7 +105,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 }
 
 const listInheritedFiles = `-- name: ListInheritedFiles :many
-SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types FROM files
+SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types, team_id FROM files
 WHERE owner_id = $1 AND transfer_pending = TRUE AND deleted_at IS NULL
 ORDER BY transfer_deadline ASC
 `
@@ -144,6 +144,7 @@ func (q *Queries) ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]
 			&i.RetainUntil,
 			&i.Sensitivity,
 			&i.PiiTypes,
+			&i.TeamID,
 		); err != nil {
 			return nil, err
 		}
@@ -156,7 +157,7 @@ func (q *Queries) ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]
 }
 
 const listInheritedWithSource = `-- name: ListInheritedWithSource :many
-SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types,
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types, f.team_id,
        u.full_name AS from_name, u.username AS from_username, u.email AS from_email
 FROM files f
 LEFT JOIN users u ON u.id = f.transfer_from
@@ -189,6 +190,7 @@ type ListInheritedWithSourceRow struct {
 	RetainUntil      pgtype.Timestamptz `json:"retain_until"`
 	Sensitivity      string             `json:"sensitivity"`
 	PiiTypes         []string           `json:"pii_types"`
+	TeamID           *uuid.UUID         `json:"team_id"`
 	FromName         *string            `json:"from_name"`
 	FromUsername     *string            `json:"from_username"`
 	FromEmail        *string            `json:"from_email"`
@@ -228,6 +230,7 @@ func (q *Queries) ListInheritedWithSource(ctx context.Context, ownerID uuid.UUID
 			&i.RetainUntil,
 			&i.Sensitivity,
 			&i.PiiTypes,
+			&i.TeamID,
 			&i.FromName,
 			&i.FromUsername,
 			&i.FromEmail,
