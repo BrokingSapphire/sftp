@@ -118,3 +118,12 @@ JOIN users u ON u.id = f.owner_id
 LEFT JOIN folders fo ON fo.id = f.folder_id
 WHERE f.deleted_at IS NULL
 ORDER BY f.owner_id, f.id;
+
+-- name: ListCommonFilesByFolder :many
+SELECT f.*, u.full_name AS uploader_name, u.username AS uploader_username,
+       (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS uploader_has_avatar
+FROM files f
+JOIN users u ON u.id = f.owner_id
+WHERE f.is_common = TRUE AND f.deleted_at IS NULL
+  AND f.folder_id IS NOT DISTINCT FROM sqlc.narg('folder_id')
+ORDER BY f.created_at DESC;

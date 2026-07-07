@@ -622,6 +622,46 @@ func (h *Handler) CommonList(c fuego.ContextNoBody) (*response.Envelope[[]models
 	return response.Paginated(files, models.ListMeta{Total: total, Limit: limit, Offset: offset}), nil
 }
 
+// CommonBrowseResponse is a navigable level of the Common area.
+type CommonBrowseResponse struct {
+	Folders []models.FolderResponse     `json:"folders"`
+	Files   []models.CommonFileResponse `json:"files"`
+}
+
+// CommonBrowse lists Common folders + files at a level (parent_id query; empty = root).
+func (h *Handler) CommonBrowse(c fuego.ContextNoBody) (*response.Envelope[CommonBrowseResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	var parent *string
+	if p := c.QueryParam("parent_id"); p != "" {
+		parent = &p
+	}
+	folders, files, err := h.svc.ListCommonAt(c.Context(), uid, isAdmin(c.Context()), parent)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(CommonBrowseResponse{Folders: folders, Files: files}), nil
+}
+
+// CommonFolderCreate creates a folder in the Common area.
+func (h *Handler) CommonFolderCreate(c fuego.ContextWithBody[models.CreateFolderRequest]) (*response.Envelope[models.FolderResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	body, err := c.Body()
+	if err != nil || body.Name == "" {
+		return nil, fuego.BadRequestError{Title: "name is required"}
+	}
+	f, err := h.svc.CreateCommonFolder(c.Context(), uid, body.ParentID, body.Name)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*f, "Folder created"), nil
+}
+
 // MakeCommon shares the caller's file into the Common area.
 func (h *Handler) MakeCommon(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
 	uid, id, err := h.idOnly(c)

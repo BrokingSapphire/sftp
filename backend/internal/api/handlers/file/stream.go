@@ -92,7 +92,12 @@ func (h *Handler) CommonUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 
-	f, err := h.svc.UploadCommon(r.Context(), uid, header.Filename, part)
+	// Optional folder_id form field targets a Common sub-folder.
+	var folderID *string
+	if v := r.FormValue("folder_id"); v != "" {
+		folderID = &v
+	}
+	f, err := h.svc.UploadCommonTo(r.Context(), uid, folderID, header.Filename, part)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return

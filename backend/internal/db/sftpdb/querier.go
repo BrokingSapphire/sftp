@@ -41,6 +41,7 @@ type Querier interface {
 	CountUnresolvedAlerts(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error)
+	CreateCommonFolder(ctx context.Context, arg CreateCommonFolderParams) (Folder, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) error
@@ -101,6 +102,8 @@ type Querier interface {
 	ListAuditLogsByActor(ctx context.Context, arg ListAuditLogsByActorParams) ([]AuditLog, error)
 	ListAuditLogsByCategory(ctx context.Context, arg ListAuditLogsByCategoryParams) ([]AuditLog, error)
 	ListCommonFiles(ctx context.Context, arg ListCommonFilesParams) ([]ListCommonFilesRow, error)
+	ListCommonFilesByFolder(ctx context.Context, folderID *uuid.UUID) ([]ListCommonFilesByFolderRow, error)
+	ListCommonFolders(ctx context.Context, parentID *uuid.UUID) ([]Folder, error)
 	ListEmbeddingsByOwner(ctx context.Context, arg ListEmbeddingsByOwnerParams) ([]ListEmbeddingsByOwnerRow, error)
 	ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]ListFileGrantsRow, error)
 	ListFileVersions(ctx context.Context, fileID uuid.UUID) ([]ListFileVersionsRow, error)

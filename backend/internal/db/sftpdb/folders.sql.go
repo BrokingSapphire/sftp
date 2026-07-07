@@ -24,10 +24,53 @@ func (q *Queries) CountFolderChildren(ctx context.Context, parentID *uuid.UUID) 
 	return total, err
 }
 
+const createCommonFolder = `-- name: CreateCommonFolder :one
+INSERT INTO folders (owner_id, parent_id, name, path, depth, is_common)
+VALUES ($1, $2, $3, $4, $5, TRUE)
+RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common
+`
+
+type CreateCommonFolderParams struct {
+	OwnerID  uuid.UUID  `json:"owner_id"`
+	ParentID *uuid.UUID `json:"parent_id"`
+	Name     string     `json:"name"`
+	Path     string     `json:"path"`
+	Depth    int32      `json:"depth"`
+}
+
+func (q *Queries) CreateCommonFolder(ctx context.Context, arg CreateCommonFolderParams) (Folder, error) {
+	row := q.db.QueryRow(ctx, createCommonFolder,
+		arg.OwnerID,
+		arg.ParentID,
+		arg.Name,
+		arg.Path,
+		arg.Depth,
+	)
+	var i Folder
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.ParentID,
+		&i.Name,
+		&i.Path,
+		&i.Depth,
+		&i.SizeBytes,
+		&i.IsStarred,
+		&i.IsPinned,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Color,
+		&i.TeamID,
+		&i.IsCommon,
+	)
+	return i, err
+}
+
 const createFolder = `-- name: CreateFolder :one
 INSERT INTO folders (owner_id, parent_id, name, path, depth)
 VALUES ($1, $5, $2, $3, $4)
-RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id
+RETURNING id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common
 `
 
 type CreateFolderParams struct {
@@ -62,6 +105,7 @@ func (q *Queries) CreateFolder(ctx context.Context, arg CreateFolderParams) (Fol
 		&i.DeletedAt,
 		&i.Color,
 		&i.TeamID,
+		&i.IsCommon,
 	)
 	return i, err
 }
@@ -113,7 +157,7 @@ func (q *Queries) GetFileByOwnerFolderName(ctx context.Context, arg GetFileByOwn
 }
 
 const getFolderByID = `-- name: GetFolderByID :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders WHERE id = $1 AND deleted_at IS NULL
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common FROM folders WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error) {
@@ -134,12 +178,13 @@ func (q *Queries) GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, erro
 		&i.DeletedAt,
 		&i.Color,
 		&i.TeamID,
+		&i.IsCommon,
 	)
 	return i, err
 }
 
 const getFolderByOwnerPath = `-- name: GetFolderByOwnerPath :one
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common FROM folders
 WHERE owner_id = $1 AND path = $2 AND deleted_at IS NULL
 `
 
@@ -166,8 +211,52 @@ func (q *Queries) GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwner
 		&i.DeletedAt,
 		&i.Color,
 		&i.TeamID,
+		&i.IsCommon,
 	)
 	return i, err
+}
+
+const listCommonFolders = `-- name: ListCommonFolders :many
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common FROM folders
+WHERE is_common = TRUE AND deleted_at IS NULL
+  AND parent_id IS NOT DISTINCT FROM $1
+ORDER BY name
+`
+
+func (q *Queries) ListCommonFolders(ctx context.Context, parentID *uuid.UUID) ([]Folder, error) {
+	rows, err := q.db.Query(ctx, listCommonFolders, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Folder{}
+	for rows.Next() {
+		var i Folder
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.ParentID,
+			&i.Name,
+			&i.Path,
+			&i.Depth,
+			&i.SizeBytes,
+			&i.IsStarred,
+			&i.IsPinned,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Color,
+			&i.TeamID,
+			&i.IsCommon,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listFilesInFolder = `-- name: ListFilesInFolder :many
@@ -214,7 +303,7 @@ func (q *Queries) ListFilesInFolder(ctx context.Context, arg ListFilesInFolderPa
 }
 
 const listFoldersByParent = `-- name: ListFoldersByParent :many
-SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id FROM folders
+SELECT id, owner_id, parent_id, name, path, depth, size_bytes, is_starred, is_pinned, created_at, updated_at, deleted_at, color, team_id, is_common FROM folders
 WHERE owner_id = $1
   AND parent_id IS NOT DISTINCT FROM $2
   AND deleted_at IS NULL
@@ -250,6 +339,7 @@ func (q *Queries) ListFoldersByParent(ctx context.Context, arg ListFoldersByPare
 			&i.DeletedAt,
 			&i.Color,
 			&i.TeamID,
+			&i.IsCommon,
 		); err != nil {
 			return nil, err
 		}

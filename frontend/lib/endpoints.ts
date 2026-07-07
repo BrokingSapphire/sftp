@@ -134,13 +134,19 @@ export interface CommonFile {
   checksum_sha256?: string;
 }
 
+export interface CommonBrowse { folders: FolderItem[]; files: CommonFile[] }
 export const commonApi = {
   list: () => unwrap<CommonFile[]>(http.get<Envelope<CommonFile[]>>("/files/common")),
+  browse: (parentId?: string) =>
+    unwrap<CommonBrowse>(http.get<Envelope<CommonBrowse>>("/files/common/browse", { params: parentId ? { parent_id: parentId } : {} })),
+  createFolder: (name: string, parentId?: string) =>
+    unwrap<FolderItem>(http.post<Envelope<FolderItem>>("/files/common/folders", { name, parent_id: parentId ?? null })),
   remove: (id: string) => http.delete(`/files/common/${id}`),
   makeCommon: (id: string) => http.post(`/files/${id}/make-common`, {}),
-  upload: (file: File, onProgress?: (pct: number) => void) => {
+  upload: (file: File, folderId?: string, onProgress?: (pct: number) => void) => {
     const form = new FormData();
     form.append("file", file);
+    if (folderId) form.append("folder_id", folderId);
     return http.post("/files/common/upload", form, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (e) => {

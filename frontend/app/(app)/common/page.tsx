@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Globe, Upload, Download, Trash2, Eye } from "lucide-react";
+import { Globe, Upload, FolderPlus, FolderUp, Download, Trash2, Eye, Folder, ChevronRight, Home } from "lucide-react";
 import { commonApi, filesApi, type CommonFile } from "@/lib/endpoints";
-import type { FileItem } from "@/lib/types";
+import type { FileItem, FolderItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/misc";
@@ -14,38 +14,38 @@ import { fileIcon } from "@/components/files/icon";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilePreview } from "@/components/files/file-preview";
-import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { StaggerList, StaggerItem } from "@/components/motion";
-import { formatBytes, timeAgo } from "@/lib/utils";
+import { formatBytes, timeAgo, cn } from "@/lib/utils";
+
+interface Crumb { id?: string; name: string }
 
 export default function CommonPage() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["common"], queryFn: () => commonApi.list() });
+  const [crumbs, setCrumbs] = useState<Crumb[]>([{ name: "Common" }]);
+  const current = crumbs[crumbs.length - 1];
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<number | null>(null);
-  const ctx = useContextMenu();
 
-  const files = q.data ?? [];
-  const refresh = () => qc.invalidateQueries({ queryKey: ["common"] });
+  const q = useQuery({ queryKey: ["common", current.id ?? "root"], queryFn: () => commonApi.browse(current.id) });
+  const folders = q.data?.folders ?? [];
+  const files = q.data?.files ?? [];
+  const refresh = () => qc.invalidateQueries({ queryKey: ["common", current.id ?? "root"] });
 
-  function fileMenu(f: CommonFile, i: number): MenuItem[] {
-    const items: MenuItem[] = [
-      { label: "Preview", icon: Eye, onClick: () => setPreview(i) },
-      { label: "Download", icon: Download, onClick: () => (window.location.href = filesApi.downloadUrl(f.id)) },
-    ];
-    if (f.can_delete) {
-      items.push({ separator: true, label: "" });
-      items.push({ label: "Delete from Common", icon: Trash2, danger: true, onClick: () => remove(f) });
-    }
-    return items;
+  function openFolder(f: FolderItem) { setCrumbs((c) => [...c, { id: f.id, name: f.name }]); }
+  function goTo(i: number) { setCrumbs((c) => c.slice(0, i + 1)); }
+
+  async function newFolder() {
+    const name = prompt("New folder name (in Common)");
+    if (!name) return;
+    try { await commonApi.createFolder(name, current.id); toast.success("Folder created"); refresh(); }
+    catch { toast.error("Could not create folder"); }
   }
-
   async function upload(fs: File[]) {
     for (const file of fs) {
       const t = toast.loading(`Uploading ${file.name} to Common…`, { position: "bottom-right" });
       try {
-        await commonApi.upload(file, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t, position: "bottom-right" }));
-        toast.success(`Added ${file.name} to Common`, { id: t, position: "bottom-right" });
+        await commonApi.upload(file, current.id, (pct) => toast.loading(`Uploading ${file.name}… ${pct}%`, { id: t, position: "bottom-right" }));
+        toast.success(`Added ${file.name}`, { id: t, position: "bottom-right" });
       } catch { toast.error(`Failed to upload ${file.name}`, { id: t, position: "bottom-right" }); }
     }
     refresh();
@@ -56,12 +56,15 @@ export default function CommonPage() {
     catch { toast.error("Could not delete"); }
   }
 
+  const empty = !q.isLoading && folders.length === 0 && files.length === 0;
+
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title="Common" subtitle="Organisation-wide files — visible to everyone. Uploaders (or admins) can delete." />
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Add to Common</Button>
+          <Button variant="outline" size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>
+          <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
           <input ref={inputRef} type="file" multiple hidden onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
             if (fs.length) upload(fs);
@@ -70,16 +73,30 @@ export default function CommonPage() {
         </div>
       </div>
 
+      {/* Breadcrumb */}
+      <nav className="flex min-w-0 items-center gap-1 text-sm">
+        {crumbs.map((c, i) => (
+          <span key={i} className="flex items-center gap-1">
+            {i > 0 && <ChevronRight size={14} className="text-muted" />}
+            <button onClick={() => goTo(i)}
+              className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-surface-2", i === crumbs.length - 1 ? "font-semibold" : "text-muted")}>
+              {i === 0 && <Home size={14} />}{c.name}
+            </button>
+          </span>
+        ))}
+      </nav>
+
       <UploadZone onFiles={upload}>
         {q.isLoading ? (
           <div className="rounded-xl border border-border bg-surface p-4">
             {[...Array(6)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}
           </div>
-        ) : files.length === 0 ? (
+        ) : empty ? (
           <EmptyState
             icon={Globe}
             title="The Common room is quiet"
-            subtitle="No org-wide files yet. Drop something here — everyone can see it, and it's unlimited (your quota won't even flinch)."
+            subtitle="No org-wide files here yet. Make a folder or drop something in — everyone can see it, and it's unlimited (your quota won't even flinch)."
+            action={<Button size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>}
           />
         ) : (
           <div className="rounded-xl border border-border bg-surface">
@@ -87,8 +104,22 @@ export default function CommonPage() {
               <span>Name</span><span>Uploaded by</span><span>Size</span><span className="text-right">Added</span>
             </div>
             <StaggerList>
+              {/* Folders first */}
+              {folders.map((f) => (
+                <StaggerItem key={f.id} onDoubleClick={() => openFolder(f)}
+                  className="group grid grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                  <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
+                    <Folder size={18} className="text-primary" />
+                    <span className="truncate text-sm font-medium">{f.name}</span>
+                  </button>
+                  <span className="text-xs text-muted">—</span>
+                  <span className="text-xs text-muted">—</span>
+                  <span className="text-right text-xs text-muted">folder</span>
+                </StaggerItem>
+              ))}
+              {/* Files */}
               {files.map((f, i) => (
-                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className="group grid grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <StaggerItem key={f.id} className="group grid grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
                     {fileIcon(f.extension, 18)}
                     <span className="truncate text-sm font-medium">{f.name}</span>
@@ -122,8 +153,6 @@ export default function CommonPage() {
           onChanged={refresh}
         />
       )}
-
-      <ContextMenu menu={ctx.menu} onClose={ctx.close} />
     </div>
   );
 }

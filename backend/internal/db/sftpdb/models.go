@@ -148,6 +148,7 @@ type Folder struct {
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 	Color     string             `json:"color"`
 	TeamID    *uuid.UUID         `json:"team_id"`
+	IsCommon  bool               `json:"is_common"`
 }
 
 type LoginHistory struct {

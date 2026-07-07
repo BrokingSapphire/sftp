@@ -35,6 +35,16 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
     catch { toast.error("Action failed"); }
   }
 
+  // Star toggle with an optimistic cache update so the UI changes immediately
+  // (and unstarred items leave the Starred list right away).
+  async function toggleStar(f: FileItem) {
+    const next = !f.is_starred;
+    qc.setQueryData<FileItem[]>([queryKey], (old) =>
+      (old ?? []).map((x) => (x.id === f.id ? { ...x, is_starred: next } : x)));
+    try { await filesApi.starFile(f.id, next); refresh(); }
+    catch { toast.error("Action failed"); refresh(); }
+  }
+
   if (!loading && !files?.length) {
     return <EmptyState icon={emptyIcon ?? FileQuestion} title={emptyLabel} subtitle={emptySubtitle} />;
   }
@@ -73,7 +83,7 @@ export function FileList({ files, loading, emptyLabel, emptyIcon, emptySubtitle,
                 <>
                   <IconBtn title="Preview" onClick={() => setPreview(i)}><Eye size={15} /></IconBtn>
                   <a href={filesApi.downloadUrl(f.id)}><IconBtn title="Download" onClick={() => {}}><Download size={15} /></IconBtn></a>
-                  <IconBtn title="Star" onClick={() => act(() => filesApi.starFile(f.id, !f.is_starred), "Updated")}>
+                  <IconBtn title="Star" onClick={() => toggleStar(f)}>
                     <Star size={15} className={f.is_starred ? "fill-amber-400 text-amber-400" : ""} />
                   </IconBtn>
                   <IconBtn title="Trash" onClick={() => act(() => filesApi.trashFile(f.id), "Moved to trash")}><Trash2 size={15} /></IconBtn>

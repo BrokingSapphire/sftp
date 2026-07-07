@@ -189,3 +189,126 @@ func (s *Service) DeleteCommon(ctx context.Context, caller uuid.UUID, isAdmin bo
 	// Common files are not counted against the owner's quota, so nothing to free.
 	return nil
 }
+
+// CreateCommonFolder creates a navigable folder inside the Common area.
+func (s *Service) CreateCommonFolder(ctx context.Context, owner uuid.UUID, parentID *string, name string) (*models.FolderResponse, error) {
+	n, err := utils.SanitizeName(name)
+	if err != nil {
+		return nil, err
+	}
+	var pid *uuid.UUID
+	parentPath := ""
+	depth := int32(0)
+	if parentID != nil && *parentID != "" {
+		id, err := uuid.Parse(*parentID)
+		if err != nil {
+			return nil, apperrors.ErrInvalidRequest
+		}
+		parent, err := s.q.GetFolderByID(ctx, id)
+		if err != nil {
+			return nil, apperrors.ErrFolderNotFound
+		}
+		if !parent.IsCommon {
+			return nil, apperrors.ErrForbidden
+		}
+		pid = &id
+		parentPath = parent.Path
+		depth = parent.Depth + 1
+	}
+	f, err := s.q.CreateCommonFolder(ctx, sftpdb.CreateCommonFolderParams{
+		OwnerID: owner, ParentID: pid, Name: n, Path: parentPath + "/" + n, Depth: depth,
+	})
+	if err != nil {
+		return nil, mapConflict(err)
+	}
+	return toFolderResponse(f), nil
+}
+
+// ListCommonAt lists the Common folders and files at a level (nil = root).
+func (s *Service) ListCommonAt(ctx context.Context, caller uuid.UUID, isAdmin bool, parentID *string) ([]models.FolderResponse, []models.CommonFileResponse, error) {
+	var pid *uuid.UUID
+	if parentID != nil && *parentID != "" {
+		id, err := uuid.Parse(*parentID)
+		if err != nil {
+			return nil, nil, apperrors.ErrInvalidRequest
+		}
+		pid = &id
+	}
+	fdrs, err := s.q.ListCommonFolders(ctx, pid)
+	if err != nil {
+		return nil, nil, err
+	}
+	folders := make([]models.FolderResponse, 0, len(fdrs))
+	for _, f := range fdrs {
+		folders = append(folders, *toFolderResponse(f))
+	}
+	rows, err := s.q.ListCommonFilesByFolder(ctx, pid)
+	if err != nil {
+		return nil, nil, err
+	}
+	files := make([]models.CommonFileResponse, 0, len(rows))
+	for _, r := range rows {
+		name := r.UploaderName
+		if name == "" {
+			name = r.UploaderUsername
+		}
+		item := models.CommonFileResponse{
+			ID: r.ID.String(), Name: r.Name, Extension: r.Extension, MimeType: r.MimeType,
+			SizeBytes: r.SizeBytes, IsStarred: r.IsStarred, UploaderID: r.OwnerID.String(),
+			UploaderName: name, UploaderHasAvatar: r.UploaderHasAvatar != nil && *r.UploaderHasAvatar,
+			CanDelete: isAdmin || r.OwnerID == caller, VersionNo: r.VersionNo, DownloadCount: r.DownloadCount,
+			CreatedAt: fmtTS(r.CreatedAt), UpdatedAt: fmtTS(r.UpdatedAt),
+		}
+		if r.ChecksumSha256 != nil {
+			item.Checksum = *r.ChecksumSha256
+		}
+		files = append(files, item)
+	}
+	return folders, files, nil
+}
+
+// UploadCommonTo uploads a file into a Common folder (nil = Common root).
+func (s *Service) UploadCommonTo(ctx context.Context, owner uuid.UUID, folderID *string, filename string, r io.Reader) (*models.FileResponse, error) {
+	var fid *uuid.UUID
+	if folderID != nil && *folderID != "" {
+		id, err := uuid.Parse(*folderID)
+		if err != nil {
+			return nil, apperrors.ErrInvalidRequest
+		}
+		parent, err := s.q.GetFolderByID(ctx, id)
+		if err != nil {
+			return nil, apperrors.ErrFolderNotFound
+		}
+		if !parent.IsCommon {
+			return nil, apperrors.ErrForbidden
+		}
+		fid = &id
+	}
+	name, err := utils.SanitizeName(filename)
+	if err != nil {
+		return nil, err
+	}
+	res, err := s.store.Save(r)
+	if err != nil {
+		return nil, err
+	}
+	if s.maxUploadSize > 0 && res.Size > s.maxUploadSize {
+		_ = s.store.Delete(res.Key)
+		return nil, apperrors.ErrPayloadTooLarge
+	}
+	checksum := res.Checksum
+	file, err := s.q.CreateFile(ctx, sftpdb.CreateFileParams{
+		OwnerID: owner, FolderID: fid, Name: name,
+		Extension: utils.FileExtension(name), MimeType: mimeByName(name),
+		SizeBytes: res.Size, ChecksumSha256: &checksum, StorageKey: res.Key,
+	})
+	if err != nil {
+		_ = s.store.Delete(res.Key)
+		return nil, mapConflict(err)
+	}
+	if err := s.q.SetFileCommon(ctx, sftpdb.SetFileCommonParams{ID: file.ID, IsCommon: true}); err != nil {
+		return nil, err
+	}
+	s.indexAsync(file.ID)
+	return toFileResponse(file), nil
+}

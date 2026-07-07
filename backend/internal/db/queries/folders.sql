@@ -56,3 +56,14 @@ WHERE id = ANY(@folder_ids::uuid[]) AND owner_id = @owner_id AND deleted_at IS N
 SELECT id, name, storage_key, size_bytes
 FROM files
 WHERE owner_id = @owner_id AND folder_id = @folder_id AND deleted_at IS NULL;
+
+-- name: CreateCommonFolder :one
+INSERT INTO folders (owner_id, parent_id, name, path, depth, is_common)
+VALUES (@owner_id, @parent_id, @name, @path, @depth, TRUE)
+RETURNING *;
+
+-- name: ListCommonFolders :many
+SELECT * FROM folders
+WHERE is_common = TRUE AND deleted_at IS NULL
+  AND parent_id IS NOT DISTINCT FROM sqlc.narg('parent_id')
+ORDER BY name;

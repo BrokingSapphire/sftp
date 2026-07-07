@@ -347,6 +347,96 @@ func (q *Queries) ListCommonFiles(ctx context.Context, arg ListCommonFilesParams
 	return items, nil
 }
 
+const listCommonFilesByFolder = `-- name: ListCommonFilesByFolder :many
+SELECT f.id, f.owner_id, f.folder_id, f.name, f.extension, f.mime_type, f.size_bytes, f.checksum_sha256, f.storage_key, f.thumbnail_key, f.is_starred, f.version_no, f.download_count, f.created_at, f.updated_at, f.deleted_at, f.is_common, f.transfer_pending, f.transfer_deadline, f.transfer_from, f.legal_hold, f.retain_until, f.sensitivity, f.pii_types, f.team_id, u.full_name AS uploader_name, u.username AS uploader_username,
+       (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS uploader_has_avatar
+FROM files f
+JOIN users u ON u.id = f.owner_id
+WHERE f.is_common = TRUE AND f.deleted_at IS NULL
+  AND f.folder_id IS NOT DISTINCT FROM $1
+ORDER BY f.created_at DESC
+`
+
+type ListCommonFilesByFolderRow struct {
+	ID                uuid.UUID          `json:"id"`
+	OwnerID           uuid.UUID          `json:"owner_id"`
+	FolderID          *uuid.UUID         `json:"folder_id"`
+	Name              string             `json:"name"`
+	Extension         string             `json:"extension"`
+	MimeType          string             `json:"mime_type"`
+	SizeBytes         int64              `json:"size_bytes"`
+	ChecksumSha256    *string            `json:"checksum_sha256"`
+	StorageKey        string             `json:"storage_key"`
+	ThumbnailKey      *string            `json:"thumbnail_key"`
+	IsStarred         bool               `json:"is_starred"`
+	VersionNo         int32              `json:"version_no"`
+	DownloadCount     int64              `json:"download_count"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	IsCommon          bool               `json:"is_common"`
+	TransferPending   bool               `json:"transfer_pending"`
+	TransferDeadline  pgtype.Timestamptz `json:"transfer_deadline"`
+	TransferFrom      *uuid.UUID         `json:"transfer_from"`
+	LegalHold         bool               `json:"legal_hold"`
+	RetainUntil       pgtype.Timestamptz `json:"retain_until"`
+	Sensitivity       string             `json:"sensitivity"`
+	PiiTypes          []string           `json:"pii_types"`
+	TeamID            *uuid.UUID         `json:"team_id"`
+	UploaderName      string             `json:"uploader_name"`
+	UploaderUsername  string             `json:"uploader_username"`
+	UploaderHasAvatar *bool              `json:"uploader_has_avatar"`
+}
+
+func (q *Queries) ListCommonFilesByFolder(ctx context.Context, folderID *uuid.UUID) ([]ListCommonFilesByFolderRow, error) {
+	rows, err := q.db.Query(ctx, listCommonFilesByFolder, folderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCommonFilesByFolderRow{}
+	for rows.Next() {
+		var i ListCommonFilesByFolderRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.FolderID,
+			&i.Name,
+			&i.Extension,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.ChecksumSha256,
+			&i.StorageKey,
+			&i.ThumbnailKey,
+			&i.IsStarred,
+			&i.VersionNo,
+			&i.DownloadCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsCommon,
+			&i.TransferPending,
+			&i.TransferDeadline,
+			&i.TransferFrom,
+			&i.LegalHold,
+			&i.RetainUntil,
+			&i.Sensitivity,
+			&i.PiiTypes,
+			&i.TeamID,
+			&i.UploaderName,
+			&i.UploaderUsername,
+			&i.UploaderHasAvatar,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFilesByFolder = `-- name: ListFilesByFolder :many
 SELECT id, owner_id, folder_id, name, extension, mime_type, size_bytes, checksum_sha256, storage_key, thumbnail_key, is_starred, version_no, download_count, created_at, updated_at, deleted_at, is_common, transfer_pending, transfer_deadline, transfer_from, legal_hold, retain_until, sensitivity, pii_types, team_id FROM files
 WHERE owner_id = $1
