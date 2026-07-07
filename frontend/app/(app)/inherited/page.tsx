@@ -79,7 +79,7 @@ export default function InheritedPage() {
         // Offset so the preview index matches the flat allFiles array.
         const offset = groups.slice(0, gi).reduce((n, x) => n + x.files.length, 0);
         return (
-          <section key={g.from_id || gi} className="rounded-xl border border-border bg-surface">
+          <section key={g.from_id || gi} className="overflow-x-auto rounded-xl border border-border bg-surface">
             <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
               <Avatar userId={g.from_id} name={g.from_name} size={30} />
               <div className="min-w-0 flex-1">
@@ -94,7 +94,7 @@ export default function InheritedPage() {
                 const idx = offset + i;
                 const dl = deadlineLabel(f.transfer_deadline);
                 return (
-                  <StaggerItem key={f.id} className="grid grid-cols-[1fr_auto_7rem_auto] items-center gap-4 border-b border-border/50 px-4 py-2.5 last:border-0 transition-colors hover:bg-surface-2">
+                  <StaggerItem key={f.id} className="grid min-w-[32rem] grid-cols-[1fr_auto_7rem_auto] items-center gap-4 border-b border-border/50 px-4 py-2.5 last:border-0 transition-colors hover:bg-surface-2">
                     <button onClick={() => setPreview(idx)} className="flex min-w-0 items-center gap-3 text-left">
                       {fileIcon(f.extension, 18)}
                       <span className="truncate text-sm font-medium">{f.name}</span>

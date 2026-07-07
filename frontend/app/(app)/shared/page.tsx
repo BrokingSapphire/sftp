@@ -34,13 +34,13 @@ export default function SharedPage() {
       )}
 
       {files.length > 0 && (
-        <div className="rounded-xl border border-border bg-surface">
-          <div className="grid grid-cols-[1fr_11rem_6rem_5rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <div className="grid min-w-[40rem] grid-cols-[1fr_11rem_6rem_5rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
             <span>Name</span><span>Owner</span><span>Access</span><span>Size</span><span className="text-right">Shared</span>
           </div>
           <StaggerList>
             {files.map((f, i) => (
-              <StaggerItem key={f.id} className="group grid grid-cols-[1fr_11rem_6rem_5rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+              <StaggerItem key={f.id} className="group grid min-w-[40rem] grid-cols-[1fr_11rem_6rem_5rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                 <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
                   {fileIcon(f.extension, 18)}
                   <span className="truncate text-sm font-medium">{f.name}</span>

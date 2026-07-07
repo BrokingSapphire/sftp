@@ -69,11 +69,11 @@ export function Topbar({ onMenu }: { onMenu?: () => void }) {
         />
         <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted sm:block">⌘K</kbd>
       </form>
-      <div className="ml-auto flex items-center gap-2">
-        <PingIndicator />
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <span className="hidden sm:block"><PingIndicator /></span>
         <NotificationBell />
         <LanguagePicker />
-        <ThemeToggle />
+        <span className="hidden sm:block"><ThemeToggle /></span>
         <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
           <button
             onClick={() => avatarInput.current?.click()}

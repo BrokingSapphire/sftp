@@ -277,7 +277,7 @@ export default function FilesPage() {
             </span>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-md border border-border p-0.5">
             <ViewBtn active={view === "list"} onClick={() => setViewPersist("list")}><ListIcon size={16} /></ViewBtn>
             <ViewBtn active={view === "grid"} onClick={() => setViewPersist("grid")}><LayoutGrid size={16} /></ViewBtn>
@@ -335,13 +335,13 @@ export default function FilesPage() {
             <p className="text-sm">This folder is empty. Drag files here or use Upload.</p>
           </div>
         ) : view === "list" ? (
-          <div className="min-h-[24rem] rounded-xl border border-border bg-surface">
-            <div className="grid grid-cols-[1fr_auto_8rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
+          <div className="min-h-[24rem] overflow-x-auto rounded-xl border border-border bg-surface">
+            <div className="grid min-w-[34rem] grid-cols-[1fr_auto_8rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
               <span>Name</span><span>Size</span><span className="text-right">Modified</span>
             </div>
             <StaggerList>
               {folders.map((f) => (
-                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className={cn("group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, folderMenu(f))} className={cn("group grid min-w-[34rem] grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
                   <div className="flex min-w-0 items-center gap-3">
                     <SelectBox selected={sel.has(f.id)} anySel={anySel} onToggle={() => toggleSel(f.id, "folder")}>
                       <Folder size={18} style={f.color ? { color: f.color } : undefined} className={f.color ? "" : "text-primary"} />
@@ -359,7 +359,7 @@ export default function FilesPage() {
                 </StaggerItem>
               ))}
               {files.map((f, i) => (
-                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className={cn("group grid grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
+                <StaggerItem key={f.id} onContextMenu={(e) => ctx.open(e, fileMenu(f, i))} className={cn("group grid min-w-[34rem] grid-cols-[1fr_auto_8rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2", sel.has(f.id) && "bg-primary/5")}>
                   <div className="flex min-w-0 items-center gap-3">
                     <SelectBox selected={sel.has(f.id)} anySel={anySel} onToggle={() => toggleSel(f.id, "file")}>
                       {fileIcon(f.extension, 18)}

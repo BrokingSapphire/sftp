@@ -94,7 +94,7 @@ export default function CommonPage() {
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title="Common" subtitle="Organisation-wide files — visible to everyone. Uploaders (or admins) can delete." />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>
           <Button variant="outline" size="sm" onClick={() => folderRef.current?.click()}><FolderUp size={16} /> Upload folder</Button>
           <Button size="sm" onClick={() => inputRef.current?.click()}><Upload size={16} /> Upload</Button>
@@ -137,15 +137,15 @@ export default function CommonPage() {
             action={<Button size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>}
           />
         ) : (
-          <div className="rounded-xl border border-border bg-surface">
-            <div className="grid grid-cols-[1fr_11rem_6rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+            <div className="grid min-w-[36rem] grid-cols-[1fr_11rem_6rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
               <span>Name</span><span>Uploaded by</span><span>Size</span><span className="text-right">Added</span>
             </div>
             <StaggerList>
               {/* Folders first */}
               {folders.map((f) => (
                 <StaggerItem key={f.id} onDoubleClick={() => openFolder(f)}
-                  className="group grid grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                  className="group grid min-w-[36rem] grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => openFolder(f)} className="flex min-w-0 items-center gap-3 text-left">
                     <Folder size={18} className="text-primary" />
                     <span className="truncate text-sm font-medium">{f.name}</span>
@@ -157,7 +157,7 @@ export default function CommonPage() {
               ))}
               {/* Files */}
               {files.map((f, i) => (
-                <StaggerItem key={f.id} className="group grid grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <StaggerItem key={f.id} className="group grid min-w-[36rem] grid-cols-[1fr_11rem_6rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
                   <button onClick={() => setPreview(i)} className="flex min-w-0 items-center gap-3 text-left">
                     {fileIcon(f.extension, 18)}
                     <span className="truncate text-sm font-medium">{f.name}</span>
