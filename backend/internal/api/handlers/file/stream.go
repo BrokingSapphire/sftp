@@ -2,8 +2,10 @@ package file
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -49,28 +51,44 @@ func (h *Handler) SimpleUpload(w http.ResponseWriter, r *http.Request) {
 		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	// 32 MiB in-memory threshold; larger parts spill to temp files.
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	// Stream the file part straight to storage (see CommonUpload) so large files
+	// don't fill /tmp. folder_id is sent before the file.
+	mr, err := r.MultipartReader()
+	if err != nil {
 		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid multipart form")
 		return
 	}
-	part, header, err := r.FormFile("file")
-	if err != nil {
-		handlers.WriteProblem(w, r, http.StatusBadRequest, "missing file field")
-		return
-	}
-	defer part.Close()
-
 	var folderID *string
-	if v := r.FormValue("folder_id"); v != "" {
-		folderID = &v
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			handlers.WriteProblem(w, r, http.StatusBadRequest, "could not read upload")
+			return
+		}
+		switch part.FormName() {
+		case "folder_id":
+			b, _ := io.ReadAll(io.LimitReader(part, 256))
+			part.Close()
+			if v := strings.TrimSpace(string(b)); v != "" {
+				folderID = &v
+			}
+		case "file":
+			f, uerr := h.svc.SimpleUpload(r.Context(), uid, folderID, part.FileName(), part)
+			part.Close()
+			if uerr != nil {
+				writeServiceError(w, r, uerr)
+				return
+			}
+			writeJSON(w, http.StatusOK, envelope{Success: true, Message: "File uploaded", Data: f})
+			return
+		default:
+			part.Close()
+		}
 	}
-	f, err := h.svc.SimpleUpload(r.Context(), uid, folderID, header.Filename, part)
-	if err != nil {
-		writeServiceError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, envelope{Success: true, Message: "File uploaded", Data: f})
+	handlers.WriteProblem(w, r, http.StatusBadRequest, "missing file field")
 }
 
 // CommonUpload stores a file directly into the organisation-wide Common area.
@@ -81,28 +99,46 @@ func (h *Handler) CommonUpload(w http.ResponseWriter, r *http.Request) {
 		handlers.WriteProblem(w, r, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	// Stream the multipart body part-by-part so large files (hundreds of MB) are
+	// piped straight to storage instead of being buffered in memory / a temp file
+	// (which fails on containers with a small /tmp). The frontend sends folder_id
+	// before the file so the target is known when the file part arrives.
+	mr, err := r.MultipartReader()
+	if err != nil {
 		handlers.WriteProblem(w, r, http.StatusBadRequest, "invalid multipart form")
 		return
 	}
-	part, header, err := r.FormFile("file")
-	if err != nil {
-		handlers.WriteProblem(w, r, http.StatusBadRequest, "missing file field")
-		return
-	}
-	defer part.Close()
-
-	// Optional folder_id form field targets a Common sub-folder.
 	var folderID *string
-	if v := r.FormValue("folder_id"); v != "" {
-		folderID = &v
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			handlers.WriteProblem(w, r, http.StatusBadRequest, "could not read upload")
+			return
+		}
+		switch part.FormName() {
+		case "folder_id":
+			b, _ := io.ReadAll(io.LimitReader(part, 256))
+			part.Close()
+			if v := strings.TrimSpace(string(b)); v != "" {
+				folderID = &v
+			}
+		case "file":
+			f, uerr := h.svc.UploadCommonTo(r.Context(), uid, folderID, part.FileName(), part)
+			part.Close()
+			if uerr != nil {
+				writeServiceError(w, r, uerr)
+				return
+			}
+			writeJSON(w, http.StatusOK, envelope{Success: true, Message: "Added to Common", Data: f})
+			return
+		default:
+			part.Close()
+		}
 	}
-	f, err := h.svc.UploadCommonTo(r.Context(), uid, folderID, header.Filename, part)
-	if err != nil {
-		writeServiceError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, envelope{Success: true, Message: "Added to Common", Data: f})
+	handlers.WriteProblem(w, r, http.StatusBadRequest, "missing file field")
 }
 
 // Download streams a file with HTTP range support.

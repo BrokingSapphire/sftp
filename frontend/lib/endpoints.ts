@@ -103,8 +103,8 @@ export const filesApi = {
     http.put(`/files/${id}/content`, text, { headers: { "Content-Type": "application/octet-stream" } }),
   simpleUpload: (file: File, folderId: string | undefined, onProgress?: (pct: number) => void) => {
     const form = new FormData();
+    if (folderId) form.append("folder_id", folderId); // before the file (streaming server)
     form.append("file", file);
-    if (folderId) form.append("folder_id", folderId);
     return http.post("/files/upload", form, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (e) => {
@@ -145,8 +145,10 @@ export const commonApi = {
   makeCommon: (id: string) => http.post(`/files/${id}/make-common`, {}),
   upload: (file: File, folderId?: string, onProgress?: (pct: number) => void) => {
     const form = new FormData();
-    form.append("file", file);
+    // folder_id MUST come before the file so the streaming server handler knows
+    // the target folder before it starts consuming the (large) file part.
     if (folderId) form.append("folder_id", folderId);
+    form.append("file", file);
     return http.post("/files/common/upload", form, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (e) => {
