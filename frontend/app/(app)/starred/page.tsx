@@ -9,7 +9,7 @@ export default function StarredPage() {
   const q = useQuery({ queryKey: ["starred"], queryFn: () => filesApi.starred() });
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader title="Starred" subtitle="Files you have starred for quick access" />
+      <PageHeader icon={Star} title="Starred" subtitle="Files you have starred for quick access" />
       <FileList files={q.data} loading={q.isLoading} queryKey="starred" emptyLabel="Nothing starred yet" emptyIcon={Star} emptySubtitle="Star the files you love so they're one click away. Playing favourites is encouraged here." />
     </div>
   );

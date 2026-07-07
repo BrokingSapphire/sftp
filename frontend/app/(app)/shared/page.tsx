@@ -21,7 +21,7 @@ export default function SharedPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader title="Shared with me" subtitle="Files other people have shared with you" />
+      <PageHeader icon={Users} title="Shared with me" subtitle="Files other people have shared with you" />
 
       {q.isLoading && <div className="rounded-xl border border-border bg-surface p-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}</div>}
 

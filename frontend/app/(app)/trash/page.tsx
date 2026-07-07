@@ -24,7 +24,7 @@ export default function TrashPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title="Trash" subtitle="Deleted files are purged automatically after the retention window" />
+        <PageHeader icon={Trash2} title="Trash" subtitle="Deleted files are purged automatically after the retention window" />
         {count > 0 && (
           <Button variant="danger" size="sm" onClick={emptyTrash}>
             <Trash2 size={16} /> Clear all

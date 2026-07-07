@@ -112,12 +112,19 @@ function IconBtn({ children, title, onClick }: { children: React.ReactNode; titl
   );
 }
 
-export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+export function PageHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: React.ElementType }) {
   const { tx } = useI18n();
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{tx(title)}</h1>
-      {subtitle && <p className="text-sm text-muted">{tx(subtitle)}</p>}
+    <div className="flex items-start gap-3">
+      {Icon && (
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon size={18} />
+        </span>
+      )}
+      <div className="min-w-0">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{tx(title)}</h1>
+        {subtitle && <p className="mt-0.5 max-w-2xl text-sm text-muted">{tx(subtitle)}</p>}
+      </div>
     </div>
   );
 }

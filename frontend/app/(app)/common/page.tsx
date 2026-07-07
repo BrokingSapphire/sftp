@@ -93,7 +93,7 @@ export default function CommonPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title="Common" subtitle="Organisation-wide files — visible to everyone. Uploaders (or admins) can delete." />
+        <PageHeader icon={Globe} title="Common" subtitle="Organisation-wide files — visible to everyone. Uploaders (or admins) can delete." />
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={newFolder}><FolderPlus size={16} /> New folder</Button>
           <Button variant="outline" size="sm" onClick={() => folderRef.current?.click()}><FolderUp size={16} /> Upload folder</Button>

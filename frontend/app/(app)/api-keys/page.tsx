@@ -41,7 +41,7 @@ export default function ApiKeysPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader title="API keys & developer docs" subtitle="Let scripts and apps use your files securely — create a key, then copy a ready-made snippet below" />
+      <PageHeader icon={KeyRound} title="API keys & developer docs" subtitle="Let scripts and apps use your files securely — create a key, then copy a ready-made snippet below" />
 
       {newKey && (
         <Card className="border-primary">

@@ -49,7 +49,7 @@ export default function TeamsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title="Team Spaces" subtitle="Shared drives owned by a group, with roles and delegated admin" />
+        <PageHeader icon={UsersRound} title="Team Spaces" subtitle="Shared drives owned by a group, with roles and delegated admin" />
         <Button size="sm" onClick={() => setCreating((v) => !v)}><Plus size={16} /> New team</Button>
       </div>
 
