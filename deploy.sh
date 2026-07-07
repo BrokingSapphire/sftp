@@ -197,6 +197,9 @@ ok "brand.config.json"
 # ── generate/merge .env ──────────────────────────────────────────────────────
 JWT_SECRET="$(env_get JWT_SECRET || true)"; [ -n "$JWT_SECRET" ] || JWT_SECRET="$(gen 32)"
 PG_PASS="$(env_get POSTGRES_PASSWORD || true)"; [ -n "$PG_PASS" ] || PG_PASS="$(gen 16)"
+# Always provision a backup-archive key so the super-admin backup/restore works
+# out of the box (independent of at-rest storage encryption).
+BACKUP_KEY="$(env_get BACKUP_ENCRYPTION_KEY || true)"; [ -n "$BACKUP_KEY" ] || BACKUP_KEY="$(gen 32)"
 
 umask 077
 {
@@ -213,6 +216,7 @@ umask 077
   echo "AI_ENABLED=$AI_ENABLED"
   echo "AI_OLLAMA_URL=$AI_OLLAMA"
   echo "EDITOR_JWT_SECRET=$ED_SECRET"
+  echo "BACKUP_ENCRYPTION_KEY=$BACKUP_KEY"
   [ -n "$ENC_KEY" ] && echo "STORAGE_ENCRYPTION_KEY=$ENC_KEY"
 } > .env
 ok ".env (secrets, permissions 600)"
@@ -223,9 +227,10 @@ say "${DIM}(first build can take a few minutes)${RST}"
 $DC up -d --build
 
 hdr "Waiting for the service to become healthy"
-BASE="${PUBLIC_URL%/}"
+# Poll the LOCAL nginx, not PUBLIC_URL — the public hostname may not resolve from
+# the server itself yet (DNS/TLS get set up afterwards).
 for i in $(seq 1 60); do
-  if curl -fsS "$BASE/api/v1/health-check" >/dev/null 2>&1; then ok "Backend is healthy"; break; fi
+  if curl -fsS "http://localhost/api/v1/health-check" >/dev/null 2>&1; then ok "Backend is healthy"; break; fi
   sleep 3
   [ "$i" = 60 ] && warn "Health check timed out — inspect logs with: $DC logs -f backend"
 done
