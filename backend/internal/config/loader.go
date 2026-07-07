@@ -122,9 +122,13 @@ func applyBrandConfig(cfg *Config) {
 		return
 	}
 
-	// AI + Office editor — brand config drives them unless already enabled via env.
-	if !cfg.AI.Enabled && brand.AI.Enabled {
+	// AI — brand.config.json is the source of truth. Enable if either env or
+	// brand says so, and take the model/URL settings from brand when present
+	// (env only carries the enable flag + URL, not the model names).
+	if brand.AI.Enabled {
 		cfg.AI.Enabled = true
+	}
+	if cfg.AI.Enabled {
 		if brand.AI.OllamaURL != "" {
 			cfg.AI.OllamaURL = brand.AI.OllamaURL
 		}
