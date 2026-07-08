@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Globe, Upload, FolderPlus, FolderUp, Download, Trash2, Eye, Folder, ChevronRight, Home } from "lucide-react";
+import { Globe, Upload, FolderPlus, FolderUp, Download, Trash2, Pencil, Eye, Folder, ChevronRight, Home } from "lucide-react";
 import { commonApi, filesApi, type CommonFile } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
@@ -84,6 +84,18 @@ export default function CommonPage() {
     } catch { toast.error(`Folder upload failed`, { id: t, position: "bottom-right" }); }
     refresh();
   }
+  async function renameFile(f: CommonFile) {
+    const name = await prompt({ title: "Rename file", defaultValue: f.name, placeholder: "New name", confirmLabel: "Rename" });
+    if (!name || name === f.name) return;
+    try { await commonApi.renameFile(f.id, name); toast.success("File renamed"); refresh(); }
+    catch { toast.error("Rename failed"); }
+  }
+  async function renameFolder(f: FolderItem) {
+    const name = await prompt({ title: "Rename folder", defaultValue: f.name, placeholder: "New name", confirmLabel: "Rename" });
+    if (!name || name === f.name) return;
+    try { await commonApi.renameFolder(f.id, name); toast.success("Folder renamed"); refresh(); }
+    catch { toast.error("Rename failed"); }
+  }
   async function remove(f: CommonFile) {
     if (!(await confirm({ title: "Delete from Common", message: `Delete “${f.name}” from Common? This cannot be undone.`, tone: "danger", confirmLabel: "Delete" }))) return;
     try { await commonApi.remove(f.id); toast.success("Deleted from Common"); refresh(); }
@@ -154,7 +166,12 @@ export default function CommonPage() {
                   </button>
                   <span className="text-xs text-muted">—</span>
                   <span className="text-xs text-muted">—</span>
-                  <span className="text-right text-xs text-muted">folder</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-right text-xs text-muted group-hover:hidden">folder</span>
+                    <div className="hidden gap-1 group-hover:flex">
+                      <IconBtn title="Rename" onClick={() => renameFolder(f)}><Pencil size={15} /></IconBtn>
+                    </div>
+                  </div>
                 </StaggerItem>
               ))}
               {/* Files */}
@@ -174,6 +191,7 @@ export default function CommonPage() {
                     <div className="hidden gap-1 group-hover:flex">
                       <IconBtn title="Preview" onClick={() => setPreview(i)}><Eye size={15} /></IconBtn>
                       <a href={filesApi.downloadUrl(f.id)}><IconBtn title="Download" onClick={() => {}}><Download size={15} /></IconBtn></a>
+                      {f.can_delete && <IconBtn title="Rename" onClick={() => renameFile(f)}><Pencil size={15} /></IconBtn>}
                       {f.can_delete && <IconBtn title="Delete" onClick={() => remove(f)}><Trash2 size={15} /></IconBtn>}
                     </div>
                   </div>

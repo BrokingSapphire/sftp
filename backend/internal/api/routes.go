@@ -244,7 +244,9 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Get(gf, "/common", h.CommonList, read, option.Summary("List organisation-wide Common files"))
 	fuego.Get(gf, "/common/browse", h.CommonBrowse, read, option.Summary("Browse Common folders + files at a level"))
 	fuego.Post(gf, "/common/folders", h.CommonFolderCreate, upload, option.Summary("Create a folder in Common"))
+	fuego.Put(gf, "/common/folders/{id}/rename", h.CommonFolderRename, write, option.Summary("Rename a Common folder (creator or admin)"))
 	fuego.PostStd(gf, "/common/upload", h.CommonUpload, upload, option.Summary("Upload a file to Common (optional folder_id)"))
+	fuego.Put(gf, "/common/{id}/rename", h.CommonFileRename, write, option.Summary("Rename a Common file (uploader or admin)"))
 	fuego.Delete(gf, "/common/{id}", h.CommonDelete, option.Summary("Delete a Common file (uploader or admin)"))
 
 	// Simple single-request multipart upload.

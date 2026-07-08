@@ -148,6 +148,8 @@ export const commonApi = {
   createFolder: (name: string, parentId?: string) =>
     unwrap<FolderItem>(http.post<Envelope<FolderItem>>("/files/common/folders", { name, parent_id: parentId ?? null })),
   remove: (id: string) => http.delete(`/files/common/${id}`),
+  renameFile: (id: string, name: string) => http.put(`/files/common/${id}/rename`, { name }),
+  renameFolder: (id: string, name: string) => http.put(`/files/common/folders/${id}/rename`, { name }),
   makeCommon: (id: string) => http.post(`/files/${id}/make-common`, {}),
   upload: (file: File, folderId?: string, onProgress?: (pct: number) => void) => {
     const form = new FormData();

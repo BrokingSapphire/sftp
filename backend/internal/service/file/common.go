@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"io"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -188,6 +189,44 @@ func (s *Service) DeleteCommon(ctx context.Context, caller uuid.UUID, isAdmin bo
 	}
 	// Common files are not counted against the owner's quota, so nothing to free.
 	return nil
+}
+
+// RenameCommonFile renames a Common file. Only the uploader or an admin may
+// rename it.
+func (s *Service) RenameCommonFile(ctx context.Context, caller uuid.UUID, isAdmin bool, fileID uuid.UUID, newName string) error {
+	name, err := utils.SanitizeName(newName)
+	if err != nil {
+		return err
+	}
+	f, err := s.q.GetFileByIDIncludingTrashed(ctx, fileID)
+	if err != nil || !f.IsCommon {
+		return apperrors.ErrFileNotFound
+	}
+	if !isAdmin && f.OwnerID != caller {
+		return apperrors.ErrForbidden
+	}
+	if err := mutationBlocked(f, false); err != nil {
+		return err
+	}
+	return s.q.RenameFile(ctx, sftpdb.RenameFileParams{ID: fileID, Name: name, Extension: utils.FileExtension(name)})
+}
+
+// RenameCommonFolder renames a Common folder. Only the creator or an admin may
+// rename it.
+func (s *Service) RenameCommonFolder(ctx context.Context, caller uuid.UUID, isAdmin bool, folderID uuid.UUID, newName string) error {
+	name, err := utils.SanitizeName(newName)
+	if err != nil {
+		return err
+	}
+	folder, err := s.q.GetFolderByID(ctx, folderID)
+	if err != nil || !folder.IsCommon {
+		return apperrors.ErrFolderNotFound
+	}
+	if !isAdmin && folder.OwnerID != caller {
+		return apperrors.ErrForbidden
+	}
+	parentPath := strings.TrimSuffix(folder.Path, "/"+folder.Name)
+	return s.q.RenameFolder(ctx, sftpdb.RenameFolderParams{ID: folderID, Name: name, Path: parentPath + "/" + name})
 }
 
 // CreateCommonFolder creates a navigable folder inside the Common area.

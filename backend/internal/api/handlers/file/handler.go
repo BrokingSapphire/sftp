@@ -777,6 +777,30 @@ func (h *Handler) CommonDelete(c fuego.ContextNoBody) (*response.Envelope[respon
 	return response.OKWithMessage[response.Any](nil, "Deleted from Common"), nil
 }
 
+// CommonFileRename renames a Common file (uploader or admin only).
+func (h *Handler) CommonFileRename(c fuego.ContextWithBody[models.RenameRequest]) (*response.Envelope[response.Any], error) {
+	uid, id, body, err := h.idAndBody(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RenameCommonFile(c.Context(), uid, isAdmin(c.Context()), id, body.Name); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "File renamed"), nil
+}
+
+// CommonFolderRename renames a Common folder (creator or admin only).
+func (h *Handler) CommonFolderRename(c fuego.ContextWithBody[models.RenameRequest]) (*response.Envelope[response.Any], error) {
+	uid, id, body, err := h.idAndBody(c)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RenameCommonFolder(c.Context(), uid, isAdmin(c.Context()), id, body.Name); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Folder renamed"), nil
+}
+
 func optionalUUID(s string) (*uuid.UUID, error) {
 	if s == "" {
 		return nil, nil
