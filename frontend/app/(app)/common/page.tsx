@@ -8,6 +8,7 @@ import { commonApi, filesApi, type CommonFile } from "@/lib/endpoints";
 import type { FileItem, FolderItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 import { Skeleton } from "@/components/ui/misc";
 import { UploadZone } from "@/components/files/upload-zone";
 import { fileIcon } from "@/components/files/icon";
@@ -21,6 +22,7 @@ interface Crumb { id?: string; name: string }
 
 export default function CommonPage() {
   const qc = useQueryClient();
+  const { confirm, prompt } = useDialogs();
   const [crumbs, setCrumbs] = useState<Crumb[]>([{ name: "Common" }]);
   const current = crumbs[crumbs.length - 1];
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +38,7 @@ export default function CommonPage() {
   function goTo(i: number) { setCrumbs((c) => c.slice(0, i + 1)); }
 
   async function newFolder() {
-    const name = prompt("New folder name (in Common)");
+    const name = await prompt({ title: "New folder in Common", placeholder: "Folder name", confirmLabel: "Create" });
     if (!name) return;
     try { await commonApi.createFolder(name, current.id); toast.success("Folder created"); refresh(); }
     catch { toast.error("Could not create folder"); }
@@ -83,7 +85,7 @@ export default function CommonPage() {
     refresh();
   }
   async function remove(f: CommonFile) {
-    if (!confirm(`Delete "${f.name}" from Common? This cannot be undone.`)) return;
+    if (!(await confirm({ title: "Delete from Common", message: `Delete “${f.name}” from Common? This cannot be undone.`, tone: "danger", confirmLabel: "Delete" }))) return;
     try { await commonApi.remove(f.id); toast.success("Deleted from Common"); refresh(); }
     catch { toast.error("Could not delete"); }
   }

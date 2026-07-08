@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { History, Download, RotateCcw, X, Check } from "lucide-react";
 import { filesApi, type FileVersion } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 import { Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
 
@@ -17,12 +18,13 @@ export function VersionHistory({
   fileId: string; fileName: string; currentVersion: number; onClose: () => void; onRestored?: () => void;
 }) {
   const qc = useQueryClient();
+  const { confirm } = useDialogs();
   const q = useQuery({ queryKey: ["versions", fileId], queryFn: () => filesApi.versions(fileId) });
   const [restoring, setRestoring] = useState<number | null>(null);
   const past = q.data ?? [];
 
   async function restore(v: FileVersion) {
-    if (!confirm(`Restore version ${v.version_no}? The current content is saved as a new version first.`)) return;
+    if (!(await confirm({ title: "Restore version", message: `Restore version ${v.version_no}? The current content is saved as a new version first.`, confirmLabel: "Restore" }))) return;
     setRestoring(v.version_no);
     try {
       await filesApi.restoreVersion(fileId, v.version_no);

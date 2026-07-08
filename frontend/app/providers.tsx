@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
+import { DialogProvider } from "@/components/ui/dialogs";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -24,7 +25,9 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={client}>
         <I18nProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <DialogProvider>{children}</DialogProvider>
+          </AuthProvider>
         </I18nProvider>
         <Toaster richColors closeButton position="top-right" duration={3000} />
       </QueryClientProvider>

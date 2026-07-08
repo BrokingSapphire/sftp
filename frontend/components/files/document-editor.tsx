@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { Save, X, Loader2, FileCode } from "lucide-react";
 import { filesApi } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 
 const EDITABLE = new Set([
   "txt", "md", "markdown", "csv", "tsv", "log", "json", "yaml", "yml", "xml",
@@ -23,6 +24,7 @@ export function DocumentEditor({
 }: {
   fileId: string; fileName: string; onClose: () => void; onSaved?: () => void;
 }) {
+  const { confirm } = useDialogs();
   const [text, setText] = useState<string | null>(null);
   const [original, setOriginal] = useState("");
   const [saving, setSaving] = useState(false);
@@ -58,8 +60,8 @@ export function DocumentEditor({
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  function requestClose() {
-    if (dirty && !confirm("Discard unsaved changes?")) return;
+  async function requestClose() {
+    if (dirty && !(await confirm({ title: "Discard changes", message: "You have unsaved changes. Discard them?", tone: "danger", confirmLabel: "Discard" }))) return;
     onClose();
   }
 

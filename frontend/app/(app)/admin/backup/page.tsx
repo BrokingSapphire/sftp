@@ -10,11 +10,13 @@ import { PageHeader } from "@/components/files/file-list";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDialogs } from "@/components/ui/dialogs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatBytes, timeAgo } from "@/lib/utils";
 
 export default function BackupPage() {
   const { user } = useAuth();
+  const { confirm } = useDialogs();
   const [path, setPath] = useState("/backups");
   const [status, setStatus] = useState<BackupStatus | null>(null);
   const [result, setResult] = useState<BackupResult | null>(null);
@@ -50,7 +52,7 @@ export default function BackupPage() {
     finally { setBusy(null); }
   }
   async function restore() {
-    if (!confirm("Restore ALL users' files from this target? Missing files are recreated; existing ones are left untouched.")) return;
+    if (!(await confirm({ title: "Restore from backup", message: "Restore ALL users' files from this target? Missing files are recreated; existing ones are left untouched.", confirmLabel: "Restore" }))) return;
     setBusy("restore");
     try {
       const r = await backupApi.restore(path);

@@ -6,14 +6,16 @@ import { Trash2 } from "lucide-react";
 import { filesApi } from "@/lib/endpoints";
 import { FileList, PageHeader } from "@/components/files/file-list";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 
 export default function TrashPage() {
   const qc = useQueryClient();
+  const { confirm } = useDialogs();
   const q = useQuery({ queryKey: ["trash"], queryFn: () => filesApi.trash() });
   const count = q.data?.length ?? 0;
 
   async function emptyTrash() {
-    if (!confirm("Permanently delete everything in Trash? This cannot be undone.")) return;
+    if (!(await confirm({ title: "Empty Trash", message: "Permanently delete everything in Trash? This cannot be undone.", tone: "danger", confirmLabel: "Empty Trash" }))) return;
     try {
       await filesApi.emptyTrash();
       toast.success("Trash emptied");

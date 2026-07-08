@@ -10,12 +10,14 @@ import { PageHeader } from "@/components/files/file-list";
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 import { Input } from "@/components/ui/input";
 import { Badge, Skeleton } from "@/components/ui/misc";
 import { formatBytes, timeAgo } from "@/lib/utils";
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
+  const { prompt } = useDialogs();
   const users = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list() });
   const roles = useQuery({ queryKey: ["roles"], queryFn: () => rolesApi.list() });
   const [open, setOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function AdminUsersPage() {
   }
 
   async function resetPassword(id: string, username: string) {
-    const pw = prompt(`New password for ${username} (min 12 chars)`);
+    const pw = await prompt({ title: `Reset password`, message: `Set a new password for ${username} (minimum 12 characters). Their active sessions will be revoked.`, type: "password", placeholder: "New password", confirmLabel: "Reset password" });
     if (!pw) return;
     if (pw.length < 12) { toast.error("Password must be at least 12 characters"); return; }
     try { await usersApi.resetPassword(id, pw); toast.success("Password reset — user's sessions revoked"); }

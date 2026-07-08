@@ -26,6 +26,7 @@ const OFFICE_EXT = new Set(["docx", "doc", "odt", "xlsx", "xls", "ods", "pptx", 
 import { useContextMenu, ContextMenu, type MenuItem } from "@/components/files/context-menu";
 import { useUploads } from "@/lib/upload-manager";
 import { useI18n } from "@/lib/i18n";
+import { useDialogs } from "@/components/ui/dialogs";
 import { formatBytes, timeAgo, cn } from "@/lib/utils";
 import { StaggerList, StaggerItem, motion } from "@/components/motion";
 
@@ -47,13 +48,14 @@ export default function FilesPage() {
   const { t: tr } = useI18n();
   const { has } = useAuth();
   const router = useRouter();
+  const { confirm, prompt } = useDialogs();
 
   async function toggleHold(f: FileItem) {
     try { await filesApi.setLegalHold(f.id, !f.legal_hold); toast.success(f.legal_hold ? "Legal hold released" : "Legal hold placed"); refresh(); }
     catch { toast.error("Could not update legal hold"); }
   }
   async function setRetention(f: FileItem) {
-    const days = prompt("Lock this file from deletion/modification for how many days? (WORM retention)", "365");
+    const days = await prompt({ title: "Set retention (WORM)", message: `Lock “${f.name}” from deletion or modification for how many days?`, defaultValue: "365", type: "number", placeholder: "Days", confirmLabel: "Lock" });
     if (!days) return;
     const n = Number(days);
     if (!n || n <= 0) return toast.error("Enter a positive number of days");
@@ -126,7 +128,7 @@ export default function FilesPage() {
     uploads.add(fs, current.id);
   }
   async function createFolder() {
-    const name = prompt("New folder name");
+    const name = await prompt({ title: "New folder", placeholder: "Folder name", confirmLabel: "Create" });
     if (!name) return;
     try { await filesApi.createFolder(name, current.id); toast.success("Folder created"); refresh(); }
     catch { toast.error("Could not create folder"); }
@@ -189,7 +191,7 @@ export default function FilesPage() {
     }
   }
   async function rename(kind: "file" | "folder", id: string, cur: string) {
-    const name = prompt("Rename to", cur);
+    const name = await prompt({ title: `Rename ${kind}`, defaultValue: cur, placeholder: "New name", confirmLabel: "Rename" });
     if (!name || name === cur) return;
     try {
       kind === "file" ? await filesApi.renameFile(id, name) : await filesApi.renameFolder(id, name);
@@ -256,8 +258,8 @@ export default function FilesPage() {
   function copyFile(f: FileItem) {
     filesApi.copyFile(f.id).then(() => { toast.success(`Copied "${f.name}"`); refresh(); }).catch(() => toast.error("Could not copy"));
   }
-  function removeFolder(f: FolderItem) {
-    if (!confirm(`Delete folder "${f.name}"? Everything inside it will be moved to Trash.`)) return;
+  async function removeFolder(f: FolderItem) {
+    if (!(await confirm({ title: "Delete folder", message: `Delete “${f.name}”? Everything inside it will be moved to Trash.`, tone: "danger", confirmLabel: "Delete" }))) return;
     filesApi.deleteFolder(f.id).then(() => { toast.success("Folder deleted"); refresh(); }).catch(() => toast.error("Could not delete folder"));
   }
 

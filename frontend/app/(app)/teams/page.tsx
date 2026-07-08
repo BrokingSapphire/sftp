@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api";
 import { PageHeader } from "@/components/files/file-list";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/misc";
@@ -24,6 +25,7 @@ const TEAM_COLORS = ["#064D51", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#16
 
 export default function TeamsPage() {
   const qc = useQueryClient();
+  const { confirm } = useDialogs();
   const q = useQuery({ queryKey: ["teams"], queryFn: () => teamsApi.list() });
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", quota_gb: 0, color: TEAM_COLORS[0] });
@@ -41,7 +43,7 @@ export default function TeamsPage() {
     } catch (e) { toast.error(e instanceof ApiError ? e.message : "Could not create team"); }
   }
   async function remove(t: Team) {
-    if (!confirm(`Delete team “${t.name}” and its shared drive? This cannot be undone.`)) return;
+    if (!(await confirm({ title: "Delete team", message: `Delete “${t.name}” and its shared drive? This cannot be undone.`, tone: "danger", confirmLabel: "Delete team" }))) return;
     try { await teamsApi.remove(t.id); toast.success("Team deleted"); refresh(); }
     catch (e) { toast.error(e instanceof ApiError ? e.message : "Could not delete"); }
   }

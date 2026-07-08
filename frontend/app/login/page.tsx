@@ -10,6 +10,7 @@ import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDialogs } from "@/components/ui/dialogs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { BRAND } from "@/lib/brand";
@@ -27,6 +28,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { confirm } = useDialogs();
   const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [idleOut, setIdleOut] = useState(false);
@@ -53,7 +55,7 @@ export default function LoginPage() {
     } catch (e) {
       // 409 → a session is already active elsewhere. Offer to take it over.
       if (e instanceof ApiError && e.status === 409) {
-        if (confirm("A session is already active for this account on another device.\n\nLog it out and continue here?")) {
+        if (await confirm({ title: "Session already active", message: "A session is already active for this account on another device. Log it out and continue here?", confirmLabel: "Continue here" })) {
           try {
             await login(values.identifier, values.password, values.remember ?? false, true);
             toast.success("Signed in — other session ended");

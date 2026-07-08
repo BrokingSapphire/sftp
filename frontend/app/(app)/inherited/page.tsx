@@ -8,6 +8,7 @@ import { filesApi } from "@/lib/endpoints";
 import type { FileItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
 import { Button } from "@/components/ui/button";
+import { useDialogs } from "@/components/ui/dialogs";
 import { Skeleton } from "@/components/ui/misc";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,6 +26,7 @@ function deadlineLabel(iso?: string) {
 
 export default function InheritedPage() {
   const qc = useQueryClient();
+  const { confirm } = useDialogs();
   const q = useQuery({ queryKey: ["inherited"], queryFn: () => filesApi.inherited() });
   const [preview, setPreview] = useState<number | null>(null);
   const groups = q.data ?? [];
@@ -39,7 +41,7 @@ export default function InheritedPage() {
     catch { toast.error("Could not keep file"); }
   }
   async function remove(f: FileItem) {
-    if (!confirm(`Permanently delete “${f.name}”?`)) return;
+    if (!(await confirm({ title: "Delete file", message: `Permanently delete “${f.name}”?`, tone: "danger", confirmLabel: "Delete" }))) return;
     try { await filesApi.deleteFile(f.id); toast.success("Deleted"); refresh(); }
     catch { toast.error("Could not delete"); }
   }
