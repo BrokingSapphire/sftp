@@ -65,6 +65,11 @@ if ! command -v docker >/dev/null 2>&1; then
   esac
 fi
 
+# Ensure the Docker daemon starts on every boot. This runs even when Docker was
+# already installed (the install block above only fires on a fresh install), so
+# the stack survives a server reboot instead of staying down.
+[ "$OS" = "Linux" ] && $SUDO systemctl enable docker >/dev/null 2>&1 || true
+
 # Start the daemon if it isn't running
 if ! docker info >/dev/null 2>&1 && ! $SUDO docker info >/dev/null 2>&1; then
   hdr "Starting the Docker daemon"
@@ -142,6 +147,37 @@ CO_TAGLINE=$(ask  "Tagline"                 "$(brand_get company.tagline || echo
 CO_URL=$(ask      "Company website URL"     "$(brand_get company.url || echo 'https://example.com')")
 CO_COLOR=$(ask    "Brand colour (hex)"      "$(brand_get colors.primary || echo '#064D51')")
 
+# ── brand logo ───────────────────────────────────────────────────────────────
+# Accept a local image path or an https URL. Blank keeps whatever is already
+# configured (the bundled default Sapphire logo on a first run). A local file is
+# copied into the frontend's public dir so it ships inside the image; a URL is
+# referenced as-is. Falls back to the default if the given path doesn't exist.
+LOGO_FULL="$(brand_get logo.full   || echo '/logo.svg')";       [ -n "$LOGO_FULL" ]  || LOGO_FULL='/logo.svg'
+LOGO_LIGHT="$(brand_get logo.light || echo '/logo-white.svg')"; [ -n "$LOGO_LIGHT" ] || LOGO_LIGHT='/logo-white.svg'
+LOGO_DARK="$(brand_get logo.dark   || echo '/logo-black.svg')"; [ -n "$LOGO_DARK" ]  || LOGO_DARK='/logo-black.svg'
+LOGO_FAV="$(brand_get logo.favicon || echo '/logo.svg')";       [ -n "$LOGO_FAV" ]   || LOGO_FAV='/logo.svg'
+LOGO_SRC="${LOGO_PATH:-}"
+[ -z "$LOGO_SRC" ] && LOGO_SRC=$(ask "Brand logo (image path or https URL, blank = default Sapphire logo)" "")
+if [ -n "$LOGO_SRC" ]; then
+  case "$LOGO_SRC" in
+    http://*|https://*)
+      LOGO_FULL="$LOGO_SRC"; LOGO_LIGHT="$LOGO_SRC"; LOGO_DARK="$LOGO_SRC"; LOGO_FAV="$LOGO_SRC"
+      ok "Using logo URL: $LOGO_SRC" ;;
+    *)
+      LOGO_SRC="${LOGO_SRC/#\~/$HOME}"
+      if [ -f "$LOGO_SRC" ]; then
+        ext="${LOGO_SRC##*.}"; [ "$ext" = "$LOGO_SRC" ] && ext="svg"
+        dest="logo-custom.${ext}"
+        mkdir -p frontend/public
+        cp -f "$LOGO_SRC" "frontend/public/$dest"
+        LOGO_FULL="/$dest"; LOGO_LIGHT="/$dest"; LOGO_DARK="/$dest"; LOGO_FAV="/$dest"
+        ok "Custom logo copied to frontend/public/$dest"
+      else
+        warn "Logo not found: $LOGO_SRC — keeping the default Sapphire logo."
+      fi ;;
+  esac
+fi
+
 hdr "Organisation & access"
 ORG_DOMAINS=$(ask "Org email domain(s), comma-separated" "$(brand_get org.domains || echo 'example.com')")
 SUPPORT=$(ask     "Support email"           "$(brand_get org.supportEmail || echo "support@${ORG_DOMAINS%%,*}")")
@@ -202,6 +238,7 @@ fi
 # ── generate brand.config.json ───────────────────────────────────────────────
 hdr "Writing configuration"
 export CO_NAME CO_SHORT CO_PRODUCT CO_PSHORT CO_TAGLINE CO_URL CO_COLOR \
+       LOGO_FULL LOGO_LIGHT LOGO_DARK LOGO_FAV \
        ORG_DOMAINS SUPPORT MAIL_FROM PUBLIC_URL \
        SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS \
        SSO_ENABLED SSO_TENANT SSO_CLIENT SSO_SECRET AI_ENABLED AI_OLLAMA \
@@ -220,7 +257,8 @@ cfg = {
     "description": f'{os.environ["CO_PRODUCT"]} — {os.environ["CO_TAGLINE"]}.',
     "url": os.environ["CO_URL"], "copyright": os.environ["CO_NAME"],
   },
-  "logo": {"full": "/logo.svg", "light": "/logo-white.svg", "dark": "/logo-black.svg", "favicon": "/logo.svg"},
+  "logo": {"full": os.environ["LOGO_FULL"], "light": os.environ["LOGO_LIGHT"],
+           "dark": os.environ["LOGO_DARK"], "favicon": os.environ["LOGO_FAV"]},
   "colors": {"primary": os.environ["CO_COLOR"], "primaryForeground": "#FFFFFF",
              "primaryDark": os.environ["CO_COLOR"], "primaryForegroundDark": "#FFFFFF"},
   "org": {"domains": domains, "supportEmail": os.environ["SUPPORT"]},
@@ -300,6 +338,49 @@ for i in $(seq 1 60); do
   sleep 3
   [ "$i" = 60 ] && warn "Health check timed out — inspect logs with: $DC logs -f backend"
 done
+
+# ── autostart on boot (Linux/systemd) ────────────────────────────────────────
+# The compose files set `restart: unless-stopped`, but that only revives
+# containers that were running at shutdown. This systemd unit guarantees the
+# whole stack comes back after any reboot — cold boot, crash, or a prior
+# `docker compose down` — and starts it with the same optional profiles.
+if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
+  hdr "Boot autostart"
+  # Build an absolute compose invocation for the unit file (systemd has no PATH/cwd).
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    DC_UNIT="$(command -v docker) compose"
+  elif command -v docker-compose >/dev/null 2>&1; then
+    DC_UNIT="$(command -v docker-compose)"
+  else
+    DC_UNIT="$DC"
+  fi
+  UNIT=/etc/systemd/system/sftp.service
+  # shellcheck disable=SC2086
+  $SUDO tee "$UNIT" >/dev/null <<EOF
+[Unit]
+Description=Sapphire SFTP (docker compose stack)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$(pwd)
+ExecStart=$DC_UNIT $PROFILES up -d
+ExecStop=$DC_UNIT down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  $SUDO systemctl daemon-reload 2>/dev/null || true
+  if $SUDO systemctl enable sftp.service >/dev/null 2>&1; then
+    ok "Autostart enabled — the stack will come up on every boot ($SUDO systemctl status sftp)"
+  else
+    warn "Could not enable sftp.service. Enable it manually: sudo systemctl enable sftp"
+  fi
+fi
 
 # ── HTTPS (Let's Encrypt) ─────────────────────────────────────────────────────
 # If the public URL is an https:// real domain, offer to obtain a certificate and

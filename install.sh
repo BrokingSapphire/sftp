@@ -105,44 +105,7 @@ else
   fi
 fi
 
-# ── 5. autostart on boot (Linux/systemd) ─────────────────────────────────────
-# Installs a systemd unit that brings the whole compose stack up on every boot.
-# The compose files already set `restart: unless-stopped`, but that only revives
-# containers that were running at shutdown; this unit guarantees the stack comes
-# up even after a cold boot or a prior `docker compose down`.
-install_autostart() {
-  case "$OS" in Linux) ;; *) return 0 ;; esac
-  has systemctl || { warn "No systemd; skipping boot autostart. Start manually with: docker compose up -d"; return 0; }
-
-  DC_BIN="$(command -v docker) compose"
-  UNIT=/etc/systemd/system/sftp.service
-  head "Installing boot autostart service ($UNIT)"
-  sudo tee "$UNIT" >/dev/null <<EOF
-[Unit]
-Description=Sapphire SFTP (docker compose stack)
-Requires=docker.service
-After=docker.service network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=$DIR
-ExecStart=$DC_BIN up -d
-ExecStop=$DC_BIN down
-TimeoutStartSec=0
-
-[Install]
-WantedBy=multi-user.target
-EOF
-  sudo systemctl daemon-reload || true
-  sudo systemctl enable sftp.service >/dev/null 2>&1 \
-    && ok "Autostart enabled — stack will come up on every boot (systemctl status sftp)" \
-    || warn "Could not enable sftp.service; enable it manually: sudo systemctl enable sftp"
-}
-install_autostart
-
-# ── 6. deploy ────────────────────────────────────────────────────────────────
+# ── 5. deploy ────────────────────────────────────────────────────────────────
 cd "$DIR"
 chmod +x deploy.sh
 head "Starting guided deploy"

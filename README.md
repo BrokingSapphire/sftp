@@ -203,10 +203,19 @@ cd sftp
 ./deploy.sh
 ```
 
-`deploy.sh` asks a few company questions (name, brand colour, org domains, first
-admin, optional SMTP, SSO, encryption, AI), generates `brand.config.json` and
-`.env` (secrets auto-generated), then builds and starts everything. When it
-finishes it prints your URL and admin credentials.
+`deploy.sh` asks a few company questions (name, brand colour, **logo**, org
+domains, first admin, optional SMTP, SSO, encryption, AI), generates
+`brand.config.json` and `.env` (secrets auto-generated), then builds and starts
+everything. When it finishes it prints your URL and admin credentials.
+
+For the logo, give a local image path or an `https` URL — a local file is copied
+into `frontend/public/` and baked into the image; leave it blank to keep the
+default. You can also pass it non-interactively: `LOGO_PATH=/path/logo.svg ./deploy.sh`.
+
+**Auto-start on boot:** the installer enables the Docker service at boot and
+registers a boot unit (systemd `sftp.service` on Linux, a `SapphireSFTP`
+startup task on Windows) so the whole stack comes back after any reboot — no
+manual `docker compose up` needed.
 
 ### Option C — Docker Compose (manual)
 

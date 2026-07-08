@@ -66,6 +66,35 @@ if (Has wsl) {
 }
 
 # --- 5. native PowerShell deploy (no WSL) ------------------------------------
+
+# Brand logo: accept a local image path or an https URL. Blank keeps the bundled
+# default Sapphire logo. A local file is copied into the frontend's public dir;
+# a URL is referenced as-is. We patch brand.config.json's logo paths to match.
+$logoSrc = if ($env:LOGO_PATH) { $env:LOGO_PATH } else { Read-Host "Brand logo (image path or https URL, blank = default Sapphire logo)" }
+if ($logoSrc) {
+  if ($logoSrc -match '^https?://') {
+    $logoPath = $logoSrc
+    Ok "Using logo URL: $logoSrc"
+  } elseif (Test-Path $logoSrc) {
+    $ext = [System.IO.Path]::GetExtension($logoSrc); if (-not $ext) { $ext = ".svg" }
+    $dest = "logo-custom$ext"
+    New-Item -ItemType Directory -Force -Path ".\frontend\public" | Out-Null
+    Copy-Item -Force $logoSrc ".\frontend\public\$dest"
+    $logoPath = "/$dest"
+    Ok "Custom logo copied to frontend/public/$dest"
+  } else {
+    Warn "Logo not found: $logoSrc - keeping the default Sapphire logo."
+    $logoPath = $null
+  }
+  if ($logoPath -and (Test-Path ".\brand.config.json")) {
+    $cfg = Get-Content ".\brand.config.json" -Raw | ConvertFrom-Json
+    $cfg.logo.full = $logoPath; $cfg.logo.light = $logoPath
+    $cfg.logo.dark = $logoPath; $cfg.logo.favicon = $logoPath
+    ($cfg | ConvertTo-Json -Depth 20) | Set-Content -Path ".\brand.config.json" -Encoding ascii
+    Ok "brand.config.json logo paths updated"
+  }
+}
+
 Info "Generating .env with strong secrets"
 function RandHex($n) { -join ((1..$n) | ForEach-Object { '{0:x2}' -f (Get-Random -Max 256) }) }
 $adminEmail = if ($env:ADMIN_EMAIL) { $env:ADMIN_EMAIL } else { "admin@example.com" }
@@ -88,6 +117,40 @@ BACKUP_ENCRYPTION_KEY=$(RandHex 32)
 
 Info "Building and starting the stack (this takes a few minutes)"
 docker compose up -d --build
+
+# --- 6. autostart on boot ----------------------------------------------------
+# The compose files use `restart: unless-stopped`, so containers revive once the
+# Docker engine is up. On Windows the engine only starts after Docker Desktop
+# launches, so we (a) enable Docker Desktop's "start on login" and (b) register a
+# startup Scheduled Task that runs `docker compose up -d` to cover cold boots and
+# prior `docker compose down`.
+Info "Configuring autostart on boot"
+try {
+  $settings = Join-Path $env:APPDATA "Docker\settings-store.json"
+  if (-not (Test-Path $settings)) { $settings = Join-Path $env:APPDATA "Docker\settings.json" }
+  if (Test-Path $settings) {
+    $s = Get-Content $settings -Raw | ConvertFrom-Json
+    $s | Add-Member -NotePropertyName autoStart -NotePropertyValue $true -Force
+    ($s | ConvertTo-Json -Depth 20) | Set-Content -Path $settings -Encoding ascii
+    Ok "Docker Desktop set to start on login"
+  } else {
+    Warn "Could not find Docker Desktop settings - enable 'Start Docker Desktop when you log in' in its settings."
+  }
+} catch { Warn "Could not update Docker Desktop autostart setting - enable it manually in Docker Desktop settings." }
+
+try {
+  $dcExe = (Get-Command docker).Source
+  $action  = New-ScheduledTaskAction -Execute $dcExe -Argument "compose up -d" -WorkingDirectory $dir
+  $trigger = New-ScheduledTaskTrigger -AtStartup
+  $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+  $taskSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+  Register-ScheduledTask -TaskName "SapphireSFTP" -Action $action -Trigger $trigger -Principal $principal -Settings $taskSettings -Force | Out-Null
+  Ok "Startup task 'SapphireSFTP' registered - the stack will come up on every boot"
+} catch {
+  Warn "Could not register the startup task (needs an elevated PowerShell). The stack still"
+  Warn "auto-restarts while Docker Desktop is running. To enable full boot autostart, re-run"
+  Warn "this installer in an Administrator PowerShell."
+}
 
 Write-Host ""
 Ok "Sapphire SFTP is starting."

@@ -229,10 +229,22 @@ script before piping to a shell? Download it, read it, then run `bash install.sh
 
 ### Option A — Guided deploy (recommended)
 
-`deploy.sh` asks a short series of questions (company name, brand colour, org
-domains, first admin account, and whether to enable SMTP, SSO, encryption, and
-AI), then generates `brand.config.json` and `.env` with strong random secrets and
-starts everything.
+`deploy.sh` asks a short series of questions (company name, brand colour, brand
+logo, org domains, first admin account, and whether to enable SMTP, SSO,
+encryption, and AI), then generates `brand.config.json` and `.env` with strong
+random secrets and starts everything.
+
+For the **logo**, provide a local image path or an `https` URL (blank keeps the
+default Sapphire logo). A local file is copied into `frontend/public/` and baked
+into the image. To set it non-interactively: `LOGO_PATH=/path/logo.svg ./deploy.sh`.
+
+The installer also configures **auto-start on boot**: it enables the Docker
+service at boot and installs a systemd unit (`sftp.service`) that brings the
+whole compose stack up on every reboot — surviving cold boots and prior
+`docker compose down`. Manage it with `sudo systemctl status sftp`. On Windows
+(native PowerShell install), it enables Docker Desktop's start-on-login and
+registers a `SapphireSFTP` startup task (run the installer in an elevated
+PowerShell so the task can be registered).
 
 **Linux / macOS / Windows-WSL:**
 
