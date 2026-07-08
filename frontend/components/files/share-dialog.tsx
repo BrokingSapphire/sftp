@@ -12,15 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { isExternalEmail as isExternal } from "@/lib/brand";
 
-export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fileName: string; onClose: () => void }) {
-  // People-with-access (internal shares)
+export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { fileId: string; fileName: string; kind?: "file" | "folder"; onClose: () => void }) {
+  const isFolder = kind === "folder";
+  // People-with-access (internal shares) — only files support per-user grants.
   const [grants, setGrants] = useState<FileGrant[]>([]);
   const [personEmail, setPersonEmail] = useState("");
   const [canWrite, setCanWrite] = useState(false);
   const [adding, setAdding] = useState(false);
 
-  // General access (link)
-  const [showLink, setShowLink] = useState(false);
+  // General access (link) — folders only offer the link, so open it by default.
+  const [showLink, setShowLink] = useState(kind === "folder");
   const [password, setPassword] = useState("");
   const [expires, setExpires] = useState<number | "">("");
   const [limit, setLimit] = useState<number | "">("");
@@ -29,10 +30,11 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (isFolder) return; // folders have no per-user grant endpoint
     // The API omits an empty array, so coalesce to [] — otherwise grants.map
     // below would crash (files with no recipients are the common case).
     filesApi.listGrants(fileId).then((g) => setGrants(g ?? [])).catch(() => setGrants([]));
-  }, [fileId]);
+  }, [fileId, isFolder]);
 
   const personExternal = personEmail ? isExternal(personEmail) : false;
 
@@ -61,11 +63,12 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
   async function createLink() {
     setLinkBusy(true);
     try {
-      const res = await sharesApi.create(fileId, {
+      const opts = {
         password: password || undefined,
         expires_in_days: expires === "" ? undefined : Number(expires),
         download_limit: limit === "" ? undefined : Number(limit),
-      });
+      };
+      const res = isFolder ? await sharesApi.createFolder(fileId, opts) : await sharesApi.create(fileId, opts);
       setLink(res);
       toast.success("Link created");
     } catch (e) {
@@ -92,7 +95,8 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
           <button onClick={onClose} className="text-muted hover:text-foreground"><X size={18} /></button>
         </div>
 
-        {/* Add people */}
+        {/* Add people (files only — folders have no per-user grant API) */}
+        {!isFolder && (<>
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 rounded-lg border border-border px-2 focus-within:ring-2 focus-within:ring-ring/40">
@@ -145,6 +149,7 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
             {(grants ?? []).length === 0 && <p className="px-1 text-xs text-muted">Only you have access.</p>}
           </div>
         </div>
+        </>)}
 
         {/* General access — link */}
         <div className="mt-4 rounded-xl border border-border p-3">
@@ -152,7 +157,7 @@ export function ShareDialog({ fileId, fileName, onClose }: { fileId: string; fil
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted"><Globe size={15} /></span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">General access — link</p>
-              <p className="text-xs text-muted">{link ? "Anyone with the link" : "Create a link anyone can open"}</p>
+              <p className="text-xs text-muted">{link ? (isFolder ? "Anyone with the link downloads the folder (zip)" : "Anyone with the link") : (isFolder ? "Create a link to download this folder as a zip" : "Create a link anyone can open")}</p>
             </div>
             <motion.span animate={{ rotate: showLink ? 180 : 0 }} className="text-muted"><ChevronDown size={16} /></motion.span>
           </button>

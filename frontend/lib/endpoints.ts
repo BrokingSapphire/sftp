@@ -181,13 +181,16 @@ export interface SharedFile {
   can_write: boolean; shared_at: string;
 }
 export interface ShareCreateResult {
-  token: string; url: string; has_password: boolean;
+  token: string; url: string; kind: "file" | "folder"; has_password: boolean;
   emailed: boolean; external: boolean; expires_at?: string;
 }
+type ShareLinkOpts = { password?: string; expires_in_days?: number; download_limit?: number; recipient_email?: string };
 export const sharesApi = {
   list: () => unwrap<ShareLink[]>(http.get<Envelope<ShareLink[]>>("/shares/")),
-  create: (file_id: string, opts: { password?: string; expires_in_days?: number; download_limit?: number; recipient_email?: string }) =>
+  create: (file_id: string, opts: ShareLinkOpts = {}) =>
     unwrap<ShareCreateResult>(http.post<Envelope<ShareCreateResult>>("/shares/", { file_id, ...opts })),
+  createFolder: (folder_id: string, opts: ShareLinkOpts = {}) =>
+    unwrap<ShareCreateResult>(http.post<Envelope<ShareCreateResult>>("/shares/", { folder_id, ...opts })),
   revoke: (id: string) => http.delete(`/shares/${id}`),
 };
 

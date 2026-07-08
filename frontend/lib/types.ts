@@ -64,7 +64,9 @@ export interface Listing {
 export interface ShareLink {
   id: string;
   token: string;
+  kind?: "file" | "folder";
   file_id?: string;
+  folder_id?: string;
   permission: string;
   has_password: boolean;
   download_limit?: number;

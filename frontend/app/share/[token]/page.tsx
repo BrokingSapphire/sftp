@@ -1,12 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Download, FileDown, Lock, Loader2, ShieldAlert } from "lucide-react";
+import { Download, FileDown, FolderDown, Lock, Loader2, ShieldAlert } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 
 interface PublicInfo {
-  token: string; file_name: string; size_bytes: number; mime_type: string;
-  has_password: boolean; permission: string;
+  token: string; kind?: "file" | "folder"; file_name: string; size_bytes: number; mime_type: string;
+  item_count?: number; has_password: boolean; permission: string;
 }
 
 function humanSize(n: number) {
@@ -45,7 +45,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = info.file_name;
+      a.download = info.kind === "folder" ? `${info.file_name}.zip` : info.file_name;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
@@ -81,10 +81,16 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
         {status === "ok" && info && (
           <>
             <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 p-4">
-              <FileDown size={28} className="shrink-0 text-primary" />
+              {info.kind === "folder"
+                ? <FolderDown size={28} className="shrink-0 text-primary" />
+                : <FileDown size={28} className="shrink-0 text-primary" />}
               <div className="min-w-0">
                 <p className="truncate font-medium">{info.file_name}</p>
-                <p className="text-xs text-muted">{humanSize(info.size_bytes)} · shared with you</p>
+                <p className="text-xs text-muted">
+                  {info.kind === "folder"
+                    ? `${info.item_count ?? 0} file${(info.item_count ?? 0) === 1 ? "" : "s"} · downloads as a zip`
+                    : `${humanSize(info.size_bytes)} · shared with you`}
+                </p>
               </div>
             </div>
 

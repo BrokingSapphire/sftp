@@ -45,6 +45,7 @@ export default function SharesPage() {
                   <p className="truncate font-mono text-sm">/share/{s.token}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
                     <StatusBadge tone={s.is_active ? "success" : "danger"} dot>{s.is_active ? "Active" : "Revoked"}</StatusBadge>
+                    {s.kind === "folder" && <Badge>Folder</Badge>}
                     <Badge className="capitalize">{s.permission}</Badge>
                     {s.has_password && <StatusBadge tone="warning">Password</StatusBadge>}
                     {s.download_limit != null && <span>{s.download_count}/{s.download_limit} downloads</span>}

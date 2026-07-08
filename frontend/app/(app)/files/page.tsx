@@ -61,7 +61,7 @@ export default function FilesPage() {
     try { await filesApi.setRetention(f.id, until); toast.success(`Retained until ${new Date(until).toLocaleDateString()}`); refresh(); }
     catch { toast.error("Could not set retention (it cannot be shortened)"); }
   }
-  const [sharing, setSharing] = useState<{ id: string; name: string } | null>(null);
+  const [sharing, setSharing] = useState<{ id: string; name: string; kind: "file" | "folder" } | null>(null);
   const [versionOf, setVersionOf] = useState<{ id: string; name: string; version: number } | null>(null);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [sel, setSel] = useState<Map<string, "file" | "folder">>(new Map());
@@ -203,7 +203,10 @@ export default function FilesPage() {
     try { await filesApi.starFile(f.id, !f.is_starred); refresh(); } catch { toast.error("Failed"); }
   }
   function share(f: FileItem) {
-    setSharing({ id: f.id, name: f.name });
+    setSharing({ id: f.id, name: f.name, kind: "file" });
+  }
+  function shareFolder(f: FolderItem) {
+    setSharing({ id: f.id, name: f.name, kind: "folder" });
   }
   async function addToCommon(f: FileItem) {
     try { await commonApi.makeCommon(f.id); toast.success(`"${f.name}" shared to Common`); }
@@ -242,6 +245,7 @@ export default function FilesPage() {
     return [
       { label: "Open", icon: FolderOpen, onClick: () => openFolder(f) },
       { label: "Download (zip)", icon: Download, onClick: () => { window.location.href = filesApi.folderDownloadUrl(f.id); } },
+      { label: "Get share link", icon: Share2, onClick: () => shareFolder(f) },
       { label: "Rename", icon: Pencil, onClick: () => rename("folder", f.id, f.name) },
       { separator: true, label: "" },
       { label: "colour", node: <ColorSwatches current={f.color} onPick={(c) => setColor(f, c)} /> },
@@ -439,7 +443,7 @@ export default function FilesPage() {
       )}
 
       <ContextMenu menu={ctx.menu} onClose={ctx.close} />
-      {sharing && <ShareDialog fileId={sharing.id} fileName={sharing.name} onClose={() => setSharing(null)} />}
+      {sharing && <ShareDialog fileId={sharing.id} fileName={sharing.name} kind={sharing.kind} onClose={() => setSharing(null)} />}
       {versionOf && (
         <VersionHistory
           fileId={versionOf.id} fileName={versionOf.name} currentVersion={versionOf.version}

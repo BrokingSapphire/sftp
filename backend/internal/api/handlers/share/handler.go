@@ -4,6 +4,7 @@ package share
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/go-fuego/fuego"
 	"github.com/google/uuid"
@@ -41,7 +42,7 @@ func (h *Handler) Create(c fuego.ContextWithBody[models.CreateRequest]) (*respon
 		return nil, handlers.Fail(apperrors.ErrInvalidRequest)
 	}
 	if err := utils.Validate(body); err != nil {
-		return nil, fuego.BadRequestError{Title: "file_id is required"}
+		return nil, fuego.BadRequestError{Title: "a valid file_id or folder_id is required"}
 	}
 	sh, err := h.svc.Create(c.Context(), uid, body)
 	if err != nil {
@@ -92,11 +93,34 @@ func (h *Handler) PublicInfo(c fuego.ContextNoBody) (*response.Envelope[models.P
 	return response.OK(*info), nil
 }
 
-// PublicDownload streams a shared file (std handler; supports range + password).
+// PublicDownload streams a shared file, or a shared folder as a zip archive
+// (std handler; files support range + password).
 // Route: GET /share/{token}/download?password=...
 func (h *Handler) PublicDownload(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
-	dl, err := h.svc.Access(r.Context(), token, r.URL.Query().Get("password"))
+	password := r.URL.Query().Get("password")
+
+	kind, err := h.svc.ShareKind(r.Context(), token)
+	if err != nil {
+		handlers.WriteProblem(w, r, apperrors.HTTPStatus(err), err.Error(), err)
+		return
+	}
+
+	if kind == "folder" {
+		ft, err := h.svc.AccessFolder(r.Context(), token, password)
+		if err != nil {
+			handlers.WriteProblem(w, r, apperrors.HTTPStatus(err), err.Error(), err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/zip")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+zipFilename(ft.Name)+"\"")
+		if _, err := h.svc.WriteFolderZip(r.Context(), ft.Owner, ft.FolderID, ft.Name, w); err != nil {
+			h.log.Error("share folder zip failed", "folder", ft.FolderID, "err", err)
+		}
+		return
+	}
+
+	dl, err := h.svc.Access(r.Context(), token, password)
 	if err != nil {
 		handlers.WriteProblem(w, r, apperrors.HTTPStatus(err), err.Error(), err)
 		return
@@ -107,6 +131,16 @@ func (h *Handler) PublicDownload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+dl.Name+"\"")
 	w.Header().Set("Accept-Ranges", "bytes")
 	http.ServeContent(w, r, dl.Name, dl.ModTime, dl.File)
+}
+
+// zipFilename turns a folder name into a safe "<name>.zip" download filename.
+func zipFilename(name string) string {
+	name = strings.NewReplacer("/", "-", "\\", "-", "\"", "", "\n", "", "\r", "").Replace(name)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = "folder"
+	}
+	return name + ".zip"
 }
 
 func currentUserID(ctx context.Context) (uuid.UUID, error) {
