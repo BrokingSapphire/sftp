@@ -481,9 +481,12 @@ accounts, RBAC, and audit trail.
 <details>
 <summary><b>How do I rebrand it for my company?</b></summary>
 
-Edit <code>brand.config.json</code> (name, colours, logo, domains), drop your logo
-in <code>frontend/public/</code>, and rebuild. <code>deploy.sh</code> can do this
-interactively.
+Run <code>deploy.sh</code> — it prompts for name, colours, <b>logo</b> (a local
+image path or <code>https</code> URL) and domains, then writes
+<code>brand.config.json</code> and copies your logo into
+<code>frontend/public/</code> for you. Prefer to do it by hand? Edit
+<code>brand.config.json</code>, drop your logo in <code>frontend/public/</code>,
+and rebuild.
 </details>
 
 <details>
