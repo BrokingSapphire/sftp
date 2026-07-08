@@ -560,6 +560,72 @@ func (h *Handler) SharedWithMe(c fuego.ContextNoBody) (*response.Envelope[[]mode
 	return response.OK(files), nil
 }
 
+// ShareFolderWithUser grants a specific internal user access to a folder.
+func (h *Handler) ShareFolderWithUser(c fuego.ContextWithBody[models.ShareUserRequest]) (*response.Envelope[models.FileGrantResponse], error) {
+	body, err := c.Body()
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	if err := utils.Validate(body); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	id, err := params.UUIDPath(c, "id")
+	if err != nil {
+		return nil, err
+	}
+	grant, err := h.svc.ShareFolderWithUser(c.Context(), uid, id, body.RecipientEmail, body.CanWrite)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage(*grant, "Folder shared"), nil
+}
+
+// ListFolderGrants lists a folder's internal recipients (owner only).
+func (h *Handler) ListFolderGrants(c fuego.ContextNoBody) (*response.Envelope[[]models.FileGrantResponse], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	grants, err := h.svc.ListFolderGrants(c.Context(), uid, id)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(grants), nil
+}
+
+// RevokeFolderGrant removes a user's access to a folder (owner only).
+func (h *Handler) RevokeFolderGrant(c fuego.ContextNoBody) (*response.Envelope[response.Any], error) {
+	uid, id, err := h.idOnly(c)
+	if err != nil {
+		return nil, err
+	}
+	rid, err := params.UUIDPath(c, "uid")
+	if err != nil {
+		return nil, err
+	}
+	if err := h.svc.RevokeFolderUserShare(c.Context(), uid, id, rid); err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OKWithMessage[response.Any](nil, "Access removed"), nil
+}
+
+// SharedFoldersWithMe lists folders other users have shared with the caller.
+func (h *Handler) SharedFoldersWithMe(c fuego.ContextNoBody) (*response.Envelope[[]models.SharedFolderResponse], error) {
+	uid, err := currentUserID(c.Context())
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	folders, err := h.svc.ListSharedFoldersWithMe(c.Context(), uid)
+	if err != nil {
+		return nil, handlers.Fail(err)
+	}
+	return response.OK(folders), nil
+}
+
 func (h *Handler) idOnly(c fuego.ContextNoBody) (uuid.UUID, uuid.UUID, error) {
 	uid, err := currentUserID(c.Context())
 	if err != nil {

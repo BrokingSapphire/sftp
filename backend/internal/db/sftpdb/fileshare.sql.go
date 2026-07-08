@@ -36,6 +36,30 @@ func (q *Queries) GetFileGrant(ctx context.Context, arg GetFileGrantParams) (Get
 	return i, err
 }
 
+const getFolderGrant = `-- name: GetFolderGrant :one
+SELECT can_read, can_write, can_download
+FROM resource_permissions
+WHERE folder_id = $1 AND grantee_user_id = $2
+`
+
+type GetFolderGrantParams struct {
+	FolderID      *uuid.UUID `json:"folder_id"`
+	GranteeUserID *uuid.UUID `json:"grantee_user_id"`
+}
+
+type GetFolderGrantRow struct {
+	CanRead     bool `json:"can_read"`
+	CanWrite    bool `json:"can_write"`
+	CanDownload bool `json:"can_download"`
+}
+
+func (q *Queries) GetFolderGrant(ctx context.Context, arg GetFolderGrantParams) (GetFolderGrantRow, error) {
+	row := q.db.QueryRow(ctx, getFolderGrant, arg.FolderID, arg.GranteeUserID)
+	var i GetFolderGrantRow
+	err := row.Scan(&i.CanRead, &i.CanWrite, &i.CanDownload)
+	return i, err
+}
+
 const grantFileToUser = `-- name: GrantFileToUser :one
 INSERT INTO resource_permissions (file_id, grantee_user_id, can_read, can_write, can_download, can_share, created_by)
 VALUES ($1, $2, TRUE, $3, TRUE, FALSE, $4)
@@ -54,6 +78,51 @@ type GrantFileToUserParams struct {
 func (q *Queries) GrantFileToUser(ctx context.Context, arg GrantFileToUserParams) (ResourcePermission, error) {
 	row := q.db.QueryRow(ctx, grantFileToUser,
 		arg.FileID,
+		arg.GranteeUserID,
+		arg.CanWrite,
+		arg.CreatedBy,
+	)
+	var i ResourcePermission
+	err := row.Scan(
+		&i.ID,
+		&i.FileID,
+		&i.FolderID,
+		&i.GranteeUserID,
+		&i.GranteeRoleID,
+		&i.CanRead,
+		&i.CanWrite,
+		&i.CanDelete,
+		&i.CanMove,
+		&i.CanShare,
+		&i.CanDownload,
+		&i.CanUpload,
+		&i.Inherit,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const grantFolderToUser = `-- name: GrantFolderToUser :one
+
+INSERT INTO resource_permissions (folder_id, grantee_user_id, can_read, can_write, can_download, can_share, created_by)
+VALUES ($1, $2, TRUE, $3, TRUE, FALSE, $4)
+ON CONFLICT (folder_id, grantee_user_id) WHERE folder_id IS NOT NULL AND grantee_user_id IS NOT NULL
+DO UPDATE SET can_write = EXCLUDED.can_write
+RETURNING id, file_id, folder_id, grantee_user_id, grantee_role_id, can_read, can_write, can_delete, can_move, can_share, can_download, can_upload, inherit, created_by, created_at
+`
+
+type GrantFolderToUserParams struct {
+	FolderID      *uuid.UUID `json:"folder_id"`
+	GranteeUserID *uuid.UUID `json:"grantee_user_id"`
+	CanWrite      bool       `json:"can_write"`
+	CreatedBy     *uuid.UUID `json:"created_by"`
+}
+
+// Folder-level internal shares (mirror the file-level grants above) -----------
+func (q *Queries) GrantFolderToUser(ctx context.Context, arg GrantFolderToUserParams) (ResourcePermission, error) {
+	row := q.db.QueryRow(ctx, grantFolderToUser,
+		arg.FolderID,
 		arg.GranteeUserID,
 		arg.CanWrite,
 		arg.CreatedBy,
@@ -114,6 +183,127 @@ func (q *Queries) ListFileGrants(ctx context.Context, fileID *uuid.UUID) ([]List
 			&i.Username,
 			&i.Email,
 			&i.HasAvatar,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFolderGrants = `-- name: ListFolderGrants :many
+SELECT rp.grantee_user_id, rp.can_write,
+       u.full_name, u.username, u.email,
+       (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS has_avatar
+FROM resource_permissions rp
+JOIN users u ON u.id = rp.grantee_user_id
+WHERE rp.folder_id = $1
+ORDER BY u.full_name
+`
+
+type ListFolderGrantsRow struct {
+	GranteeUserID *uuid.UUID `json:"grantee_user_id"`
+	CanWrite      bool       `json:"can_write"`
+	FullName      string     `json:"full_name"`
+	Username      string     `json:"username"`
+	Email         string     `json:"email"`
+	HasAvatar     *bool      `json:"has_avatar"`
+}
+
+func (q *Queries) ListFolderGrants(ctx context.Context, folderID *uuid.UUID) ([]ListFolderGrantsRow, error) {
+	rows, err := q.db.Query(ctx, listFolderGrants, folderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListFolderGrantsRow{}
+	for rows.Next() {
+		var i ListFolderGrantsRow
+		if err := rows.Scan(
+			&i.GranteeUserID,
+			&i.CanWrite,
+			&i.FullName,
+			&i.Username,
+			&i.Email,
+			&i.HasAvatar,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSharedFoldersWithMe = `-- name: ListSharedFoldersWithMe :many
+SELECT fo.id, fo.owner_id, fo.parent_id, fo.name, fo.path, fo.depth, fo.size_bytes, fo.is_starred, fo.is_pinned, fo.created_at, fo.updated_at, fo.deleted_at, fo.color, fo.team_id, fo.is_common, rp.can_write, rp.created_at AS shared_at,
+       u.full_name AS owner_name, u.username AS owner_username,
+       (u.avatar_path IS NOT NULL AND u.avatar_path <> '') AS owner_has_avatar
+FROM resource_permissions rp
+JOIN folders fo ON fo.id = rp.folder_id AND fo.deleted_at IS NULL
+JOIN users u ON u.id = fo.owner_id
+WHERE rp.grantee_user_id = $1 AND rp.folder_id IS NOT NULL
+ORDER BY rp.created_at DESC
+`
+
+type ListSharedFoldersWithMeRow struct {
+	ID             uuid.UUID          `json:"id"`
+	OwnerID        uuid.UUID          `json:"owner_id"`
+	ParentID       *uuid.UUID         `json:"parent_id"`
+	Name           string             `json:"name"`
+	Path           string             `json:"path"`
+	Depth          int32              `json:"depth"`
+	SizeBytes      int64              `json:"size_bytes"`
+	IsStarred      bool               `json:"is_starred"`
+	IsPinned       bool               `json:"is_pinned"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	Color          string             `json:"color"`
+	TeamID         *uuid.UUID         `json:"team_id"`
+	IsCommon       bool               `json:"is_common"`
+	CanWrite       bool               `json:"can_write"`
+	SharedAt       pgtype.Timestamptz `json:"shared_at"`
+	OwnerName      string             `json:"owner_name"`
+	OwnerUsername  string             `json:"owner_username"`
+	OwnerHasAvatar *bool              `json:"owner_has_avatar"`
+}
+
+func (q *Queries) ListSharedFoldersWithMe(ctx context.Context, granteeUserID *uuid.UUID) ([]ListSharedFoldersWithMeRow, error) {
+	rows, err := q.db.Query(ctx, listSharedFoldersWithMe, granteeUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSharedFoldersWithMeRow{}
+	for rows.Next() {
+		var i ListSharedFoldersWithMeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.ParentID,
+			&i.Name,
+			&i.Path,
+			&i.Depth,
+			&i.SizeBytes,
+			&i.IsStarred,
+			&i.IsPinned,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Color,
+			&i.TeamID,
+			&i.IsCommon,
+			&i.CanWrite,
+			&i.SharedAt,
+			&i.OwnerName,
+			&i.OwnerUsername,
+			&i.OwnerHasAvatar,
 		); err != nil {
 			return nil, err
 		}
@@ -232,5 +422,20 @@ type RevokeFileGrantParams struct {
 
 func (q *Queries) RevokeFileGrant(ctx context.Context, arg RevokeFileGrantParams) error {
 	_, err := q.db.Exec(ctx, revokeFileGrant, arg.FileID, arg.GranteeUserID)
+	return err
+}
+
+const revokeFolderGrant = `-- name: RevokeFolderGrant :exec
+DELETE FROM resource_permissions
+WHERE folder_id = $1 AND grantee_user_id = $2
+`
+
+type RevokeFolderGrantParams struct {
+	FolderID      *uuid.UUID `json:"folder_id"`
+	GranteeUserID *uuid.UUID `json:"grantee_user_id"`
+}
+
+func (q *Queries) RevokeFolderGrant(ctx context.Context, arg RevokeFolderGrantParams) error {
+	_, err := q.db.Exec(ctx, revokeFolderGrant, arg.FolderID, arg.GranteeUserID)
 	return err
 }

@@ -14,7 +14,11 @@ import { isExternalEmail as isExternal } from "@/lib/brand";
 
 export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { fileId: string; fileName: string; kind?: "file" | "folder"; onClose: () => void }) {
   const isFolder = kind === "folder";
-  // People-with-access (internal shares) — only files support per-user grants.
+  // Internal per-user grants work for both files and folders; pick the endpoints.
+  const grantApi = isFolder
+    ? { list: filesApi.listFolderGrants, share: filesApi.shareFolderWithUser, revoke: filesApi.revokeFolderGrant }
+    : { list: filesApi.listGrants, share: filesApi.shareWithUser, revoke: filesApi.revokeGrant };
+  // People-with-access (internal shares).
   const [grants, setGrants] = useState<FileGrant[]>([]);
   const [personEmail, setPersonEmail] = useState("");
   const [canWrite, setCanWrite] = useState(false);
@@ -30,10 +34,10 @@ export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { file
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (isFolder) return; // folders have no per-user grant endpoint
     // The API omits an empty array, so coalesce to [] — otherwise grants.map
-    // below would crash (files with no recipients are the common case).
-    filesApi.listGrants(fileId).then((g) => setGrants(g ?? [])).catch(() => setGrants([]));
+    // below would crash (resources with no recipients are the common case).
+    grantApi.list(fileId).then((g) => setGrants(g ?? [])).catch(() => setGrants([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileId, isFolder]);
 
   const personExternal = personEmail ? isExternal(personEmail) : false;
@@ -42,7 +46,7 @@ export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { file
     if (!personEmail) return;
     setAdding(true);
     try {
-      const g = await filesApi.shareWithUser(fileId, personEmail, canWrite);
+      const g = await grantApi.share(fileId, personEmail, canWrite);
       setGrants((gs) => [...gs.filter((x) => x.user_id !== g.user_id), g]);
       setPersonEmail("");
       toast.success(`Shared with ${g.name}`);
@@ -52,11 +56,11 @@ export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { file
     } finally { setAdding(false); }
   }
   async function removePerson(g: FileGrant) {
-    try { await filesApi.revokeGrant(fileId, g.user_id); setGrants((gs) => gs.filter((x) => x.user_id !== g.user_id)); }
+    try { await grantApi.revoke(fileId, g.user_id); setGrants((gs) => gs.filter((x) => x.user_id !== g.user_id)); }
     catch { toast.error("Could not remove access"); }
   }
   async function setRole(g: FileGrant, write: boolean) {
-    try { const ng = await filesApi.shareWithUser(fileId, g.email, write); setGrants((gs) => gs.map((x) => (x.user_id === g.user_id ? ng : x))); }
+    try { const ng = await grantApi.share(fileId, g.email, write); setGrants((gs) => gs.map((x) => (x.user_id === g.user_id ? ng : x))); }
     catch { toast.error("Could not update role"); }
   }
 
@@ -95,8 +99,7 @@ export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { file
           <button onClick={onClose} className="text-muted hover:text-foreground"><X size={18} /></button>
         </div>
 
-        {/* Add people (files only — folders have no per-user grant API) */}
-        {!isFolder && (<>
+        {/* Add people (internal per-user grants — files and folders) */}
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 rounded-lg border border-border px-2 focus-within:ring-2 focus-within:ring-ring/40">
@@ -149,7 +152,6 @@ export function ShareDialog({ fileId, fileName, kind = "file", onClose }: { file
             {(grants ?? []).length === 0 && <p className="px-1 text-xs text-muted">Only you have access.</p>}
           </div>
         </div>
-        </>)}
 
         {/* General access — link */}
         <div className="mt-4 rounded-xl border border-border p-3">

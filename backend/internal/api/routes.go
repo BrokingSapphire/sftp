@@ -9,52 +9,52 @@ import (
 	"github.com/go-fuego/fuego/option"
 
 	"sapphirebroking.com/sftp_service/internal/api/handlers"
+	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
 	apikeyhandler "sapphirebroking.com/sftp_service/internal/api/handlers/apikey"
 	audithandler "sapphirebroking.com/sftp_service/internal/api/handlers/audit"
-	aihandler "sapphirebroking.com/sftp_service/internal/api/handlers/ai"
-	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
-	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
-	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
-	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	authhandler "sapphirebroking.com/sftp_service/internal/api/handlers/auth"
+	backuphandler "sapphirebroking.com/sftp_service/internal/api/handlers/backup"
+	editorhandler "sapphirebroking.com/sftp_service/internal/api/handlers/editor"
 	filehandler "sapphirebroking.com/sftp_service/internal/api/handlers/file"
 	m "sapphirebroking.com/sftp_service/internal/api/handlers/middleware"
 	notifhandler "sapphirebroking.com/sftp_service/internal/api/handlers/notification"
+	securityhandler "sapphirebroking.com/sftp_service/internal/api/handlers/security"
 	sharehandler "sapphirebroking.com/sftp_service/internal/api/handlers/share"
 	ssohandler "sapphirebroking.com/sftp_service/internal/api/handlers/sso"
+	teamhandler "sapphirebroking.com/sftp_service/internal/api/handlers/team"
 	userhandler "sapphirebroking.com/sftp_service/internal/api/handlers/user"
 	"sapphirebroking.com/sftp_service/internal/config"
-	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	"sapphirebroking.com/sftp_service/internal/metrics"
-	"sapphirebroking.com/sftp_service/pkg/ratelimit"
+	auditsvc "sapphirebroking.com/sftp_service/internal/service/audit"
 	"sapphirebroking.com/sftp_service/pkg/logger"
+	"sapphirebroking.com/sftp_service/pkg/ratelimit"
 )
 
 // Deps carries everything the router needs. Feature handlers are added here as
 // later phases land (users, files, shares, ...).
 type Deps struct {
-	CORSConfig    config.CORSConfig
-	Logger        logger.Logger
-	DebugErrors   bool
-	Auth          *m.Authenticator
-	GlobalRL      *ratelimit.Limiter
-	LoginRL       *ratelimit.Limiter
-	Perms         *m.Permissions
-	Recorder      *auditsvc.Recorder
-	HealthHandler *handlers.HealthHandler
-	AuthHandler   *authhandler.Handler
-	SSOHandler    *ssohandler.Handler
-	UserHandler   *userhandler.Handler
-	FileHandler   *filehandler.Handler
-	APIKeyHandler *apikeyhandler.Handler
+	CORSConfig      config.CORSConfig
+	Logger          logger.Logger
+	DebugErrors     bool
+	Auth            *m.Authenticator
+	GlobalRL        *ratelimit.Limiter
+	LoginRL         *ratelimit.Limiter
+	Perms           *m.Permissions
+	Recorder        *auditsvc.Recorder
+	HealthHandler   *handlers.HealthHandler
+	AuthHandler     *authhandler.Handler
+	SSOHandler      *ssohandler.Handler
+	UserHandler     *userhandler.Handler
+	FileHandler     *filehandler.Handler
+	APIKeyHandler   *apikeyhandler.Handler
 	AuditHandler    *audithandler.Handler
 	SecurityHandler *securityhandler.Handler
 	AIHandler       *aihandler.Handler
 	EditorHandler   *editorhandler.Handler
 	BackupHandler   *backuphandler.Handler
 	TeamHandler     *teamhandler.Handler
-	ShareHandler  *sharehandler.Handler
-	NotifHandler  *notifhandler.Handler
+	ShareHandler    *sharehandler.Handler
+	NotifHandler    *notifhandler.Handler
 }
 
 var (
@@ -215,6 +215,12 @@ func registerFileRoutes(g *fuego.Server, deps Deps) {
 	fuego.Put(gd, "/{id}/color", h.SetFolderColor, fwrite, option.Summary("Set folder colour"))
 	fuego.Delete(gd, "/{id}", h.DeleteFolder, fdel, option.Summary("Delete folder"))
 	fuego.GetStd(gd, "/{id}/download", h.FolderDownload, read, option.Summary("Download a folder as a zip"))
+
+	// Internal (per-user) folder sharing — mirrors the file endpoints below.
+	fuego.Get(gd, "/shared-with-me", h.SharedFoldersWithMe, read, option.Summary("List folders shared with me"))
+	fuego.Post(gd, "/{id}/share-user", h.ShareFolderWithUser, fwrite, option.Summary("Share a folder with a specific user"))
+	fuego.Get(gd, "/{id}/shares", h.ListFolderGrants, read, option.Summary("List a folder's internal recipients"))
+	fuego.Delete(gd, "/{id}/shares/{uid}", h.RevokeFolderGrant, fwrite, option.Summary("Remove a user's access to a folder"))
 
 	// Files.
 	gf := fuego.Group(g, "/files", option.Tags("Files"), secured, respUnauthorized, respForbidden)

@@ -66,6 +66,7 @@ type Querier interface {
 	GetFileVersion(ctx context.Context, arg GetFileVersionParams) (GetFileVersionRow, error)
 	GetFolderByID(ctx context.Context, id uuid.UUID) (Folder, error)
 	GetFolderByOwnerPath(ctx context.Context, arg GetFolderByOwnerPathParams) (Folder, error)
+	GetFolderGrant(ctx context.Context, arg GetFolderGrantParams) (GetFolderGrantRow, error)
 	GetPermissionsForRole(ctx context.Context, roleID uuid.UUID) ([]string, error)
 	GetPermissionsForUser(ctx context.Context, id uuid.UUID) ([]string, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
@@ -83,6 +84,8 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GrantFileToUser(ctx context.Context, arg GrantFileToUserParams) (ResourcePermission, error)
+	// Folder-level internal shares (mirror the file-level grants above) -----------
+	GrantFolderToUser(ctx context.Context, arg GrantFolderToUserParams) (ResourcePermission, error)
 	HardDeleteFile(ctx context.Context, id uuid.UUID) (string, error)
 	HasFileText(ctx context.Context, fileID uuid.UUID) (bool, error)
 	IncrementDownloadCount(ctx context.Context, id uuid.UUID) error
@@ -112,6 +115,7 @@ type Querier interface {
 	ListFilesInFolder(ctx context.Context, arg ListFilesInFolderParams) ([]ListFilesInFolderRow, error)
 	ListFilesMissingText(ctx context.Context, limit int32) ([]ListFilesMissingTextRow, error)
 	ListFilesNeedingEmbedding(ctx context.Context, rowLimit int32) ([]ListFilesNeedingEmbeddingRow, error)
+	ListFolderGrants(ctx context.Context, folderID *uuid.UUID) ([]ListFolderGrantsRow, error)
 	ListFoldersByParent(ctx context.Context, arg ListFoldersByParentParams) ([]Folder, error)
 	ListInheritedFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
 	ListInheritedWithSource(ctx context.Context, ownerID uuid.UUID) ([]ListInheritedWithSourceRow, error)
@@ -125,6 +129,7 @@ type Querier interface {
 	ListRecentLoginHistory(ctx context.Context, arg ListRecentLoginHistoryParams) ([]LoginHistory, error)
 	ListRoles(ctx context.Context) ([]Role, error)
 	ListSecurityAlerts(ctx context.Context, arg ListSecurityAlertsParams) ([]SecurityAlert, error)
+	ListSharedFoldersWithMe(ctx context.Context, granteeUserID *uuid.UUID) ([]ListSharedFoldersWithMeRow, error)
 	ListSharedWithMe(ctx context.Context, granteeUserID *uuid.UUID) ([]ListSharedWithMeRow, error)
 	ListSharesByOwner(ctx context.Context, ownerID uuid.UUID) ([]Share, error)
 	ListStarredFiles(ctx context.Context, ownerID uuid.UUID) ([]File, error)
@@ -162,6 +167,7 @@ type Querier interface {
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) error
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID) error
 	RevokeFileGrant(ctx context.Context, arg RevokeFileGrantParams) error
+	RevokeFolderGrant(ctx context.Context, arg RevokeFolderGrantParams) error
 	RevokeSession(ctx context.Context, id uuid.UUID) error
 	RevokeSessionByHash(ctx context.Context, refreshTokenHash string) error
 	RevokeShare(ctx context.Context, arg RevokeShareParams) error

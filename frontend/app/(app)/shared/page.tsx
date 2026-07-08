@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Download, Eye, Pencil, Glasses } from "lucide-react";
+import { Users, Download, Eye, Pencil, Glasses, Folder } from "lucide-react";
 import { filesApi } from "@/lib/endpoints";
 import type { FileItem } from "@/lib/types";
 import { PageHeader } from "@/components/files/file-list";
@@ -16,21 +16,57 @@ import { formatBytes, timeAgo } from "@/lib/utils";
 
 export default function SharedPage() {
   const q = useQuery({ queryKey: ["shared-with-me"], queryFn: () => filesApi.sharedWithMe() });
+  const qf = useQuery({ queryKey: ["shared-folders-with-me"], queryFn: () => filesApi.sharedFolders() });
   const [preview, setPreview] = useState<number | null>(null);
   const files = q.data ?? [];
+  const folders = qf.data ?? [];
+  const loading = q.isLoading || qf.isLoading;
+  const nothing = !loading && files.length === 0 && folders.length === 0;
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader icon={Users} title="Shared with me" subtitle="Files other people have shared with you" />
+      <PageHeader icon={Users} title="Shared with me" subtitle="Files and folders other people have shared with you" />
 
-      {q.isLoading && <div className="rounded-xl border border-border bg-surface p-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}</div>}
+      {loading && <div className="rounded-xl border border-border bg-surface p-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-2 h-9 w-full" />)}</div>}
 
-      {!q.isLoading && files.length === 0 && (
+      {nothing && (
         <EmptyState
           icon={Users}
           title="No one's shared with you… yet"
-          subtitle="When a colleague shares a file, it lands right here. Popularity is only a matter of time."
+          subtitle="When a colleague shares a file or folder, it lands right here. Popularity is only a matter of time."
         />
+      )}
+
+      {folders.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <div className="grid min-w-[40rem] grid-cols-[1fr_11rem_6rem_5rem_7rem] gap-4 border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">
+            <span>Folder</span><span>Owner</span><span>Access</span><span></span><span className="text-right">Shared</span>
+          </div>
+          <StaggerList>
+            {folders.map((f) => (
+              <StaggerItem key={f.id} className="group grid min-w-[40rem] grid-cols-[1fr_11rem_6rem_5rem_7rem] items-center gap-4 border-b border-border/50 px-4 py-2.5 transition-colors hover:bg-surface-2">
+                <a href={filesApi.folderDownloadUrl(f.id)} className="flex min-w-0 items-center gap-3 text-left">
+                  <Folder size={18} className="shrink-0" style={f.color ? { color: f.color } : undefined} />
+                  <span className="truncate text-sm font-medium">{f.name}</span>
+                </a>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted">
+                  <Avatar userId={f.owner_id} name={f.owner_name} hasAvatar={f.owner_has_avatar} size={20} />
+                  <span className="truncate">{f.owner_name}</span>
+                </span>
+                <span className={`flex items-center gap-1 text-xs font-medium ${f.can_write ? "text-primary" : "text-muted"}`}>
+                  {f.can_write ? <Pencil size={12} /> : <Glasses size={12} />} {f.can_write ? "Editor" : "Viewer"}
+                </span>
+                <span></span>
+                <div className="flex items-center justify-end gap-1">
+                  <span className="text-xs text-muted group-hover:hidden">{timeAgo(f.shared_at)}</span>
+                  <div className="hidden gap-1 group-hover:flex">
+                    <a href={filesApi.folderDownloadUrl(f.id)}><button title="Download (zip)" className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-border hover:text-foreground"><Download size={15} /></button></a>
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        </div>
       )}
 
       {files.length > 0 && (

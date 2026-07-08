@@ -84,18 +84,18 @@ type RetentionRequest struct {
 
 // CommonFileResponse is a file in the organisation-wide Common area.
 type CommonFileResponse struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Extension    string `json:"extension"`
-	MimeType     string `json:"mime_type"`
-	SizeBytes    int64  `json:"size_bytes"`
-	IsStarred    bool   `json:"is_starred"`
-	UploaderID   string `json:"uploader_id"`
-	UploaderName string `json:"uploader_name"`
-	UploaderHasAvatar bool `json:"uploader_has_avatar"`
-	CanDelete    bool   `json:"can_delete"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Extension         string `json:"extension"`
+	MimeType          string `json:"mime_type"`
+	SizeBytes         int64  `json:"size_bytes"`
+	IsStarred         bool   `json:"is_starred"`
+	UploaderID        string `json:"uploader_id"`
+	UploaderName      string `json:"uploader_name"`
+	UploaderHasAvatar bool   `json:"uploader_has_avatar"`
+	CanDelete         bool   `json:"can_delete"`
+	CreatedAt         string `json:"created_at"`
+	UpdatedAt         string `json:"updated_at"`
 	// Mirror of FileResponse fields the viewer needs.
 	FolderID      *string `json:"folder_id,omitempty"`
 	VersionNo     int32   `json:"version_no"`
@@ -170,6 +170,21 @@ type SharedFileResponse struct {
 	IsStarred      bool   `json:"is_starred"`
 	VersionNo      int32  `json:"version_no"`
 	DownloadCount  int64  `json:"download_count"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	OwnerID        string `json:"owner_id"`
+	OwnerName      string `json:"owner_name"`
+	OwnerHasAvatar bool   `json:"owner_has_avatar"`
+	CanWrite       bool   `json:"can_write"`
+	SharedAt       string `json:"shared_at"`
+}
+
+// SharedFolderResponse is a folder shared with the caller by someone else.
+type SharedFolderResponse struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	IsStarred      bool   `json:"is_starred"`
+	Color          string `json:"color"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
 	OwnerID        string `json:"owner_id"`

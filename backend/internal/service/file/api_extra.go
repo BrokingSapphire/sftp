@@ -15,11 +15,14 @@ import (
 
 // WriteFolderZip streams a folder (recursively) as a zip archive to w and
 // returns the folder name (for the download filename). Decrypts transparently.
-func (s *Service) WriteFolderZip(ctx context.Context, owner, folderID uuid.UUID, w io.Writer) (string, error) {
-	root, err := s.ownedFolder(ctx, owner, folderID)
+// The caller may be the folder's owner or a user it was shared with; files are
+// always walked under the folder's real owner.
+func (s *Service) WriteFolderZip(ctx context.Context, caller, folderID uuid.UUID, w io.Writer) (string, error) {
+	root, err := s.authorizeFolderRead(ctx, caller, folderID)
 	if err != nil {
 		return "", err
 	}
+	owner := root.OwnerID
 	zw := zip.NewWriter(w)
 	defer zw.Close()
 
